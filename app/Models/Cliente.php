@@ -15,4 +15,9 @@ class Cliente extends Model
         'ubicacion',
         'creador_por_usuario'
     ];
+
+    public function asignaciones()
+    {
+        return $this->hasMany(Asignacion::class, 'id_cliente');
+    }
 }

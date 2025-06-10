@@ -15,6 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('tipo_venta');
             $table->decimal('precio_venta',8,2);
+            $table->unsignedBigInteger('id_producto');
+            $table->boolean('activo')->default(true);
+            $table->foreign('id_producto')->references('id')->on('productos');
             $table->timestamps();
         });
     }

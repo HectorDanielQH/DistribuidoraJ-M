@@ -75,4 +75,9 @@ class User extends Authenticatable
     {
         return 'profile/username';
     }
+
+    public function asignaciones()
+    {
+        return $this->hasMany(Asignacion::class, 'id_usuario');
+    }
 }

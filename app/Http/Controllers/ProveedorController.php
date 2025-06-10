@@ -80,7 +80,6 @@ class ProveedorController extends Controller
     {
         return response()->json([
             'usuario'=>Proveedor::find($proveedor),
-            'marcas'=>Marca::where('id_proveedor',$proveedor)->get()
         ]);
     }
 
@@ -99,14 +98,11 @@ class ProveedorController extends Controller
     {
         $request->validate([
             'nombreproveedor'=> 'required|string|max:255',
-            'opciones' => 'required|array'
         ],[
             'nombreproveedor.required' => 'El nombre del proveedor es obligatorio.',
             'nombreproveedor.string' => 'El nombre del proveedor debe ser una cadena de texto.',
             'nombreproveedor.unique' => 'El nombre del proveedor ya existe.',
             'nombreproveedor.max' => 'El nombre del proveedor no puede exceder los 255 caracteres.',
-            'opciones.required' => 'Debe seleccionar al menos una opción.',
-            'opciones.array' => 'Las opciones deben ser un arreglo.'
         ]);
 
         $existe = Proveedor::where('nombre_proveedor', $request->nombreproveedor)
@@ -120,13 +116,6 @@ class ProveedorController extends Controller
         }
 
         $proveedor = Proveedor::find($proveedor);
-        $proveedor->marcas()->delete();
-        foreach ($request->opciones as $opcion) {
-            Marca::create([
-                'descripcion' => trim(strtoupper($opcion)),
-                'id_proveedor' => $proveedor->id,
-            ]);
-        }
 
         $proveedor->update([
             'nombre_proveedor' => $request->nombreproveedor
@@ -145,8 +134,6 @@ class ProveedorController extends Controller
         if (!$proveedor) {
             return response()->json(['error' => 'Proveedor no encontrado.'], 404);
         }
-
-        $proveedor->marcas()->delete();
 
         $proveedor->delete();
         return response()->json(['mensaje' => 'Proveedor y sus marcas eliminados correctamente.']);

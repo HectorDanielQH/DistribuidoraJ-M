@@ -15,4 +15,14 @@ class Marca extends Model
     {
         return $this->belongsTo(Proveedor::class, 'id_proveedor');
     }
+
+    public function linea()
+    {
+        return $this->hasMany(Linea::class, 'id_marca');
+    }
+
+    public function productos()
+    {
+        return $this->hasMany(Producto::class, 'id_marca');
+    }
 }

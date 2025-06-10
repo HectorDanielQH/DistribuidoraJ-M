@@ -361,11 +361,35 @@ return [
             'can' => 'administrador.permisos',
 
         ],
+        ['header'=> '.::ASIGNACIONES::.'],
+        [
+            'text' => 'Asignaciones',
+            'route' => 'asignacionclientes.index',
+            'icon' => 'fas fa-fw fa-tasks',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Rendimiento de personal',
+            'icon' => 'fas fa-fw fa-chart-bar',
+            'can' => 'administrador.permisos',
+
+        ],
+        ['header' => '.:: VENTAS Y COMPRAS ::.'],
+        [
+            'text' => 'Pedidos',
+            'icon' => 'fas fa-fw fa-shopping-cart',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Ventas',
+            'icon' => 'fas fa-fw fa-receipt',
+            'can' => 'administrador.permisos',
+        ],
         ['header' => '.:: REPORTES ::.'],
         [
-            'text' => '.:: Reportes ::.',
-            //'url'  => '#', // URL to the report page
-            //'icon_color'  => '', // Icon color
+            'text' => 'Inventario',
+            'url' => '#',
+            'icon' => 'fas fa-fw fa-boxes',
         ],
         [
             'text' => 'Ventas',
@@ -373,14 +397,9 @@ return [
             'icon' => 'fas fa-fw fa-chart-line',
         ],
         [
-            'text' => 'Compras',
+            'text' => 'Ventas por producto',
             'url' => '#',
             'icon' => 'fas fa-fw fa-shopping-cart',
-        ],
-        [
-            'text' => 'Inventario',
-            'url' => '#',
-            'icon' => 'fas fa-fw fa-boxes',
         ],
         ['header' => '.:: CONFIGURACIONES ::.'],
         [
@@ -389,7 +408,7 @@ return [
             //'icon_color'  => '', // Icon color
         ],
         [
-            'text' => 'Configuración de la tienda',
+            'text' => 'Configuración del sistema',
             'url' => '#',
             'icon' => 'fas fa-fw fa-cogs',
         ],

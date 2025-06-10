@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('productos', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('id_proveedor');
+            $table->unsignedBigInteger('id_marca');
+            $table->unsignedBigInteger('id_linea');
             $table->string('codigo')->unique();
+            $table->string('nombre_producto');
             $table->string('descripcion_producto');
             $table->integer('cantidad');
             $table->string('detalle_cantidad');
@@ -24,14 +28,10 @@ return new class extends Migration
             $table->integer('descripcion_descuento_porcentaje')->nullable();
             $table->string('descripcion_regalo')->nullable();
             $table->string('foto_producto')->nullable();
-            $table->unsignedBigInteger('id_forma_venta');
-            $table->unsignedBigInteger('id_proveedor');
-            $table->unsignedBigInteger('id_marca');
-            $table->unsignedBigInteger('id_linea');
-            $table->foreign('id_forma_venta')->references('id')->on('forma_ventas');
             $table->foreign('id_proveedor')->references('id')->on('proveedors');
             $table->foreign('id_marca')->references('id')->on('marcas');
             $table->foreign('id_linea')->references('id')->on('lineas');
+            $table->boolean('estado_de_baja')->default(false);
             $table->timestamps();
         });
     }

@@ -41,7 +41,7 @@
                 <form method="GET" action="{{ route('proveedores.index') }}" class="row g-3">
                     <div class="col-md-7">
                         <label for="nombre" class="form-label text-muted">Nombre completo</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Juan Pérez" value="{{ $nombre ?? '' }}"  style="border-radius: 8px;">
+                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Proovedor" value="{{ $nombre ?? '' }}"  style="border-radius: 8px;">
                     </div>
                     <div class="col-md-5 d-flex align-items-end">
                         <button type="submit" class="btn w-100" style="background-color: #3498db; color: white; font-weight: bold; border-radius: 8px;">
@@ -70,7 +70,7 @@
                         </x-adminlte-input>
                     </div>
                     <div class="col-md-12 w-100">
-                        <label for="opciones" class="text-dark">Ingrese Marcas o productos</label>
+                        <label for="opciones" class="text-dark">Ingrese Marcas</label>
                         <select class="w-100" id="opciones" multiple="multiple" name="opciones[]">
                         </select>
                     </div>
@@ -85,7 +85,7 @@
 
 
     <!--EDITAR USUARIO-->
-    <x-adminlte-modal id="modalEditarProovedor" size="lg" theme="dark" icon="fas fa-user-plus" title="Editar Distribuidor">
+    <x-adminlte-modal id="modalEditarProovedor" size="lg" theme="dark" icon="fas fa-user-edit" title="Editar Distribuidor">
         <div class="modal-body px-4">
             <form id="registro-proveedores-editar" method="POST">
                 @method('PUT')
@@ -100,11 +100,6 @@
                             </x-slot>
                         </x-adminlte-input>
                     </div>
-                    <div class="col-md-12 w-100">
-                        <label for="opciones" class="text-dark">Ingrese Marcas o productos</label>
-                        <select class="w-100" id="opciones-editar" multiple="multiple" name="opciones[]">
-                        </select>
-                    </div>
                 </div>
             </form>
         </div>
@@ -116,48 +111,58 @@
     
 
     <div class="container">
-        <table class="table table- table-bordered">
+        <table class="table table-bordered">
             <thead class="table-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Nombre de Proveedor</th>
+                    <th scope="col">Descripcion de venta de Productos y Marcas</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($proveedores as $proveedor)
                     <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Nombre de Proveedor</th>
-                        <th scope="col">Descripcion de venta de Productos y Marcas</th>
-                        <th scope="col">Acciones</th>
+                        <th scope="row" style="width: 5%">{{ $loop->iteration }}</th>
+                        <td style="width: 20%">{{ $proveedor->nombre_proveedor }}</td>
+                        <td style="width: 65%">
+                            @foreach ($proveedor->marcas as $opcion)
+                                <span class="badge bg-dark">{{ $opcion->descripcion }} 
+                                    <button class="btn btn-sm btn-warning mx-2" type="button" id-marca="{{$opcion->id}}" nombre-marca="{{ $opcion->descripcion }}" onclick="editarFuncion(this)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="eliminarMarcas({{$opcion->id}})" type="button">
+                                        <i class="fas fa-trash"></i>
+                                    </button> 
+                                    <button type="button" class="btn btn-primary btn-sm ml-2" onclick="moverMarcas({{$opcion->id}})" data-toggle="tooltip" data-placement="top" title="Mover">
+                                        <i class="fas fa-arrows-alt"></i>
+                                    </button>
+                                </span>
+                            @endforeach
+                            <button class="btn btn-sm btn-success my-2" onclick="anadirMarca({{$proveedor->id}})" type="button"> <i class="fas fa-plus"></i> </button>
+                        </td>
+                        <td class="w-20">
+                            <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEditarProovedor" onclick="funcionEditar(this)" id-usuario-editar="{{$proveedor->id}}">
+                                <i class="fas fa-user-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="funcionEliminar(this)" id-usuario="{{$proveedor->id}}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse ($proveedores as $proveedor)
-                        <tr>
-                            <th scope="row">{{ $loop->iteration }}</th>
-                            <td>{{ $proveedor->nombre_proveedor }}</td>
-                            <td>
-                                @foreach ($proveedor->marcas as $opcion)
-                                    <span class="badge bg-success">{{ $opcion->descripcion }}</span>
-                                @endforeach
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEditarProovedor" onclick="funcionEditar(this)" id-usuario-editar="{{$proveedor->id}}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="funcionEliminar(this)" id-usuario="{{$proveedor->id}}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center">
-                                <div class="alert alert-warning mb-0" role="alert">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    No se encontraron resultados para la búsqueda, quizas con otra coincidencia.
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                @empty
+                    <tr>
+                        <td colspan="4" class="text-center">
+                            <div class="alert alert-warning mb-0" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No se encontraron resultados para la búsqueda, quizas con otra coincidencia.
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
         </table>
     </div>
-
 @stop
 
 @section('css')
@@ -190,7 +195,7 @@
         $(document).ready(function() {
             $('#opciones').select2({
                 tags: true,
-                tokenSeparators: [',', ' '],
+                tokenSeparators: [','],
                 width: '100%',
                 placeholder: 'Agregue marcas o productos',
                 theme: "classic"
@@ -198,7 +203,7 @@
 
             $('#opciones-editar').select2({
                 tags: true,
-                tokenSeparators: [',', ' '],
+                tokenSeparators: [','],
                 width: '100%',
                 placeholder: 'Agregue marcas o productos',
                 theme: "classic"
@@ -279,7 +284,7 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error al eliminar el proveedor',
-                                text: xhr.responseJSON.message,
+                                text: "Tienes registros asociados a este proveedor, no puedes eliminarlo.",
                             });
                         }
                     });
@@ -300,15 +305,6 @@
                 },
                 success: function(response) {
                     $('#nombre-proveedor-editar').val(response.usuario.nombre_proveedor);
-                    $('#opciones-editar').empty();
-
-                    $('#opciones-editar').val(response.marcas);
-                    response.marcas.forEach(marca => {
-                        const option = new Option(marca.descripcion, marca.descripcion, true, true);
-                        $('#opciones-editar').append(option);
-                    });
-
-                    $('#opciones-editar').trigger('change');
                 },
                 error: function(xhr, status, error) {
                     Swal.fire({
@@ -380,5 +376,199 @@
             });
         });
 
+        function eliminarMarcas(e){
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "No podrás recuperar esta marca una vez eliminada.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    $.ajax({
+                        url: `{{ route('marcas.destroy', ':id') }}`.replace(':id', e),
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            _method: 'DELETE'
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Marca eliminada con éxito',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            location.reload();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al eliminar la marca',
+                                text: "Tienes registros asociados a esta marca, no puedes eliminarla.",
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function anadirMarca(idProveedor){
+            Swal.fire({
+                title: 'Agregar Marca',
+                input: 'text',
+                inputPlaceholder: 'Ingrese la descripción de la marca',
+                showCancelButton: true,
+                confirmButtonText: 'Agregar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (marca) => {
+                    if (!marca) {
+                        Swal.showValidationMessage('Por favor, ingrese una marca válida.');
+                        return false;
+                    }
+                    return marca;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let nuevaMarca = result.value;
+                    $.ajax({
+                        url: '{{ route('marcas.store') }}',
+                        type: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: { descripcion: nuevaMarca, proveedor_id: idProveedor },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Marca agregada con éxito',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            location.reload();
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al agregar la marca',
+                                text: xhr.responseJSON.message,
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+
+        function editarFuncion(e){
+            let idMarca = e.getAttribute('id-marca');
+            let nombreMarca = e.getAttribute('nombre-marca');
+            Swal.fire({
+                title: 'Editar Marca',
+                input: 'text',
+                inputValue: nombreMarca,
+                inputPlaceholder: 'Ingrese la nueva descripción de la marca',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (nuevaDescripcion) => {
+                    if (!nuevaDescripcion) {
+                        Swal.showValidationMessage('Por favor, ingrese una descripción válida.');
+                        return false;
+                    }
+                    return nuevaDescripcion;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let descripcionActualizada = result.value;
+                    $.ajax({
+                        url: `{{ route('marcas.update', ':id') }}`.replace(':id', idMarca),
+                        type: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: { descripcion: descripcionActualizada, _method: 'PUT' },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Marca actualizada con éxito',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            location.reload();
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al actualizar la marca',
+                                text: xhr.responseJSON.message,
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function moverMarcas(idMarca) {
+            Swal.fire({
+                title: 'Mover Marca',
+                text: "Selecciona el nuevo proveedor para esta marca.",
+                input: 'select',
+                inputOptions: {
+                    @foreach ($proveedores as $proveedor)
+                        '{{ $proveedor->id  }}': '{{ $proveedor->nombre_proveedor }}',
+                    @endforeach
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Mover',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (nuevoProveedorId) => {
+                    if (!nuevoProveedorId) {
+                        Swal.showValidationMessage('Por favor, selecciona un proveedor válido.');
+                        return false;
+                    }
+                    return nuevoProveedorId;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let nuevoProveedorId = result.value;
+                    $.ajax({
+                        url: `{{ route('marca.mover', ':id') }}`.replace(':id', idMarca),
+                        type: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        data: { proveedor_id: nuevoProveedorId },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Marca movida con éxito',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            location.reload();
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al mover la marca',
+                                text: xhr.responseJSON.message,
+                            });
+                        }
+                    });
+                }
+            });
+        }
     </script>
 @stop
