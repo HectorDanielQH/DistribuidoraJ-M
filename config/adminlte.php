@@ -171,12 +171,12 @@ return [
     |
     */
 
-    'classes_auth_card' => 'card-outline card-primary',
+    'classes_auth_card' => 'card-outline card-dark',
     'classes_auth_header' => '',
     'classes_auth_body' => '',
     'classes_auth_footer' => '',
     'classes_auth_icon' => '',
-    'classes_auth_btn' => 'btn-flat btn-primary',
+    'classes_auth_btn' => 'btn-flat btn-dark',
 
     /*
     |--------------------------------------------------------------------------
@@ -299,35 +299,10 @@ return [
     */
 
     'menu' => [
-        // Navbar items:
-        /*[
-            'type' => 'navbar-search',
-            'text' => 'search',
-            'topnav_right' => true,
-        ],
         [
-            'type' => 'fullscreen-widget',
-            'topnav_right' => true,
-        ],*/
-
-        // Sidebar items:
-        /*[
-            'type' => 'sidebar-menu-search',
-            'text' => 'search',
+            'header' => '.:: ROLES Y USUARIOS ::.',
+            'can' => 'administrador.permisos',
         ],
-        [
-            'text' => 'blog',
-            'url' => 'admin/blog',
-            'can' => 'manage-blog',
-        ],
-        [
-            'text' => 'pages',
-            'url' => 'admin/pages',
-            'icon' => 'far fa-fw fa-file',
-            'label' => 4,
-            'label_color' => 'success',
-        ],*/
-        ['header' => '.:: ROLES Y USUARIOS ::.'],
         [
             'text' => 'Usuarios',
             'route' => 'usuarios.index',
@@ -335,7 +310,10 @@ return [
             'can' => 'administrador.permisos',
         ],
         
-        ['header' => '.::INVENTARIO::.'],
+        [
+            'header' => '.::INVENTARIO::.',
+            'can' => 'administrador.permisos',
+        ],
         [
             'text' => 'Proveedores',
             'route' => 'proveedores.index',
@@ -355,13 +333,22 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'text' => 'Rutas',
+            'route' => 'rutas.index',
+            'icon' => 'fas fa-fw fa-route',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'text' => 'Clientes',
             'route' => 'clientes.index',
             'icon' => 'fas fa-fw fa-users-cog',
             'can' => 'administrador.permisos',
 
         ],
-        ['header'=> '.::ASIGNACIONES::.'],
+        [
+            'header'=> '.::ASIGNACIONES Y RENDIMIENTO::.',
+            'can' => 'administrador.permisos',
+        ],
         [
             'text' => 'Asignaciones',
             'route' => 'asignacionclientes.index',
@@ -370,53 +357,66 @@ return [
         ],
         [
             'text' => 'Rendimiento de personal',
+            'route' => 'rendimientopersonal.index',
             'icon' => 'fas fa-fw fa-chart-bar',
             'can' => 'administrador.permisos',
 
         ],
-        ['header' => '.:: VENTAS Y COMPRAS ::.'],
         [
-            'text' => 'Pedidos',
+            'header' => '.:: PEDIDOS Y VENTAS::.',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Pedidos Pendientes',
+            'route' => 'pedidos.administrador.visualizacion',
+            'icon' => 'fas fa-fw fa-shopping-cart',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Pedidos Despachados',
+            'route' => 'pedidos.administrador.visualizacionDespachados',
             'icon' => 'fas fa-fw fa-shopping-cart',
             'can' => 'administrador.permisos',
         ],
         [
             'text' => 'Ventas',
+            'route' => 'ventas.index',
             'icon' => 'fas fa-fw fa-receipt',
             'can' => 'administrador.permisos',
-        ],
-        ['header' => '.:: REPORTES ::.'],
+        ],/*
         [
-            'text' => 'Inventario',
-            'url' => '#',
-            'icon' => 'fas fa-fw fa-boxes',
+            'header' => '.:: REPORTES ::.',
+            'can' => 'administrador.permisos',
         ],
         [
-            'text' => 'Ventas',
-            'url' => '#',
+            'text' => 'Ventas por Producto',
+            'route' => 'ventas.administrador.ventasProductos',
             'icon' => 'fas fa-fw fa-chart-line',
+            'can' => 'administrador.permisos',
+        ],
+*/
+        //Para vendedores
+        [
+            'header' => '.:: PRODUCTOS ::.',
+            'can' => 'vendedor.permisos',
         ],
         [
-            'text' => 'Ventas por producto',
-            'url' => '#',
+            'text' => 'Productos',
+            'route' => 'productos.vendedor.obtenerProductos',
             'icon' => 'fas fa-fw fa-shopping-cart',
-        ],
-        ['header' => '.:: CONFIGURACIONES ::.'],
-        [
-            'text' => '.:: Configuraciones ::.',
-            //'url'  => '#', // URL to the settings page
-            //'icon_color'  => '', // Icon color
+            'can' => 'vendedor.permisos',
         ],
         [
-            'text' => 'Configuración del sistema',
-            'url' => '#',
-            'icon' => 'fas fa-fw fa-cogs',
+            'header'=> '.::ASIGNACIONES::.',
+            'can' => 'vendedor.permisos',
         ],
         [
-            'text' => 'Contraseña',
-            'url' => '#',
-            'icon' => 'fas fa-fw fa-key',
+            'text' => 'Mis Asignaciones',
+            'route' => 'asignacionvendedor.index',
+            'icon' => 'fas fa-fw fa-tasks',
+            'can' => 'vendedor.permisos',
         ],
+
         /*
         [
             'text' => 'multilevel',

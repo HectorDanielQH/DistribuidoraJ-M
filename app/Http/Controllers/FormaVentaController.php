@@ -31,6 +31,7 @@ class FormaVentaController extends Controller
         $request->validate([
             'tipo_venta' => 'required|string|max:255',
             'precio_venta' => 'required|numeric',
+            'equivalencia_cantidad' => 'required|numeric',
             'id_producto' => 'required|exists:productos,id',
         ]);
 

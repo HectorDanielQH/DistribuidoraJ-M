@@ -40,6 +40,12 @@
                     <div class="row g3 mt-3">
                         <div class="col-md-12">
                             <label for="descripcion_linea" class="form-label text-muted">Descripción de la línea <button class="btn btn-success ml-2" type="button" id="boton-agregar">+</button></label>
+                            <div id="registro-lineas">
+                                <div class='d-flex justify-content-center align-items-center my-2' id='0'>
+                                    <input type="text" name="descripcion_linea[]" class="descripcion-linea form-control shadow-sm border-1" placeholder="Descripción de la línea">
+                                    <button class='btn btn-danger' type="button" onclick='botonEliminar(this)'> - </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -64,33 +70,19 @@
                     <i class="fas fa-plus mr-2"></i> Asignar Lineas
                 </button>
 
-                @if ($eliminar_busqueda)                    
-                    <button class="btn btn-danger ms-2" id="limpiarboton" style="font-weight: bold; border-radius: 8px;">
-                        <i class="fas fa-times"></i> Limpiar búsqueda
-                    </button>
-                @endif
             </div>
             <div class="card-body" style="padding: 2rem;">
                 <p class="text-muted" style="margin-top: -15px">
                     Puedes buscar cliente por nombre completo o cédula de identidad con cualquier coincidencia.
                 </p>
-                <form method="GET" action="{{ route('lineas.index') }}" class="row g-3">
-                    <div class="col-md-8">
-                        <label for="nombre" class="form-label text-muted">Nombre de la Marca</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Chocolates" value="{{ $request->nombre ?? '' }}"  style="border-radius: 8px;">
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn w-100" style="background-color: #3498db; color: white; font-weight: bold; border-radius: 8px;">
-                            <i class="fas fa-search"></i> Buscar
-                        </button>
-                    </div>
-                </form>
+                <label for="nombre" class="form-label text-muted">Nombre de la Marca</label>
+                <input type="text" class="form-control shadow-sm border-0" name="nombre" id="nombre-marca-lineas" placeholder="Ej: Chocolates" style="border-radius: 8px;">
             </div>
         </div>
     </div>
 
     <div class="container" style="overflow-x: auto;">
-        <table class="table table-bordered">
+        <table class="table table-bordered" id="tabla-lineas">
             <thead class="table-dark">
                     <tr>
                         <th scope="col">#</th>
@@ -99,46 +91,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($marcas as $marca)
-                        <tr class="w-100">
-                            <th style="width: 5%" scope="row">
-                                {{ $loop->iteration }}
-                            </th>
-                            <td style="width: 25%">
-                                {{ $marca->descripcion }}
-                            </td>
-                            <td style="width: 70%">
-                                @forelse($marca->linea as $linea)
-                                    <span class="badge bg-dark m-1 p-1">
-                                        {{$linea->descripcion_linea}}
-                                        <button type="button" class="btn btn-warning btn-sm ms-1 mx-2" id-linea="{{ $linea->id }}" id-nombre-linea="{{$linea->descripcion_linea}}" onclick="editarLinea(this)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger btn-sm ms-1 mr-1" onclick="eliminarLinea({{ $linea->id }})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </span>
-                                @empty
-                                    <span class="badge bg-warning">{{__('No se agregaron lineas')}}</span>
-                                @endforelse
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center">
-                                <div class="alert alert-warning mb-0" role="alert">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    No se encontraron resultados.
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
                 </tbody>
         </table>
-
-        <div class="d-flex justify-content-center mt-3">
-            {{ $marcas->appends(request()->query())->links() }}
-        </div>
     </div>
 
 @stop
@@ -146,6 +100,7 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
 
     <style>
         input.form-control:focus, select.form-control:focus {
@@ -169,31 +124,66 @@
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
 
     <script>
-        $(document).ready(function(){
-            new SlimSelect({
-                select: '#marca-select',
-                settings:{
-                    placeholderText: "Seleccione una marca",
-                    searchText: "No se encontraron resultados",
-                    searchingText: "Buscando...",
-                    searchPlaceholder: "Buscar marca",
-                }
-            })
+        let slimMarca = new SlimSelect({
+            select: '#marca-select',
+            settings: {
+                placeholderText: "Seleccione una marca",
+                searchText: "No se encontraron resultados",
+                searchingText: "Buscando...",
+                searchPlaceholder: "Buscar marca",
+            }
         });
+        $(document).ready(function(){
+            $('#tabla-lineas').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                },
+                processing:true,
+                serverSide:true,
+                searching: false,
 
-        let botonkey=0;
+                ajax: {
+                    url: "{{ route('lineas.index') }}",
+                    type: "GET",
+                    data: function (d) {
+                        d.descripcion_marca = $('#nombre-marca-lineas').val();
+                    }
+                },
+                columns: [
+                    { data: 'id', width: '5%', searchable: false},
+                    { data: 'descripcion_marca', width: '15%'},
+                    { data: 'lineas',width: '80%',orderable: false, searchable: false}
+                ],
+            });
+
+            $('#nombre-marca-lineas').on('keyup', function() {
+                $('#tabla-lineas').DataTable().ajax.reload();
+            });
+        });
 
         $('#boton-agregar').click(function(){
-            let nuevoinput = `<div class='d-flex justify-content-center align-items-center my-2' id='${botonkey}'><input type="text" name="descripcion_linea" class="descripcion-linea form-control shadow-sm border-1" placeholder="Descripción de la línea"> <button class='btn btn-danger' type="button" onclick='botonEliminar(${botonkey})'> - </button></div>`;
-            $('#registro-cliente').append(nuevoinput);
-            botonkey++;
+            let nuevoinput = `
+                <div class='d-flex justify-content-center align-items-center my-2'>
+                    <input type="text" name="descripcion_linea[]" class="descripcion-linea form-control shadow-sm border-1" placeholder="Descripción de la línea">
+                    <button class='btn btn-danger' type="button" onclick='botonEliminar(this)'> - </button>
+                </div>`;
+            $('#registro-lineas').append(nuevoinput);
         });
 
 
-        function botonEliminar(id){
-            $(`#${id}`).remove();
+        function botonEliminar(e){
+            if ($('.descripcion-linea').length <= 1) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Debe haber al menos una línea.',
+                });
+                return;
+            }
+            e.parentNode.remove();
         }
 
         function anadirlineasboton(){
@@ -206,19 +196,21 @@
 
         $('#registro-cliente').submit(function (e) {
             e.preventDefault();
+            let descripcion_linea = $('[name="descripcion_linea[]"]').map(function() {
+                return $(this).val().trim();
+            }).get();
+            if (descripcion_linea.length === 0 || descripcion_linea.every(linea => linea === '')) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Debe ingresar al menos una descripción de línea.',
+                });
+                return;
+            }
 
             let marca_id = $('#marca-select').val();
-            let descripcion_linea = [];
 
             let camposIncompletos = false;
-            $('.descripcion-linea').each(function () {
-                const valor = $(this).val().trim();
-                if (valor === "") {
-                    camposIncompletos = true;
-                    return false;
-                }
-                descripcion_linea.push(valor);
-            });
 
             if (!marca_id || camposIncompletos || descripcion_linea.length === 0) {
                 Swal.fire({
@@ -228,6 +220,14 @@
                 });
                 return;
             }
+
+            Swal.fire({
+                title: 'Guardando...',
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                allowOutsideClick: false
+            });
 
             $.ajax({
                 url: "{{ route('lineas.store') }}",
@@ -244,8 +244,21 @@
                         showConfirmButton: false,
                         timer: 1500
                     });
+                    $('#tabla-lineas').DataTable().ajax.reload();
+                    $('#registro-cliente')[0].reset();
+
+                    // Vacía y vuelve a agregar una línea inicial
+                    $('#registro-lineas').empty();
+                    $('#registro-lineas').append(`
+                        <div class='d-flex justify-content-center align-items-center my-2' id='0'>
+                            <input type="text" name="descripcion_linea[]" class="descripcion-linea form-control shadow-sm border-1" placeholder="Descripción de la línea">
+                            <button class='btn btn-danger' type="button" onclick='botonEliminar(this)'> - </button>
+                        </div>
+                    `);
+                    // Limpia el select de marcas
+                    slimMarca.setSelected({ value: '', text: 'Seleccione marca...' });
+
                     $('#botonenviar-cerrar').click();
-                    location.reload();
                 },
                 error: function (xhr) {
                     Swal.fire({
@@ -268,6 +281,13 @@
                 confirmButtonText: 'Sí, eliminar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando...',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        allowOutsideClick: false
+                    });
                     $.ajax({
                         url: `{{ route('lineas.destroy', ':id')}}`.replace(':id', id),
                         type: 'POST',
@@ -282,7 +302,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-lineas').DataTable().ajax.reload();
                         },
                         error: function(xhr) {
                             Swal.fire(
@@ -317,6 +337,13 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Actualizando...',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        allowOutsideClick: false
+                    })
                     $.ajax({
                         url: `{{ route('lineas.update', ':id') }}`.replace(':id', id),
                         method: 'POST',
@@ -332,7 +359,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            setTimeout(() => location.reload(), 1600);
+                            $('#tabla-lineas').DataTable().ajax.reload();
                         },
                         error: (xhr) => {
                             Swal.fire(

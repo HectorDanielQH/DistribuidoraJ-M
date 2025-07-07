@@ -11,6 +11,9 @@
             <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
                 Panel de administración de productos
             </span>
+            <a class="btn btn-success mt-3" id="boton-agregar" style="border-radius: 8px;" href="{{ route('productos.vendedor.descargarCatalogo') }}" target="_blank">
+                <i class="fas fa-file-pdf"></i> Descargar Catalogo de Productos
+            </a>
         </div>
     </div>
 @stop
@@ -168,10 +171,32 @@
                     <div class="row g3 mt-3">
                         <div class="col-md-12">
                             <label for="descripcion_linea" class="form-label text-muted">Forma de Venta del Producto <button class="btn btn-success ml-2" type="button" id="boton-agregar-forma-venta">+</button></label>
-
-                            <div id="grupodeinputs">
-
-                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th scope="col" style="width: 50%">Forma de Venta</th>
+                                        <th scope="col" style="width: 30%">Precio</th>
+                                        <th scope="col" style="width: 20%">Equivalencia Stock</th>
+                                        <th scope="col" style="width: 20%">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="grupodeinputs">
+                                    <tr>
+                                        <td>
+                                            <input type="text" class="form-control forma-venta" name="forma_venta[]" placeholder="Ej: Unidad, Caja, Bolsa" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control cantidad-venta" name="cantidad_venta[]" placeholder="Ej: 1, 12, 24" min="0.01" value="0.01" step="0.01" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control cantidad-venta" name="equivalencia_stock[]" placeholder="Ej: 1, 12, 24" min="1" value="1" step="1" required>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-danger" type="button" onclick="$(this).closest('tr').remove();">X</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </form>
@@ -337,7 +362,8 @@
                     <thead class="bg-secondary text-white">
                         <tr>
                             <th>Forma de Venta</th>
-                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Conversión Stock</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-formas-venta-mostrar-producto">
@@ -374,8 +400,9 @@
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
-                            <th scope="col" style="width: 50%">Forma de Venta</th>
-                            <th scope="col" style="width: 30%">Cantidad</th>
+                            <th scope="col" style="width: 30%">Forma de Venta</th>
+                            <th scope="col" style="width: 30%">Precio Venta</th>
+                            <th scope="col" style="width: 20%">Conversión Stock</th>
                             <th scope="col" style="width: 20%">Acciones</th>
                         </tr>
                     </thead>
@@ -454,9 +481,9 @@
                         <td class="text-center align-middle">{{ $producto->codigo }}</td>
                         <td class="text-center align-middle">
                             @if ($producto->foto_producto)
-                                <img src="{{route('productos.imagen', $producto->id)}}" alt="Imagen del producto" class="img-thumbnail" style="width: 100px; height: 100px;">
+                                <img src="{{route('productos.imagen', $producto->id)}} ?v={{ time() }}" alt="Imagen del producto" class="img-thumbnail" style="width: 100px; height: 100px;">
                             @else
-                                <img src="{{ asset('images/logo_color.webp') }}" alt="No disponible" class="img-thumbnail" style="width: 100px; height: 100px;">
+                                <img src="{{ asset('images/logo_color.webp') }} ?v={{ time() }}" alt="No disponible" class="img-thumbnail" style="width: 100px; height: 100px;">
                             @endif
                         </td>
                         <td class="text-center align-middle">{{ $producto->nombre_producto }}</td>
@@ -644,6 +671,14 @@
             });
 
             $("#proveedor_id").on("select2:select", function(e){
+                Swal.fire({
+                    title: 'Cargando marcas...',
+                    html: 'Por favor espera',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 let proveedorId = e.params.data.id;
                 $.ajax({
                     url: "{{ route('marcas.show', ':id') }}".replace(':id', proveedorId),
@@ -652,6 +687,7 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(data) {
+                        Swal.close();
                         $('#marca_id').empty().append('<option value="" disabled selected>Seleccione una marca...</option>');
                         data.forEach(function(marca) {
                             $('#marca_id').append('<option value="' + marca.id + '">' + marca.descripcion + '</option>');
@@ -680,6 +716,14 @@
 
             
             $("#marca_id").on("select2:select", function(e){
+                Swal.fire({
+                    title: 'Cargando lineas...',
+                    html: 'Por favor espera',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 let marcaId = e.params.data.id;
                 $.ajax({
                     url: "{{ route('lineas.show', ':id') }}".replace(':id', marcaId),
@@ -688,6 +732,7 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(data) {
+                        Swal.close();
                         $('#linea_id').empty().append('<option value="" disabled selected>Seleccione una marca...</option>');
                         data.forEach(function(lineas) {
                             $('#linea_id').append('<option value="' + lineas.id + '">' + lineas.descripcion_linea + '</option>');
@@ -772,13 +817,21 @@
 
         $("#boton-agregar-forma-venta").click(function() {
             let nuevoInput = `
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control forma-venta" name="forma_venta[]" placeholder="Ej: Unidad, Caja, Bolsa" required>
-                    <input type="number"  class="form-control cantidad-venta" name="cantidad_venta[]" placeholder="Ej: 1, 12, 24" min="0,01" value="0.01" step="0.01" required>
-                    <button class="btn btn-danger" type="button" onclick="$(this).parent().remove();">X</button>
-                </div>`;
+                <tr>
+                    <td>
+                        <input type="text" class="form-control forma-venta" name="forma_venta[]" placeholder="Ej: Unidad, Caja, Bolsa" required>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control cantidad-venta" name="cantidad_venta[]" placeholder="Ej: 1, 12, 24" min="0.01" value="0.01" step="0.01" required>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control cantidad-venta" name="equivalencia_stock[]" placeholder="Ej: 1, 12, 24" min="1" value="1" step="1" required>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" type="button" onclick="$(this).closest('tr').remove();">X</button>
+                    </td>
+                </tr>`;
             $("#grupodeinputs").append(nuevoInput);
-
         });
 
 
@@ -787,8 +840,27 @@
         });
 
         $("#registro-producto").submit(function(event){
+            //verificamos si el formulario es válido
+            if (!this.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Por favor, completa todos los campos obligatorios.',
+                });
+                return;
+            }
             event.preventDefault();
             let formData = new FormData(this);
+            Swal.fire({
+                title: 'Agregando producto...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
                 url: "{{ route('productos.store') }}",
                 type: 'POST',
@@ -882,7 +954,7 @@
                 html: `
                     <label for="descuento" class="swal2-label">Descuento (%)</label>
                     <br/>
-                    <input type="number" id="descuento" class="swal2-input" placeholder="Ej: 10" min="0" value="0">
+                    <input type="number" id="descuento" class="swal2-input" placeholder="Ej: 10" min="0" value="1">
                     <br/>
                     <label for="regalo" class="swal2-label">Regalo</label>
                     <br/>
@@ -1048,6 +1120,15 @@
 
         function verFormasVenta(e) {
             let idProducto = $(e).attr('id-producto');
+            //swal de carga de formas de venta
+            Swal.fire({
+                title: 'Cargando formas de venta...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            })
             $.ajax({
                 url: "{{ route('formaventas.show', ':id') }}".replace(':id', idProducto),
                 type: 'GET',
@@ -1055,6 +1136,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(data) {
+                    Swal.close(); // Cerrar el swal de carga
                     let parainsetar=$('#tabla-formas-venta');
                     parainsetar.empty();
                     if (data.length > 0) {
@@ -1063,6 +1145,7 @@
                                 <tr>
                                     <td>${formaVenta.tipo_venta}</td>
                                     <td>${formaVenta.precio_venta}</td>
+                                    <td>${formaVenta.equivalencia_cantidad}</td>
                                     <td class="text-center">
                                         <button class="btn btn-info btn-sm" onclick="actualizarVisualizacionFormasVentas(${formaVenta.id})">
                                             ${ formaVenta.activo ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>' }
@@ -1077,7 +1160,7 @@
                         });
                         parainsetar.append(`
                             <tr>
-                                <td colspan="3" class="text-center">
+                                <td colspan="4" class="text-center">
                                     <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
                                         <i class="fas fa-plus"></i> Agregar Forma de Venta
                                     </button>
@@ -1087,10 +1170,10 @@
                     } else {
                         parainsetar.append(`
                             <tr>
-                                <td colspan="3" class="text-center">No hay formas de venta registradas.</td>
+                                <td colspan="4" class="text-center">No hay formas de venta registradas.</td>
                             </tr>
                             <tr>
-                                <td colspan="3" class="text-center">
+                                <td colspan="4" class="text-center">
                                     <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
                                         <i class="fas fa-plus"></i> Agregar Forma de Venta
                                     </button>
@@ -1127,6 +1210,7 @@
                                 <tr>
                                     <td>${formaVenta.tipo_venta}</td>
                                     <td>${formaVenta.precio_venta}</td>
+                                    <td>${formaVenta.equivalencia_cantidad}</td>
                                     <td class="text-center">
                                         <button class="btn btn-info btn-sm" onclick="actualizarVisualizacionFormasVentas(${formaVenta.id})">
                                             ${ formaVenta.activo ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>' }
@@ -1141,7 +1225,7 @@
                         });
                         parainsetar.append(`
                             <tr>
-                                <td colspan="3" class="text-center">
+                                <td colspan="4" class="text-center">
                                     <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
                                         <i class="fas fa-plus"></i> Agregar Forma de Venta
                                     </button>
@@ -1151,10 +1235,10 @@
                     } else {
                         parainsetar.append(`
                             <tr>
-                                <td colspan="3" class="text-center">No hay formas de venta registradas.</td>
+                                <td colspan="4" class="text-center">No hay formas de venta registradas.</td>
                             </tr>
                             <tr>
-                                <td colspan="3" class="text-center">
+                                <td colspan="4" class="text-center">
                                     <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
                                         <i class="fas fa-plus"></i> Agregar Forma de Venta
                                     </button>
@@ -1227,6 +1311,10 @@
                     <label for="precio_venta" class="swal2-label">Precio de Venta</label>
                     <br/>
                     <input type="number" id="precio_venta" class="swal2-input" placeholder="Ej: 100.00" min="0.01" step="0.01" required>
+                    <br/>
+                    <label for="equivalencia_cantidad" class="swal2-label">Equivalencia de Cantidad</label>
+                    <br/>
+                    <input type="number" id="equivalencia_cantidad" class="swal2-input" placeholder="Ej: 1, 12, 24" min="1" value="1" step="1" required>
                 `,
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
@@ -1236,11 +1324,12 @@
                 preConfirm: () => {
                     const tipoVenta = $('#tipo_venta').val();
                     const precioVenta = $('#precio_venta').val();
-                    if (!tipoVenta || !precioVenta) {
+                    const equivalenciaCantidad = $('#equivalencia_cantidad').val();
+                    if (!tipoVenta || !precioVenta || !equivalenciaCantidad) {
                         Swal.showValidationMessage('Por favor, complete todos los campos');
                         return false;
                     }
-                    return { tipoVenta, precioVenta, idProducto };
+                    return { tipoVenta, precioVenta, equivalenciaCantidad , idProducto };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -1250,6 +1339,7 @@
                         data: {
                             tipo_venta: result.value.tipoVenta,
                             precio_venta: result.value.precioVenta,
+                            equivalencia_cantidad: result.value.equivalenciaCantidad,
                             id_producto: result.value.idProducto,
                             _token: "{{ csrf_token() }}"
                         },
@@ -1276,11 +1366,28 @@
         }
 
         $('#cerrar-forma-de-ventas-producto').click(function() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Cerrando...',
+                text: 'Se cerrará la ventana de formas de venta.',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                $('#modal-formas-venta').modal('hide');
+            });
             window.location.reload();
         });
 
 
         function actualizarVisualizacionFormasVentas(idFormasVentas){
+            Swal.fire({
+                title: 'Actualizando visualización...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
                 url: "{{ route('formaventas.updateVisualizacion', ':id') }}".replace(':id', idFormasVentas),
                 type: 'POST',
@@ -1314,6 +1421,14 @@
         function visualizarProducto(e){
             let idProducto = $(e).attr('id-producto');
             $('#id-producto-cambiar').val(idProducto);
+            Swal.fire({
+                title: 'Cargando detalles del producto...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
                 url: "{{ route('productos.show', ':id') }}".replace(':id', idProducto),
                 type: 'GET',
@@ -1321,6 +1436,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(data) {
+                    Swal.close(); // Cerrar el swal de carga
                     if (data.producto.foto_producto) {
                         $('#foto_producto_visualizar').attr('src', '{{ route("productos.imagen", ":id") }}'.replace(':id', data.producto.id));
                     } else {
@@ -1350,6 +1466,7 @@
                                 <tr>
                                     <td>${formaVenta.tipo_venta}</td>
                                     <td>${formaVenta.precio_venta}</td>
+                                    <td>${formaVenta.equivalencia_cantidad} ${data.producto.detalle_cantidad}</td>
                                 </tr>
                             `);
                         }
@@ -1420,6 +1537,15 @@
         });
 
         $('#visualizar-cerrar-actualizar').click(function() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Cerrando...',
+                text: 'Se cerrará la ventana de visualización.',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                $('#modal-visualizar-editar').modal('hide');
+            });
             window.location.reload();
         });
 
@@ -1580,6 +1706,14 @@
 
 
         function cerrar_modal_actualizar_vista(){
+            Swal.fire({
+                title: 'Renderizando vista...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            })
             window.location.reload();
         };
         $('#cambiar-proveedor-producto-visualizar').click(function(){
@@ -1621,11 +1755,20 @@
 
         function cargarMarcasYLineasVisualizarEditar(e){
             let idProveedor = $(e).val();
+            Swal.fire({
+                title: 'Cargando marcas y líneas...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             if (idProveedor) {
                 $.ajax({
                     url: "{{ route('marcas.show', ':id') }}".replace(':id', idProveedor),
                     type: 'GET',
                     success: function(data) {
+                        Swal.close(); // Cerrar el swal de carga
                         $('#proveedor-marca-visualizar-editar').empty();
                         $('#proveedor-marca-visualizar-editar').append('<option value="">Seleccione una marca</option>');
                         data.forEach(function(marca) {
@@ -1648,11 +1791,20 @@
 
         function cargarLineasVisualizarEditar(e){
             let idMarca = $(e).val();
+            Swal.fire({
+                title: 'Cargando líneas...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             if (idMarca) {
                 $.ajax({
                     url: "{{ route('lineas.show', ':id') }}".replace(':id', idMarca),
                     type: 'GET',
                     success: function(data) {
+                        Swal.close(); // Cerrar el swal de carga
                         $('#proveedor_producto-linea-visualizar-editar').empty();
                         $('#proveedor_producto-linea-visualizar-editar').append('<option value="">Seleccione una linea</option>');
                         data.forEach(function(linea) {
@@ -2138,6 +2290,14 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Cargando...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
                         url: "{{ route('productos.dardealtaobaja', ':id') }}".replace(':id', id),
                         type: 'POST',
@@ -2232,6 +2392,14 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // Hacer la solicitud AJAX solo si se confirmó
+                        Swal.fire({
+                            title: 'Cargando productos con stock bajo...',
+                            html: 'Por favor espera',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
                         $.ajax({
                             url: "{{ route('productos.bajostock') }}",
                             type: 'GET',

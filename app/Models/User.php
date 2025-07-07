@@ -59,7 +59,7 @@ class User extends Authenticatable
 
     public function adminlte_image()
     {
-        return 'images/logo_profile.webp';
+        return '/images/logo_profile.webp';
     }
 
     public function adminlte_desc()

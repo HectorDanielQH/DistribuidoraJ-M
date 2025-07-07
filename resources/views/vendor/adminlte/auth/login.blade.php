@@ -40,7 +40,17 @@
 
             @error('username')
                 <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
+                    <strong>
+                        @if($message == 'validation.required')
+                            {{ __('Campo requerido') }}
+                        @else 
+                            @if($message == 'auth.failed')
+                                {{ __('Usuario incorrecto') }}
+                            @else
+                                {{$message}}
+                            @endif
+                        @endif                        
+                    </strong>
                 </span>
             @enderror
         </div>
@@ -58,7 +68,17 @@
 
             @error('password')
                 <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
+                    <strong>
+                        @if($message == 'validation.required')
+                            {{ __('Campo requerido') }}
+                        @else 
+                            @if($message == 'auth.failed')
+                                {{ __('Contraseña incorrecta') }}
+                            @else
+                                {{$message}}
+                            @endif
+                        @endif
+                    </strong>
                 </span>
             @enderror
         </div>
@@ -66,6 +86,7 @@
         {{-- Login field --}}
         <div class="row">
             <div class="col-7">
+                {{--
                 <div class="icheck-primary" title="{{ __('adminlte::adminlte.remember_me_hint') }}">
                     <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
 
@@ -73,6 +94,7 @@
                         {{ __('adminlte::adminlte.remember_me') }}
                     </label>
                 </div>
+                --}}
             </div>
 
             <div class="col-5">
@@ -86,7 +108,7 @@
 @stop
 
 @section('auth_footer')
-    {{-- Password reset link --}}
+    {{-- Password reset link
     @if($passResetUrl)
         <p class="my-0">
             <a href="{{ $passResetUrl }}">
@@ -94,8 +116,8 @@
             </a>
         </p>
     @endif
-
-    {{-- Register link --}}
+    --}}
+    {{-- Register link 
     @if($registerUrl)
         <p class="my-0">
             <a href="{{ $registerUrl }}">
@@ -103,4 +125,5 @@
             </a>
         </p>
     @endif
+    --}}
 @stop

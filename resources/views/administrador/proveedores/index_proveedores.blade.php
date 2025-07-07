@@ -18,7 +18,7 @@
 @section('content')
 
     <div class="d-flex flex-column justify-content-center align-items-center">
-        <div class="card shadow-sm border-0 mb-4" style="background-color: #f9f9fb; border-radius: 16px;">
+        <div class="card shadow-sm border-0 " style="background-color: #f9f9fb; border-radius: 16px;">
             <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #2c3e50; color: #ffffff; border-radius: 16px 16px 0 0; padding: 1rem 1.5rem;">
                 <h5 class="mb-0">
                     <i class="fas fa-filter me-2"></i> Opciones de búsqueda
@@ -27,28 +27,17 @@
                 <button class="btn" id="boton-agregar" data-toggle="modal" data-target="#modalAgregarProveedor" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
                     <i class="fas fa-user-plus"></i>
                 </button>
-
-                @if ($eliminar_busqueda)                    
-                    <button class="btn btn-danger ms-2" id="limpiarboton" style="font-weight: bold; border-radius: 8px;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                @endif
             </div>
             <div class="card-body" style="padding: 2rem;">
                 <p class="text-muted" style="margin-top: -15px">
                     Puedes buscar al proovedor por su nombre
                 </p>
-                <form method="GET" action="{{ route('proveedores.index') }}" class="row g-3">
+                <div class="row g-3">
                     <div class="col-md-7">
                         <label for="nombre" class="form-label text-muted">Nombre completo</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Proovedor" value="{{ $nombre ?? '' }}"  style="border-radius: 8px;">
+                        <input type="text" class="form-control shadow-sm border-0" name="nombre" id="nombreProveedor" placeholder="Ej: Proovedor"  style="border-radius: 8px;">
                     </div>
-                    <div class="col-md-5 d-flex align-items-end">
-                        <button type="submit" class="btn w-100" style="background-color: #3498db; color: white; font-weight: bold; border-radius: 8px;">
-                            <i class="fas fa-search"></i> Buscar
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -110,8 +99,8 @@
     </x-adminlte-modal>
     
 
-    <div class="container">
-        <table class="table table-bordered">
+    <div class="container table-responsive my-4">
+        <table class="table table-bordered" id="tabla-proveedores">
             <thead class="table-dark">
                 <tr>
                     <th scope="col">#</th>
@@ -121,45 +110,14 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($proveedores as $proveedor)
-                    <tr>
-                        <th scope="row" style="width: 5%">{{ $loop->iteration }}</th>
-                        <td style="width: 20%">{{ $proveedor->nombre_proveedor }}</td>
-                        <td style="width: 65%">
-                            @foreach ($proveedor->marcas as $opcion)
-                                <span class="badge bg-dark">{{ $opcion->descripcion }} 
-                                    <button class="btn btn-sm btn-warning mx-2" type="button" id-marca="{{$opcion->id}}" nombre-marca="{{ $opcion->descripcion }}" onclick="editarFuncion(this)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="eliminarMarcas({{$opcion->id}})" type="button">
-                                        <i class="fas fa-trash"></i>
-                                    </button> 
-                                    <button type="button" class="btn btn-primary btn-sm ml-2" onclick="moverMarcas({{$opcion->id}})" data-toggle="tooltip" data-placement="top" title="Mover">
-                                        <i class="fas fa-arrows-alt"></i>
-                                    </button>
-                                </span>
-                            @endforeach
-                            <button class="btn btn-sm btn-success my-2" onclick="anadirMarca({{$proveedor->id}})" type="button"> <i class="fas fa-plus"></i> </button>
-                        </td>
-                        <td class="w-20">
-                            <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEditarProovedor" onclick="funcionEditar(this)" id-usuario-editar="{{$proveedor->id}}">
-                                <i class="fas fa-user-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="funcionEliminar(this)" id-usuario="{{$proveedor->id}}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="text-center">
-                            <div class="alert alert-warning mb-0" role="alert">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                No se encontraron resultados para la búsqueda, quizas con otra coincidencia.
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
+                <tr>
+                    <td colspan="4" class="text-center">
+                        <div class="alert alert-warning mb-0" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No se encontraron resultados para la búsqueda, quizas con otra coincidencia.
+                        </div>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -168,6 +126,8 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -190,9 +150,38 @@
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
 
     <script>
         $(document).ready(function() {
+            $('#tabla-proveedores').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                },
+                "processing":true,
+                "serverSide":true,
+                "searching": false,
+
+                "ajax": {
+                    "url": "{{ route('proveedores.index') }}",
+                    "type": "GET",
+                    "data": function (d) {
+                        d.proveedor = $('#nombreProveedor').val();
+                    }
+                },
+                columns:[
+                    { data: 'id',width: '5%' },
+                    { data: 'nombre_proveedor',width: '20%'},
+                    { data: 'producto_marcas',width: '65%', orderable: false, searchable: false},
+                    { data: 'acciones',width: '10%', orderable: false, searchable: false }
+                ],
+
+            });
+
+            $('#nombreProveedor').on('keyup', function() {
+                $('#tabla-proveedores').DataTable().ajax.reload();
+            });
+
             $('#opciones').select2({
                 tags: true,
                 tokenSeparators: [','],
@@ -215,6 +204,13 @@
         });
 
         $('#registro-proveedores').submit(function(e) {
+            Swal.fire({
+                title: 'Agregando Proveedor...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             e.preventDefault();
             var formData = $(this).serialize();
             $.ajax({
@@ -232,7 +228,7 @@
                         timer: 1500
                     });
                     $('#botonenviar-cerrar').click();
-                    location.reload();
+                    $('#tabla-proveedores').DataTable().ajax.reload();
                 },
                 error: function(xhr) {
                     Swal.fire({
@@ -278,7 +274,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-proveedores').DataTable().ajax.reload();
                         },
                         error: function(xhr, status, error) {
                             Swal.fire({
@@ -295,6 +291,13 @@
         let idProveedorEditar = null;
 
         function funcionEditar(e){
+            Swal.fire({
+                title: 'Cargando datos del proveedor...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             let id_usuario=e.getAttribute('id-usuario-editar');
             idProveedorEditar = id_usuario;
             $.ajax({
@@ -304,6 +307,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
+                    Swal.close();
                     $('#nombre-proveedor-editar').val(response.usuario.nombre_proveedor);
                 },
                 error: function(xhr, status, error) {
@@ -339,7 +343,7 @@
                         timer: 1500
                     });
                     $('#botonenviar-cerrar-editar').click();
-                    setTimeout(() => location.reload(), 1600);
+                    $('#tabla-proveedores').DataTable().ajax.reload();
                 },
                 error: function(xhr) {
                     let errorMessage = xhr.responseJSON?.message || 'Ocurrió un error inesperado.';
@@ -371,7 +375,7 @@
                             Swal.showLoading();
                         }
                     })
-                    window.location.href = "{{ route('proveedores.index') }}";
+                    $('#tabla-proveedores').DataTable().ajax.reload();
                 }
             });
         });
@@ -409,7 +413,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-proveedores').DataTable().ajax.reload();
                         },
                         error: function(xhr, status, error) {
                             console.error(xhr);
@@ -441,6 +445,13 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Agregando...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     let nuevaMarca = result.value;
                     $.ajax({
                         url: '{{ route('marcas.store') }}',
@@ -456,7 +467,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-proveedores').DataTable().ajax.reload();
                         },
                         error: function(xhr) {
                             Swal.fire({
@@ -506,7 +517,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-proveedores').DataTable().ajax.reload();
                         },
                         error: function(xhr) {
                             Swal.fire({
@@ -541,6 +552,13 @@
                     return nuevoProveedorId;
                 }
             }).then((result) => {
+                Swal.fire({
+                    title: 'Moviendo...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 if (result.isConfirmed) {
                     let nuevoProveedorId = result.value;
                     $.ajax({
@@ -557,7 +575,7 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-proveedores').DataTable().draw();
                         },
                         error: function(xhr) {
                             Swal.fire({

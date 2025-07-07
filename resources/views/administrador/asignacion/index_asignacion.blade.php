@@ -22,7 +22,7 @@
             <div class="modal-header">
                 <h1 class="modal-title text-lg" id="staticBackdropLabel">
                     <i class="fas fa-user-plus me-2"></i>
-                    Asignar Cliente
+                    Asignar rutas a Vendedor
                 </h1>
                 <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
                     <i class="fas fa-times"></i>
@@ -30,8 +30,8 @@
             </div>
             <div class="modal-body">
                 <select class="form-select mb-3 text-black" id="clienteSelect" name="clientes" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar cliente">
-                    @foreach($clientes as $cliente)
-                        <option value="{{ $cliente->id }}" class="text-black">{{ $cliente->nombres }} {{ $cliente->apellido_paterno }} {{ $cliente->apellido_materno }}</option>
+                    @foreach($rutas as $ruta)
+                        <option value="{{ $ruta->id }}" class="text-black">{{ $ruta->nombre_ruta }}</option>
                     @endforeach
                 </select>
             </div>
@@ -44,7 +44,7 @@
     </div>
 
 
-    <div class="modal fade" id="visualizarCliente" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal fade" id="visualizarClientes" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -66,7 +66,6 @@
                                     <th scope="col">Nombre Completo</th>
                                     <th scope="col">Celular</th>
                                     <th scope="col">Dirección</th>
-                                    <th scope="col">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="clientesAsignadosBody">
@@ -81,6 +80,45 @@
             </div>
         </div>
     </div>
+
+
+    <div class="modal fade" id="visualizarRutas" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title text-lg" id="staticBackdropLabel">
+                        <i class="fas fa-route me-2"></i>
+                            Ver Rutas Asignadas
+                    </h1>
+                    <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Nombre Ruta</th>
+                                    <th scope="col">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rutasAsignadasBody">
+                                <!-- Aquí se llenarán los clientes asignados mediante AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between align-content-center">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="cancelar-asignacion-rutas">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
 
     <div class="container">
         <nav>
@@ -97,7 +135,7 @@
             <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab" tabindex="0">
                 <div class="container py-5">
                     <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
-                        <table class="table table-bordered align-middle text-center" style="min-width: 800px;">
+                        <table id="tabla-asignaciones" class="table table-bordered align-middle text-center" style="min-width: 800px;">
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">#</th>
@@ -109,39 +147,8 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($vendedores as $vendedor)
-                                    <tr>
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>{{ $vendedor->cedulaidentidad }}</td>
-                                        <td>{{ $vendedor->nombres }} {{ $vendedor->apellido_paterno }} {{ $vendedor->apellido_materno }}</td>
-                                        <td>{{ $vendedor->celular }}</td>
-                                        <td>
-                                            @if($vendedor->asignaciones->count() > 0)
-                                                <span class="badge bg-success">{{ $vendedor->asignaciones->count() }}</span>
-                                            @else
-                                                <span class="badge bg-danger">0</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-primary btn-sm" data-bs-target="#visualizarCliente" data-bs-toggle="modal" data-id="{{ $vendedor->id }}" onclick="clientesAsignados(this)">
-                                                <i class="fas fa-eye mr-1"></i>Ver Asignaciones 
-                                            </button>
-                                            <button class="btn btn-success btn-sm" data-bs-target="#asignarCliente" data-bs-toggle="modal" data-id="{{ $vendedor->id }}" onclick="valordeusuariovendedor(this)">
-                                                <i class="fas fa-plus mr-1"></i> Asignar Clientes
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center">No hay vendedores asignados.</td>
-                                    </tr>
-                                @endforelse
                             </tbody>
                         </table>
-                    </div>
-
-                    <div class="d-flex justify-content-center mt-3">
-                        {{ $asignaciones->appends(request()->query())->links() }}
                     </div>
                 </div>
             </div>
@@ -196,6 +203,7 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
 
     <style>
         input.form-control:focus, select.form-control:focus {
@@ -220,7 +228,36 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
 
+    <script>
+        $(document).ready(function() {
+            $('#tabla-asignaciones').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                },
+                "processing":true,
+                "serverSide":true,
+                "ajax": {
+                    "url": "{{ route('asignacionclientes.index') }}",
+                    "type": "GET",
+                    /*"data": function (d) {
+                        d.nombres_completos = $('#cajabusquedanombre').val();
+                        d.cedulaidentidad = $('#cajabusquedacedula').val();
+                    }*/
+                },
+                columns:[
+                    { data: 'id', width: '5%'},
+                    { data: 'cedulaidentidad', width: '15%'},
+                    { data: 'nombre_completo', width: '35%'},
+                    { data: 'celular', width: '15%'},
+                    { data: 'asignacion', width: '15%'},
+                    { data: 'action', width: '15%', orderable: false, searchable: false }
+                ],
+                
+            });
+        });
+    </script>
     <script>
         $('#clienteSelect').select2({
             placeholder: "Seleccione un cliente",
@@ -239,15 +276,23 @@
         let id_vendedor = null;
 
         function valordeusuariovendedor(e){
+            Swal.fire({
+                title: 'Cargando rutas...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             id_vendedor = $(e).attr('data-id');
             $('#clienteSelect').val(null).trigger('change');
             $.ajax({
-                url: "{{ route('asignacionclientes.getClientesNoAsignados') }}",
+                url: "{{ route('asignacionclientes.getRutasNoAsignados') }}",
                 type: 'GET',
                 success: function(data) {
+                    Swal.close();
                     $('#clienteSelect').empty();
                     data.forEach(cliente => {
-                        $('#clienteSelect').append(new Option(cliente.nombres + ' ' + cliente.apellido_paterno + ' ' + cliente.apellido_materno, cliente.id, false, false));
+                        $('#clienteSelect').append(new Option(cliente.nombre_ruta, cliente.id, false, false));
                     });
                     $('#clienteSelect').trigger('change');
                 },
@@ -268,17 +313,24 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Debe seleccionar al menos un cliente.',
+                    text: 'Debe seleccionar al menos una ruta.',
                 });
                 return;
             }
+            Swal.fire({
+                title: 'Asignando rutas con clientes...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
                 url: "{{ route('asignacionclientes.store') }}",
                 type: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
                     id_vendedor: id_vendedor,
-                    clientes: selectclientes
+                    rutas: selectclientes
                 },
                 success: function(response) {
                     Swal.fire({
@@ -291,7 +343,7 @@
                     }).then(() => {
                         $('#asignarCliente').modal('hide');
                         $('#clienteSelect').val(null).trigger('change');
-                        location.reload();
+                        $('#tabla-asignaciones').DataTable().ajax.reload();
                     });
                 },
                 error: function(xhr) {
@@ -310,11 +362,19 @@
 
         function clientesAsignados(e) {
             let id_vendedor = $(e).attr('data-id');
+            Swal.fire({
+                title: 'Cargando clientes asignados...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
                 url: "{{ route('asignacionclientes.getClientesAsignados',':id') }}".replace(':id', id_vendedor),
                 type: 'GET',
                 data: { id_vendedor: id_vendedor },
                 success: function(data) {
+                    Swal.close();
                     $('#clientesAsignadosBody').empty();
                     if (data.length > 0) {
                         data.forEach((cliente, index) => {
@@ -325,11 +385,6 @@
                                     <td>${cliente.nombres} ${cliente.apellido_paterno} ${cliente.apellido_materno}</td>
                                     <td>${cliente.celular}</td>
                                     <td>${cliente.ubicacion}</td>
-                                    <td>
-                                        <button class="btn btn-danger btn-sm" onclick="eliminarCliente(${cliente.id}, ${id_vendedor})">
-                                            <i class="fas fa-trash-alt"></i> Eliminar
-                                        </button>
-                                    </td>
                                 </tr>
                             `);
                         });
@@ -372,7 +427,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                             }).then(() => {
-                                window.location.reload();
+                                $('#tabla-asignaciones').DataTable().ajax.reload();
                             });
                         },
                         error: function(xhr) {
@@ -397,6 +452,13 @@
                 });
                 return;
             }
+            Swal.fire({
+                title: 'Cargando clientes asignados...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
                 url: "{{ route('vendedores.obtenerRuta', ':id') }}".replace(':id', id_vendedor),
                 type: 'GET',
@@ -405,6 +467,7 @@
                  },
 
                 success: function(data) {
+                    Swal.close();
                     $('#clientesAsignadosBodyrutas').empty();
                     if (data.length > 0) {
                         data.forEach((cliente, index) => {
@@ -494,5 +557,90 @@
                 }
             });
         })
+
+
+        function rutasAsignadas(e) {
+            let id_vendedor = $(e).attr('data-id');
+            Swal.fire({
+                title: 'Cargando rutas asignadas...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            $.ajax({
+                url: "{{ route('asignacionclientes.getRutasAsignadas',':id') }}".replace(':id', id_vendedor),
+                type: 'GET',
+                data: { id_vendedor: id_vendedor },
+                success: function(data) {
+                    Swal.close();
+                    $('#rutasAsignadasBody').empty();
+                    if (data.length > 0) {
+                        data.forEach((ruta, index) => {
+                            $('#rutasAsignadasBody').append(`
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${ruta.nombre_ruta}</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm" onclick="eliminarRuta(${ruta.id}, ${id_vendedor})">
+                                            <i class="fas fa-trash-alt"></i> Eliminar
+                                        </button>
+                                    </td>
+                                </tr>
+                            `);
+                        });
+                    } else {
+                        $('#rutasAsignadasBody').append('<tr><td colspan="3">No hay rutas asignadas.</td></tr>');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al cargar las rutas asignadas.',
+                    });
+                }
+            });
+        }
+
+        function eliminarRuta(rutaId, vendedorId) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "¡Esta acción no se puede deshacer!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/rutasasignadosavendedoreseliminar/${rutaId}/${vendedorId}`,
+                        type: 'DELETE',
+                        data: { _token: '{{ csrf_token() }}' },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Éxito',
+                                text: 'Ruta eliminada correctamente.',
+                                showCancelButton: false,
+                                showConfirmButton: false,
+                                timer: 2000,
+                            }).then(() => {
+                                $('#tabla-asignaciones').DataTable().ajax.reload();
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Ocurrió un error al eliminar la ruta.',
+                            });
+                        }
+                    });
+                }
+            });
+        }
     </script>
 @stop

@@ -6,38 +6,67 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
+use Yajra\DataTables\DataTables;
 
 class UsuarioController extends Controller
 {    
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, DataTables $dataTables)
     {
-        $query = User::query();
+        if($request->ajax()){
+            $query = User::query()->with('roles');
 
-        if ($request->filled('nombre')) {
-            $keywords = explode(' ', $request->nombre);
-            $query->where(function ($q) use ($keywords) {
-                foreach ($keywords as $word) {
-                    $q->where(function ($subquery) use ($word) {
-                        $subquery->where('nombres', 'like', '%' . $word . '%')
-                                ->orWhere('apellido_paterno', 'like', '%' . $word . '%')
-                                ->orWhere('apellido_materno', 'like', '%' . $word . '%');
-                    });
-                }
-            });
+
+            if ($request->filled('nombres_completos')) {
+                $nombre = strtoupper(trim($request->nombres_completos));
+                $query->where(function($q) use ($nombre) {
+                    $q->whereRaw('UPPER(nombres) LIKE ?', ["%{$nombre}%"])
+                    ->orWhereRaw('UPPER(apellido_paterno) LIKE ?', ["%{$nombre}%"])
+                    ->orWhereRaw('UPPER(apellido_materno) LIKE ?', ["%{$nombre}%"]);
+                });
+            }
+
+            if ($request->filled('cedulaidentidad')) {
+                $ci = strtoupper(trim($request->cedulaidentidad));
+                $query->where('cedulaidentidad', 'like', "%{$ci}%");
+            }
+            
+            return $dataTables->eloquent($query)
+                ->addColumn('cedulaidentidad', function ($usuario) {
+                    return $usuario->cedulaidentidad;
+                })
+                ->addColumn('foto_perfil', function ($usuario) {
+                    if ($usuario->foto_perfil && Storage::exists($usuario->foto_perfil)) {
+                        return '<img src="' . route('usuarios.imagenperfil', $usuario->id) . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
+                    }
+                    return '<img src="' . asset('images/logo_profile.webp') . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
+                })
+                ->addColumn('nombres_completos', function ($usuario) {
+                    return trim(strtoupper($usuario->nombres . ' ' . $usuario->apellido_paterno . ' ' . $usuario->apellido_materno));
+                })
+                ->addColumn('celular', function ($usuario) {
+                    return $usuario->celular;
+                })
+                ->addColumn('rol', function ($usuario) {
+                    $rol = $usuario->getRoleNames()->first();
+                    if ($rol) {
+                        return '<span class="badge badge-success">' . e($rol) . '</span>';
+                    }
+                    return '<span class="badge badge-danger">No asignado</span>';
+                })
+                ->addColumn('action', function ($usuario) {
+                    $editButton = '<button class="btn btn-warning btn-sm edit-user" id-usuario="' . $usuario->id . '" onclick="editarUsuario(this)" data-toggle="modal" data-target="#modalEditarUsuario"><i class="fas fa-edit"></i></button>';
+                    $deleteButton = '<button class="btn btn-danger btn-sm delete-user" id-usuario="' . $usuario->id . '" onclick="eliminarUsuario(this)"><i class="fas fa-trash"></i></button>';
+                    $viewButton = '<button class="btn btn-info btn-sm view-user" id-usuario="' . $usuario->id . '" onclick="visualizarUsuario(this)" data-toggle="modal" data-target="#modalVisualizar"><i class="fas fa-eye"></i></button>';
+                    return $editButton . ' ' . $deleteButton . ' ' . $viewButton;
+                })
+                ->rawColumns(['foto_perfil','rol','action'])
+                ->make(true);
         }
-
-        if ($request->filled('ci')) {
-            $query->where('cedulaidentidad', 'like', '%' . $request->ci . '%');
-        }
-
-        $usuarios = $query->paginate(10);
-
         $roles = Role::all();
-
-        return view('administrador.usuarios.index_users', compact('usuarios', 'request','roles'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('ci'));
+        return view('administrador.usuarios.index_users', compact('roles'));
     }
 
     /**

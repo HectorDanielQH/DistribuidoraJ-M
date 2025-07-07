@@ -19,8 +19,10 @@ return new class extends Migration
             $table->string('apellido_materno')->nullable();
             $table->string('celular');
             $table->string('ubicacion');
+            $table->unsignedInteger('ruta_id');
             $table->unsignedBigInteger('creador_por_usuario');
             $table->foreign('creador_por_usuario')->references('id')->on('users');
+            $table->foreign('ruta_id')->references('id')->on('rutas');
             $table->timestamps();
         });
     }

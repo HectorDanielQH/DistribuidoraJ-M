@@ -4,26 +4,68 @@ namespace App\Http\Controllers;
 
 use App\Models\Linea;
 use App\Models\Marca;
+use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 
 class LineaController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, DataTables $dataTables)
     {
-        $query = Marca::query();
+        if($request->ajax()){            
 
-        if ($request->filled('nombre')) {
-            $query->where('descripcion', 'like', '%' . $request->nombre . '%');
+            $query = Marca::query();
+            
+            if ($request->filled('descripcion_marca')) {
+                $query->where('descripcion', 'like', '%' . trim(strtoupper($request->descripcion_marca)) . '%');
+            }
+            
+            return $dataTables->eloquent($query)
+                ->addColumn('descripcion_marca', function ($marca) {
+                    return $marca->descripcion;
+                })
+                ->addColumn('lineas', function ($marca) {
+                    $lineas = $marca->linea;
+                    if ($lineas->isEmpty()) {
+                        return "<span class='badge bg-secondary'>No hay líneas</span>";
+                    }
+                    $botones = "";
+                    foreach ($lineas as $linea) {
+                        $botones .= "<span class='badge bg-dark'>{$linea->descripcion_linea}
+                            <button class='btn btn-sm btn-warning mx-2' type='button' id-linea='{$linea->id}' id-nombre-linea='$linea->descripcion_linea' onclick='editarLinea(this)'>
+                                <i class='fas fa-edit'></i>
+                            </button>
+                            <button class='btn btn-sm btn-danger' onclick='eliminarLinea({$linea->id})' type='button'>
+                                <i class='fas fa-trash'></i>
+                            </button>
+                        </span> ";
+                    }
+                    
+                    return $botones;
+                })
+                ->addColumn('acciones', function ($marca) {
+                    $botones = "
+                        <button class='btn btn-sm btn-warning' type='button' id-linea='{$marca->id}' onclick='editarLinea(this)'>
+                            <i class='fas fa-edit'></i>
+                        </button>
+                        <button class='btn btn-sm btn-danger' onclick='eliminarLinea({$marca->id})' type='button'>
+                            <i class='fas fa-trash'></i>
+                        </button>
+                    ";
+                    return $botones;
+                })
+                ->rawColumns(['lineas','acciones'])
+                ->make(true);
         }
 
-        $marcas = $query->paginate(5);
+        $marcas_busqueda= Marca::select('id', 'descripcion')
+            ->orderBy('descripcion', 'asc')
+            ->get();
 
-        $marcas_busqueda= Marca::all();
-
-        return view('administrador.lineas.index_lineas',compact('marcas','marcas_busqueda'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('ci'));
+        return view('administrador.lineas.index_lineas', compact('marcas_busqueda'));
     }
 
     /**

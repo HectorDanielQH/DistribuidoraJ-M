@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\Rutas;
 use Illuminate\Http\Request;
 
 class ClienteController extends Controller
@@ -32,8 +33,8 @@ class ClienteController extends Controller
         }
 
         $clientes = $query->paginate(10);
-
-        return view('administrador.clientes.index_clientes', compact('clientes', 'request'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('ci'));
+        $rutas = Rutas::all();
+        return view('administrador.clientes.index_clientes', compact('clientes', 'rutas', 'request'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('ci'));
     }
 
     /**
@@ -56,6 +57,7 @@ class ClienteController extends Controller
             'apellidomaterno' => 'nullable|string|max:255|required_without:apellidopaterno',
             'celular' => 'required|string|max:255',
             'direccion' => 'required|string|max:255',
+            'ruta' => 'required|exists:rutas,id',
         ],[
             'cedulaidentidad.required' => 'El campo Cédula de Identidad es obligatorio.',
             'cedulaidentidad.unique' => 'La Cédula de Identidad ya está registrada.',
@@ -64,6 +66,8 @@ class ClienteController extends Controller
             'apellidomaterno.required_without' => 'Debe ingresar al menos el Apellido Paterno o el Apellido Materno.',
             'celular.required' => 'El campo Celular es obligatorio.',
             'direccion.required' => 'El campo Dirección es obligatorio.',
+            'ruta.required' => 'Debe seleccionar una ruta.',
+            'ruta.exists' => 'La ruta seleccionada no es válida.',
         ]);
 
         Cliente::create([
@@ -74,6 +78,7 @@ class ClienteController extends Controller
             'celular'=> trim(strtoupper($request->celular)),
             'ubicacion'=> trim(strtoupper($request->direccion)),
             'creador_por_usuario'=>auth()->id(),
+            'ruta_id' => $request->ruta,
         ]);
 
         return response()->json([
@@ -109,6 +114,7 @@ class ClienteController extends Controller
             'apellidomaterno' => 'nullable|string|max:255|required_without:apellidopaterno',
             'celular' => 'required|string|max:255',
             'direccion' => 'required|string|max:255',
+            'ruta' => 'required|exists:rutas,id',
         ],[
             'cedulaidentidad.required' => 'El campo Cédula de Identidad es obligatorio.',
             'nombres.required' => 'El campo Nombres es obligatorio.',
@@ -116,6 +122,8 @@ class ClienteController extends Controller
             'apellidomaterno.required_without' => 'Debe ingresar al menos el Apellido Paterno o el Apellido Materno.',
             'celular.required' => 'El campo Celular es obligatorio.',
             'direccion.required' => 'El campo Dirección es obligatorio.',
+            'ruta.required' => 'Debe seleccionar una ruta.',
+            'ruta.exists' => 'La ruta seleccionada no es válida.',
         ]);
 
         $cliente = Cliente::findOrFail($cliente);
@@ -128,6 +136,7 @@ class ClienteController extends Controller
             'celular'=> trim(strtoupper($request->celular)),
             'ubicacion'=> trim(strtoupper($request->direccion)),
             'creador_por_usuario'=>auth()->id(),
+            'ruta_id' => $request->ruta,
         ]);
 
         return response()->json([

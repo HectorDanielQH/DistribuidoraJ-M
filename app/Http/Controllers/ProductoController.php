@@ -67,9 +67,10 @@ class ProductoController extends Controller
             'habilitarPromocion' => 'nullable',
             'promocionDescuento' => 'nullable|integer|min:0|max:100',
             'promocionRegalo' => 'nullable|string|max:255',
-            'imagen_producto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'imagen_producto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'forma_venta' => 'required|array|min:1',
             'cantidad_venta' => 'required|array|min:1',
+            'equivalencia_stock' => 'required|array|min:1',
         ],[
             'proveedor_id.required' => 'El proveedor es obligatorio.',
             'marca_id.required' => 'La marca es obligatoria.',
@@ -92,7 +93,7 @@ class ProductoController extends Controller
             'promocionDescuento.max' => 'El descuento de la promoción no puede ser mayor a 100.',
             'promocionRegalo.max' => 'La descripción del regalo de la promoción no puede exceder los 255 caracteres.',
             'imagen_producto.image' => 'El archivo debe ser una imagen.',
-            'imagen_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif o svg.',
+            'imagen_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif, svg o webp.',
             'imagen_producto.max' => 'La imagen no puede exceder los 2MB.',
             'forma_venta.required' => 'La forma de venta es obligatoria.',
             'forma_venta.array' => 'La forma de venta debe ser un arreglo.',
@@ -100,6 +101,9 @@ class ProductoController extends Controller
             'cantidad_venta.required' => 'La cantidad de venta es obligatoria.',
             'cantidad_venta.array' => 'La cantidad de venta debe ser un arreglo.',
             'cantidad_venta.min' => 'Debe haber al menos una cantidad de venta.',
+            'equivalencia_stock.required' => 'La equivalencia de stock es obligatoria.',
+            'equivalencia_stock.array' => 'La equivalencia de stock debe ser un arreglo.',
+            'equivalencia_stock.min' => 'Debe haber al menos una equivalencia de stock.',
         ]);
 
         if($request->hasFile('imagen_producto')) {
@@ -118,7 +122,7 @@ class ProductoController extends Controller
                 'detalle_precio_compra' => $request->descripcionCompra,
                 'presentacion' => $request->presentacionProducto,
                 'promocion' => $request->habilitarPromocion ? true : false,
-                'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? null,
+                'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? 0,
                 'descripcion_regalo' => $request->promocionRegalo ?? null,
                 'foto_producto' => $path
             ]);   
@@ -137,15 +141,15 @@ class ProductoController extends Controller
                 'detalle_precio_compra' => $request->descripcionCompra,
                 'presentacion' => $request->presentacionProducto,
                 'promocion' => $request->habilitarPromocion ? true : false,
-                'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? null,
+                'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? 0,
                 'descripcion_regalo' => $request->promocionRegalo ?? null,
             ]);
         }
-
         foreach ($request->forma_venta as $key => $forma_venta) {
             FormaVenta::create([
                 'tipo_venta' => $forma_venta,
                 'precio_venta' => str_replace(',', '.', $request->cantidad_venta[$key]),
+                'equivalencia_cantidad' => $request->equivalencia_stock[$key],
                 'id_producto' => $producto->id
             ]);
         }
@@ -204,10 +208,11 @@ class ProductoController extends Controller
     public function destroy(string $producto)
     {
         $producto = Producto::findOrFail($producto);
+        FormaVenta::where('id_producto', $producto->id)->delete();
+
         if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
             Storage::disk('local')->delete($producto->foto_producto);
         }
-        FormaVenta::where('id_producto', $producto->id)->delete();
         $producto->delete();
 
         return response()->json(['success' => true]);
@@ -223,7 +228,15 @@ class ProductoController extends Controller
 
         return response()->file(storage_path('app/private/' . $producto->foto_producto));
     }
+    public function imagenProductoCodigo(string $codigo)
+    {
+        $producto = Producto::where('codigo', $codigo)->firstOrFail();
+        if (!$producto->foto_producto || !Storage::disk('local')->exists($producto->foto_producto)) {
+            abort(404);
+        }
 
+        return response()->file(storage_path('app/private/' . $producto->foto_producto));
+    }
     public function actualizarCantidadProducto(Request $request, string $id)
     {
         $producto = Producto::findOrFail($id);
@@ -257,7 +270,7 @@ class ProductoController extends Controller
 
         $producto = Producto::findOrFail($id);
         $producto->promocion = true;
-        $producto->descripcion_descuento_porcentaje= $request->descuento ?? null;
+        $producto->descripcion_descuento_porcentaje= $request->descuento ?? 0;
         $producto->descripcion_regalo = trim(strtoupper($request->regalo)) ?? null;
         $producto->save();
 
@@ -268,7 +281,7 @@ class ProductoController extends Controller
     {
         $producto = Producto::findOrFail($id);
         $producto->promocion = false;
-        $producto->descripcion_descuento_porcentaje = null;
+        $producto->descripcion_descuento_porcentaje = 0;
         $producto->descripcion_regalo = null;
         $producto->save();
 
@@ -286,7 +299,7 @@ class ProductoController extends Controller
         ]);
 
         $producto = Producto::findOrFail($id);
-        $producto->descripcion_descuento_porcentaje = $request->descuento ?? null;
+        $producto->descripcion_descuento_porcentaje = $request->descuento ?? 0;
         $producto->descripcion_regalo = trim(strtoupper($request->regalo)) ?? null;
         $producto->save();
 
@@ -296,11 +309,11 @@ class ProductoController extends Controller
     public function editarFotografia(Request $request, string $id)
     {
         $request->validate([
-            'foto_producto' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'foto_producto' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ], [
             'foto_producto.required' => 'La imagen del producto es obligatoria.',
             'foto_producto.image' => 'El archivo debe ser una imagen.',
-            'foto_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif o svg.',
+            'foto_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif, svg o webp.',
             'foto_producto.max' => 'La imagen no puede exceder los 2MB.',
         ]);
 

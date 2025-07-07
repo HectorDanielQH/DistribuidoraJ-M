@@ -27,32 +27,21 @@
                 <button class="btn" id="boton-agregar" data-toggle="modal" data-target="#modalPurple" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
                     <i class="fas fa-user-plus"></i> Nuevo Usuario
                 </button>
-
-                @if ($eliminar_busqueda)                    
-                    <button class="btn btn-danger ms-2" id="limpiarboton" style="font-weight: bold; border-radius: 8px;">
-                        <i class="fas fa-times"></i> Limpiar búsqueda
-                    </button>
-                @endif
             </div>
             <div class="card-body" style="padding: 2rem;">
                 <p class="text-muted" style="margin-top: -15px">
                     Puedes buscar usuarios por nombre completo o cédula de identidad con cualquier coincidencia.
                 </p>
-                <form method="GET" action="{{ route('usuarios.index') }}" class="row g-3">
+                <div class="row g-3">
                     <div class="col-md-5">
                         <label for="nombre" class="form-label text-muted">Nombre completo</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Juan Pérez" value="{{ $request->nombre ?? '' }}"  style="border-radius: 8px;">
+                        <input type="text" id="cajabusquedanombre" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Juan Pérez" style="border-radius: 8px;">
                     </div>
                     <div class="col-md-5">
                         <label for="ci" class="form-label text-muted">Cédula de identidad</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="ci" placeholder="Ej: 12345678" value="{{ $request->ci ?? '' }}"  style="border-radius: 8px;">
+                        <input type="text" id="cajabusquedacedula" class="form-control shadow-sm border-0" name="ci" placeholder="Ej: 12345678" style="border-radius: 8px;">
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn w-100" style="background-color: #3498db; color: white; font-weight: bold; border-radius: 8px;">
-                            <i class="fas fa-search"></i> Buscar
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -60,7 +49,7 @@
     <!--AGREGAR USUARIO-->
     <x-adminlte-modal id="modalPurple" size="lg" theme="dark" icon="fas fa-user-plus" title="Agregar Usuario">
             <div class="modal-body px-4">
-                <form id="registro-usuario" action="{{ route('usuarios.store') }}" enctype="multipart/form-data">
+                <form id="registro-usuario" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -357,7 +346,7 @@
     <!-- TABLA -->
     <div class="container pb-5">
         <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
-            <table class="table table-bordered align-middle text-center" style="min-width: 800px;">
+            <table id="tablaUsuarios" class="table table-striped table-bordered" style="width: 100%;">
                 <thead class="table-dark">
                     <tr>
                         <th scope="col">#</th>
@@ -370,80 +359,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($usuarios as $usuario)
-                        <tr>
-                            <td>{{ $usuario->id }}</td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-id-card mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $usuario->cedulaidentidad }}
-                            </td>
-                            <td>
-                                @if ($usuario->foto_perfil)
-                                    <img src="{{ route('usuarios.imagenperfil', $usuario->id) }}" alt="Foto de perfil" class="img-fluid rounded-circle" style="width: 40px; height: 50px;">
-                                @else
-                                    <img src="{{ asset('images/logo_color.webp') }}" alt="Foto de perfil" class="img-fluid rounded-circle" style="width: 40px; height: 50px;">
-                                @endif
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-user-circle mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $usuario->nombres }} {{ $usuario->apellido_paterno }} {{ $usuario->apellido_materno }}
-
-                                <br>
-                                
-                                @if ($usuario->estado == 'DE BAJA')
-                                    <span class="badge bg-danger">De baja</span>
-                                @else
-                                    <span class="badge bg-success">Activo</span>
-                                @endif
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-mobile-alt mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $usuario->celular }}
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-user-tag mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ strtoupper($usuario->getRoleNames()->first()) }}
-                                
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group" role="group" aria-label="Acciones del usuario">
-                                    <button 
-                                        class="btn btn-warning btn-sm rounded-3 me-2" 
-                                        data-toggle="modal"
-                                        data-target="#modalEditarUsuario"
-                                        id-usuario="{{ $usuario->id }}"
-                                        onclick="editarUsuario(this)">
-                                        <i class="fas fa-user-edit"></i>
-                                    </button>
-
-                                    <button class="btn btn-danger btn-sm rounded-3" id-usuario="{{ $usuario->id }}" onclick="eliminarUsuario(this)">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-
-                                    <button class="btn btn-info btn-sm rounded-3 " data-toggle="modal" data-target="#modalVisualizar"  id-usuario="{{ $usuario->id }}" onclick="visualizarUsuario(this)">
-                                        <i class="fas fa-eye
-                                        "></i>
-                                    </button>
-                                </div>
-                            </td>
-
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <div class="alert alert-warning mb-0" role="alert">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    No se encontraron resultados para la búsqueda, quizas con otra coincidencia.
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
+                    <tr>
+                        <td colspan="7" class="text-center">Cargando datos...</td>
+                    </tr>
                 </tbody>
             </table>
-        </div>
-
-        <div class="d-flex justify-content-center mt-3">
-            {{ $usuarios->appends(request()->query())->links() }}
         </div>
     </div>
 
@@ -451,6 +371,7 @@
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -472,6 +393,43 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+
+    <script>
+        $(document).ready(function(){
+            $('#tablaUsuarios').DataTable({
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                },
+                "processing":true,
+                "serverSide":true,
+                "searching": false,
+
+                "ajax": {
+                    "url": "{{ route('usuarios.index') }}",
+                    "type": "GET",
+                    "data": function (d) {
+                        d.nombres_completos = $('#cajabusquedanombre').val();
+                        d.cedulaidentidad = $('#cajabusquedacedula').val();
+                    }
+                },
+                columns:[
+                    { data: 'id' },
+                    { data: 'cedulaidentidad'},
+                    { data: 'foto_perfil', orderable: false, searchable: false},
+                    { data: 'nombres_completos'},
+                    { data: 'celular', orderable: false, searchable: false},
+                    { data: 'rol', orderable: false, searchable: false},
+                    { data: 'action', orderable: false, searchable: false }
+                ],
+                
+            });
+        });
+
+        $(document).on('keyup', '#cajabusquedanombre, #cajabusquedacedula', function() {
+            $('#tablaUsuarios').DataTable().draw();
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -490,32 +448,15 @@
             });
         });
 
-        $('#limpiarboton').click(function() {
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "Se eliminará la búsqueda actual.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, limpiar búsqueda',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: 'Limpiando...',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    })
-                    window.location.href = "{{ route('usuarios.index') }}";
-                }
-            });
-        });
-
         $('#botonenviar').click(()=>{
             $('#registro-usuario').submit();
+            Swal.fire({
+                title: 'Registrando...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         })
 
         $('#registro-usuario').submit(function(event) {
@@ -538,7 +479,8 @@
                         timer: 1500
                     });
                     $('#botonenviar-cerrar').click();
-                    location.reload();
+                    $('#tablaUsuarios').DataTable().ajax.reload();
+                    $('#registro-usuario')[0].reset();
                 },
                 error: function(xhr, status, error) {
                     Swal.fire({
@@ -584,13 +526,13 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tablaUsuarios').DataTable().draw();
                         },
                         error: function(xhr, status, error) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error al eliminar el usuario',
-                                text: xhr.responseJSON.message,
+                                text: "No se pudo eliminar el usuario. De seguro tiene pedidos y/o ventas.",
                             });
                         }
                     });
@@ -599,6 +541,13 @@
         }
 
         function visualizarUsuario(element) {
+            Swal.fire({
+                title: 'Cargando datos...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $('#ciview').text('');
             $('#nombresview').text('');
             $('#apellidopaternoview').text('');
@@ -655,6 +604,14 @@
         let idUsuarioEditar = null;
 
         function editarUsuario(element) {
+            Swal.fire({
+                title: 'Cargando datos...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             $('#cedulaidentidadeditar').val('');
             $('#nombreseditar').val('');
             $('#apellidopaternoeditar').val('');
@@ -671,7 +628,6 @@
                 url: `{{ route('usuarios.show', ':id') }}`.replace(':id', idUsuarioEditar),
                 type: 'GET',
                 success: function(response) {
-                    console.log(response);
                     $('#cedulaidentidadeditar').val(response.usuario.cedulaidentidad);
                     $('#nombreseditar').val(response.usuario.nombres);
                     $('#apellidopaternoeditar').val(response.usuario.apellido_paterno);
@@ -704,6 +660,21 @@
         });
 
         $('#registro-usuario-editar').submit(function(event) {
+            if (idUsuarioEditar === null) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se ha seleccionado un usuario para editar.',
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             event.preventDefault();
             let formData = new FormData(this);
             $.ajax({
@@ -723,7 +694,7 @@
                         timer: 1500
                     });
                     $('#botonenviar-cerrar-editar').click();
-                    location.reload();
+                    $('#tablaUsuarios').DataTable().draw();
                 },
                 error: function(xhr, status, error) {
                     Swal.fire({

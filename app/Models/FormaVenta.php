@@ -9,6 +9,7 @@ class FormaVenta extends Model
     protected $fillable = [
         'tipo_venta',
         'precio_venta',
+        'equivalencia_cantidad',
         'id_producto',
         'activo',
     ];

@@ -5,30 +5,81 @@ namespace App\Http\Controllers;
 use App\Models\Marca;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 
 class ProveedorController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, DataTables $dataTables)
     {
-        $query = Proveedor::query();
+        if($request->ajax()){
+            $query = Proveedor::query();
+            if ($request->filled('proveedor')) {
+                $nombreBuscado = strtoupper(trim($request->proveedor));
+                $query->whereRaw('UPPER(nombre_proveedor) LIKE ?', ["%{$nombreBuscado}%"]);
+            }
+            return $dataTables->eloquent($query)
+                ->addColumn('nombre_proveedor', function ($proveedor) {
+                    return $proveedor->nombre_proveedor;
+                })
 
-        // Si se proporcionó un nombre, filtrar la búsqueda (sin modificar la base de datos)
-        if ($request->filled('nombre')) {
-            $nombreBuscado = strtoupper(trim($request->nombre));
-            $query->whereRaw('UPPER(nombre_proveedor) LIKE ?', ["%{$nombreBuscado}%"]);
+                ->addColumn('producto_marcas', function ($proveedor) {
+                    $marcas=Proveedor::find($proveedor->id)->marcas;
+                    if ($marcas->isEmpty()) {
+                        $botones = "
+                            <span class='badge bg-secondary'>No hay marcas</span>
+                            <button type='button' class='btn btn-success btn-sm mt-2' data-toggle='modal' data-target='#modalAgregarMarca' onclick='anadirMarca($proveedor->id)' id-proveedor='{$proveedor->id}'>
+                                <i class='fas fa-plus'></i> Agregar Marca
+                            </button>
+                        ";
+                        return $botones;
+                    }
+
+                    $botones="";
+
+                    foreach ($marcas as $opcion) {
+                        $botones .= "
+                            <span class='badge bg-dark'>$opcion->descripcion 
+                                <button class='btn btn-sm btn-warning mx-2' type='button' id-marca='{$opcion->id}' nombre-marca='{$opcion->descripcion}' onclick='editarFuncion(this)'>
+                                    <i class='fas fa-edit'></i>
+                                </button>
+                                <button class='btn btn-sm btn-danger' onclick='eliminarMarcas({$opcion->id})' type='button'>
+                                    <i class='fas fa-trash'></i>
+                                </button> 
+                                <button type='button' class='btn btn-primary btn-sm ml-2' onclick='moverMarcas({$opcion->id})' data-toggle='tooltip' data-placement='top' title='Mover'>
+                                    <i class='fas fa-arrows-alt'></i>
+                                </button>
+                            </span>
+                        ";
+                    }
+
+                    $botones .= "
+                        <button type='button' class='btn btn-success btn-sm mt-2' data-toggle='modal' data-target='#modalAgregarMarca' onclick='anadirMarca($proveedor->id)' id-proveedor='$proveedor->id'>
+                            <i class='fas fa-plus'></i> Agregar Marca
+                        </button>
+                    ";
+
+                    return $botones;
+                })
+
+                ->addColumn('acciones', function ($proveedor) {
+                    return "
+                        <button type='button' class='btn btn-warning btn-sm' data-toggle='modal' data-target='#modalEditarProovedor' onclick='funcionEditar(this)' id-usuario-editar='$proveedor->id'>
+                            <i class='fas fa-user-edit'></i>
+                        </button>
+                        <button type='button' class='btn btn-danger btn-sm' onclick='funcionEliminar(this)' id-usuario='$proveedor->id'>
+                            <i class='fas fa-trash'></i>
+                        </button>
+                    ";
+                })
+                ->rawColumns(['nombre_proveedor','producto_marcas','acciones'])
+                ->make(true);
         }
 
-        // Obtener valor del campo para reenviarlo a la vista
-        $nombre = $request->nombre;
-
-        // Paginación de resultados
-        $proveedores = $query->paginate(10);
-
-        return view('administrador.proveedores.index_proveedores', compact('proveedores', 'nombre'))
-            ->with('eliminar_busqueda', $request->filled('nombre'));
+        $proveedores = Proveedor::all();
+        return view('administrador.proveedores.index_proveedores', compact('proveedores'));
     }
 
     /**

@@ -124,6 +124,20 @@
                                 </x-slot>
                             </x-adminlte-input>
                         </div>
+
+                        <div class="col-md-6">
+                            <x-adminlte-select name="ruta" id="ruta" label="Selecciona la Ruta" label-class="text-dark" igroup-size="lg">
+                                <x-slot name="prependSlot">
+                                    <div class="input-group-text bg-dark">
+                                        <i class="fas fa-route"></i>
+                                    </div>
+                                </x-slot>
+                                <option value="">Seleccione una ruta</option>
+                                @foreach ($rutas as $ruta)
+                                    <option value="{{ $ruta->id }}" {{ old('ruta') == $ruta->id ? 'selected' : '' }}>{{ $ruta->nombre_ruta }}</option>
+                                @endforeach
+                            </x-adminlte-select>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -200,6 +214,20 @@
                                 </x-slot>
                             </x-adminlte-input>
                         </div>
+
+                        <div class="col-md-6">
+                            <x-adminlte-select name="ruta"  id="rutaEditar" label="Selecciona la Ruta" label-class="text-dark" igroup-size="lg">
+                                <x-slot name="prependSlot">
+                                    <div class="input-group-text bg-dark">
+                                        <i class="fas fa-route"></i>
+                                    </div>
+                                </x-slot>
+                                <option value="">Seleccione una ruta</option>
+                                @foreach ($rutas as $ruta)
+                                    <option value="{{ $ruta->id }}" {{ old('ruta') == $ruta->id ? 'selected' : '' }}>{{ $ruta->nombre_ruta }}</option>
+                                @endforeach
+                            </x-adminlte-select>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -221,6 +249,7 @@
                         <th scope="col">Nombre Completo</th>
                         <th scope="col">Celular</th>
                         <th scope="col">Direccion</th>
+                        <th scope="col">Ruta</th>
                         <th scope="col">Acciones</th>
                     </tr>
                 </thead>
@@ -244,6 +273,10 @@
                                 <i class="fas fa-map-marker-alt mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
                                 {{ $cliente->ubicacion }}
                                 
+                            </td>
+                            <td style="text-align: left;">
+                                <i class="fas fa-route mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
+                                {{ $cliente->ruta ? $cliente->ruta->nombre_ruta : 'Sin ruta asignada' }}
                             </td>
                             <td class="text-center">
                                 <div class="btn-group" role="group" aria-label="Acciones del usuario">
@@ -292,6 +325,7 @@
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -313,6 +347,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+
 
     <script>
         $('#botonenviar').click(function(){
