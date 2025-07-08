@@ -10,6 +10,8 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+        <link rel="shortcut icon" href="{{asset('images/logo_color.webp')}}" type="image/x-icon">
     </head>
     <body class="relative text-[#1b1b18] flex p-6 lg:p-8 items-center lg:justify-center min-h-screen flex-col bg-gray-50 overflow-hidden">
         <div class="absolute inset-0 flex items-center justify-center opacity-5 text-[5rem] lg:text-[8rem] font-bold z-0 select-none pointer-events-none">

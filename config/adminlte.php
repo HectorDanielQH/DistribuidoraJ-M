@@ -304,6 +304,12 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'text' => 'Permisos',
+            'route' => 'permisos.index',
+            'icon' => 'fas fa-fw fa-user-shield',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'text' => 'Usuarios',
             'route' => 'usuarios.index',
             'icon' => 'fas fa-fw fa-users',

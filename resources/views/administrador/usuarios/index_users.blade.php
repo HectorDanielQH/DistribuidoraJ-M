@@ -32,7 +32,7 @@
                 <p class="text-muted" style="margin-top: -15px">
                     Puedes buscar usuarios por nombre completo o cédula de identidad con cualquier coincidencia.
                 </p>
-                <div class="row g-3">
+                <div class="row g-3 d-flex justify-content-center align-items-center">
                     <div class="col-md-5">
                         <label for="nombre" class="form-label text-muted">Nombre completo</label>
                         <input type="text" id="cajabusquedanombre" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Juan Pérez" style="border-radius: 8px;">

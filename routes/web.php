@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administrador\PermisosController;
 use App\Http\Controllers\AsignacionController;
 use App\Http\Controllers\AsinacionVendedorController;
 use App\Http\Controllers\ClienteController;
@@ -26,6 +27,13 @@ Auth::routes(['register' => false]);
 
 Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+    //Rutas de permisos
+    Route::get('/permisos', [PermisosController::class, 'index'])->name('permisos.index');
+    Route::post('/permisos/store', [PermisosController::class, 'store'])->name('permisos.store');
+
+
+    //---------------------------------------
 
     Route::get('usuarios/imagenperfil/{id}', [UsuarioController::class, 'imagenPerfil'])->name('usuarios.imagenperfil');
     Route::post('marcas/mover/{id}', [MarcaController::class, 'mover'])->name('marca.mover');
@@ -107,7 +115,6 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     //pedido administrador pdf
     Route::get('pedidos/administrador/visualizacion-pdf-despachar', [PedidoAdministradorController::class,'visualizacionPdfDespachar'])->name('pedidos.administrador.visualizacionPdfDespachar');
 
-
     //rendimiento personal Controller
     Route::get('rendimientopersonal/obtener-rendimiento-personal/{id}', [RendimientoPersonalController::class, 'rendimientoPersonal'])->name('rendimientopersonal.obtenerRendimientoPersonal');
     //VENTAS----------------------------
@@ -115,6 +122,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('ventas/administrador/visualizacion-pedido/{id}', [VentaController::class,'visualizacionPedido'])->name('ventas.administrador.visualizacionPedido');
     Route::get('ventas/administrador/ventas-producto', [VentaController::class,'resporteVentasProducto'])->name('ventas.administrador.ventasProductos');
     Route::get('ventas/obtener-rendimiento-producto/{id}', [VentaController::class, 'reporteVentaProductosId'])->name('rendimientopersonal.obtenerVentasProductos');
+
 
     //----------------------------
     Route::resource('usuarios', UsuarioController::class);
