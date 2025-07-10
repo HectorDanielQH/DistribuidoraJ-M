@@ -85,7 +85,7 @@
                 "processing":true,
                 "serverSide":true,
                 "ajax": {
-                    "url": "{{ route('permisos.index') }}",
+                    "url": "{{ route('administrador.permisos.index') }}",
                     "type": "GET",
                 },
                 columns:[
@@ -117,19 +117,129 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Creando permiso...',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('permisos.store') }}",
+                        url: "{{ route('administrador.permisos.store') }}",
                         type: "POST",
                         data: {
                             name: result.value,
                             _token: '{{ csrf_token() }}'
                         },
                         success: function(response) {
+                            Swal.close();
                             $('#tablaPersmisos').DataTable().ajax.reload();
-                            Swal.fire('Éxito', 'Permiso creado correctamente', 'success');
+                            Swal.fire({
+                                title: 'Éxito',
+                                text: 'Permiso creado exitosamente',
+                                icon: 'success',
+                                showCancelButton: false,
+                                showConfirmButton: false,
+                                timer: 1000
+                            });
                         },
                         error: function(xhr) {
                             Swal.fire('Error', 'No se pudo crear el permiso', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function deleteRole(e) 
+        { 
+            let id=$(e).attr('data-id');
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "¡No podrás revertir esto!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminarlo'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando permiso...',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    $.ajax({
+                        url: "{{ route('administrador.permisos.destroy', ':id') }}".replace(':id', id),
+                        type: "DELETE",
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            Swal.close();
+                            $('#tablaPersmisos').DataTable().ajax.reload();
+                            Swal.fire({
+                                title: 'Éxito',
+                                text: 'Permiso eliminado exitosamente',
+                                icon: 'success',
+                                showCancelButton: false,
+                                showConfirmButton: false,
+                                timer: 1000
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error', 'No se pudo eliminar el permiso', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function editRole(e){
+            let id=$(e).attr('data-id');
+            Swal.fire({
+                title: 'Editar rol',
+                html: `
+                    <input type="text" id="editRoleName" class="swal2-input" placeholder="Nombre del rol">
+                `,
+                focusConfirm: false,
+                preConfirm: () => {
+                    const editRoleName = document.getElementById('editRoleName').value;
+                    if (!editRoleName) {
+                        Swal.showValidationMessage('Por favor, ingresa un nombre para el rol');
+                    } else {
+                        return editRoleName;
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Actualizando rol...',
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    $.ajax({
+                        url: "{{ route('administrador.permisos.update', ':id') }}".replace(':id', id),
+                        type: "PUT",
+                        data: {
+                            name: result.value,
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            Swal.close();
+                            $('#tablaPersmisos').DataTable().ajax.reload();
+                            Swal.fire({
+                                title: 'Éxito',
+                                text: 'Rol actualizado exitosamente',
+                                icon: 'success',
+                                showCancelButton: false,
+                                showConfirmButton: false,
+                                timer: 1000
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error', 'No se pudo actualizar el rol', 'error');
                         }
                     });
                 }

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
 use App\Models\Marca;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
@@ -9,6 +10,10 @@ use Yajra\DataTables\DataTables;
 
 class ProveedorController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:administrador.permisos');
+    }
     /**
      * Display a listing of the resource.
      */

@@ -406,7 +406,7 @@
                 "searching": false,
 
                 "ajax": {
-                    "url": "{{ route('usuarios.index') }}",
+                    "url": "{{ route('administrador.usuarios.index') }}",
                     "type": "GET",
                     "data": function (d) {
                         d.nombres_completos = $('#cajabusquedanombre').val();
@@ -463,7 +463,7 @@
             event.preventDefault();
             let formData = new FormData(this);
             $.ajax({
-                url: "{{ route('usuarios.store') }}",
+                url: "{{ route('administrador.usuarios.store') }}",
                 type: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -514,7 +514,7 @@
                         }
                     });
                     $.ajax({
-                        url: `{{ route('usuarios.destroy', ':id') }}`.replace(':id', idUsuario),
+                        url: `{{ route('administrador.usuarios.destroy', ':id') }}`.replace(':id', idUsuario),
                         type: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -561,7 +561,7 @@
 
             const idUsuario = $(element).attr('id-usuario');
             $.ajax({
-                url: `{{ route('usuarios.show', ':id') }}`.replace(':id', idUsuario),
+                url: `{{ route('administrador.usuarios.show', ':id') }}`.replace(':id', idUsuario),
                 type: 'GET',
                 success: function(response) {
                     $('#ciview').text(response.usuario.cedulaidentidad);
@@ -625,7 +625,7 @@
 
             idUsuarioEditar = $(element).attr('id-usuario');
             $.ajax({
-                url: `{{ route('usuarios.show', ':id') }}`.replace(':id', idUsuarioEditar),
+                url: `{{ route('administrador.usuarios.show', ':id') }}`.replace(':id', idUsuarioEditar),
                 type: 'GET',
                 success: function(response) {
                     $('#cedulaidentidadeditar').val(response.usuario.cedulaidentidad);
@@ -678,7 +678,7 @@
             event.preventDefault();
             let formData = new FormData(this);
             $.ajax({
-                url: `{{ route('usuarios.update', ':id') }}`.replace(':id', idUsuarioEditar),
+                url: `{{ route('administrador.usuarios.update', ':id') }}`.replace(':id', idUsuarioEditar),
                 type: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')

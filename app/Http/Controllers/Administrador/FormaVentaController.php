@@ -1,18 +1,37 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
 use App\Models\FormaVenta;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 
 class FormaVentaController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request, DataTables $dataTable, string $id_producto)
     {
-        //
+        $formasVenta = FormaVenta::where('id_producto', $id_producto)->get();
+
+        return $dataTable->of($formasVenta)
+            ->editColumn('precio_venta', function ($formaVenta) {
+                return $formaVenta->precio_venta. ' Bs.-';
+            })
+            ->addColumn('conversion_stock', function ($formaVenta) {
+                return $formaVenta->equivalencia_cantidad . ' ' . $formaVenta->producto->detalle_cantidad;
+            })
+            ->addColumn('acciones', function ($formaVenta) {
+                $acciones = '<div class="btn-group" role="group">';
+                $acciones .= '<button class="btn btn-sm btn-danger" onclick="eliminarFormaVenta(' . $formaVenta->id . ')"><i class="fas fa-trash"></i></button>';
+                $acciones .= $formaVenta->activo?'<button class="btn btn-sm btn-info" id-visualizacion="' . $formaVenta->id . '" onclick="editarVisualizacion(this)"><i class="fas fa-eye"></i></button>': '<button class="btn btn-sm btn-secondary" id-visualizacion="' . $formaVenta->id . '" onclick="editarVisualizacion(this)"><i class="fas fa-eye-slash"></i></button>';
+                $acciones .= '</div>';
+                return $acciones;
+            })
+            ->rawColumns(['acciones'])
+            ->make(true);
     }
 
     /**
@@ -78,7 +97,7 @@ class FormaVentaController extends Controller
         ]);
     }
 
-    public function editarVisualizacion(Request $request, $id)
+    public function editarVisualizacion(Request $request, string $id)
     {
         $formaVenta = FormaVenta::findOrFail($id);
         $formaVenta->activo = !$formaVenta->activo;

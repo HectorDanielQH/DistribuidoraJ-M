@@ -32,8 +32,8 @@
                 <p class="text-muted" style="margin-top: -15px">
                     Puedes buscar al proovedor por su nombre
                 </p>
-                <div class="row g-3">
-                    <div class="col-md-7">
+                <div class="row g-3 w-100 d-flex align-items-center">
+                    <div class="col-md-12">
                         <label for="nombre" class="form-label text-muted">Nombre completo</label>
                         <input type="text" class="form-control shadow-sm border-0" name="nombre" id="nombreProveedor" placeholder="Ej: Proovedor"  style="border-radius: 8px;">
                     </div>
@@ -46,7 +46,7 @@
     <!--AGREGAR USUARIO-->
     <x-adminlte-modal id="modalAgregarProveedor" size="lg" theme="dark" icon="fas fa-user-plus" title="Agregar Distribuidor">
         <div class="modal-body px-4">
-            <form id="registro-proveedores" action="{{ route('proveedores.store') }}">
+            <form id="registro-proveedores" action="{{ route('administrador.proveedores.store') }}">
                 @csrf
                 <div class="row g-3">
                     <div class="col-md-12">
@@ -156,14 +156,14 @@
         $(document).ready(function() {
             $('#tabla-proveedores').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                    url: '/i18n/es-ES.json'
                 },
                 "processing":true,
                 "serverSide":true,
                 "searching": false,
 
                 "ajax": {
-                    "url": "{{ route('proveedores.index') }}",
+                    "url": "{{ route('administrador.proveedores.index') }}",
                     "type": "GET",
                     "data": function (d) {
                         d.proveedor = $('#nombreProveedor').val();
@@ -212,10 +212,10 @@
                 }
             });
             e.preventDefault();
-            var formData = $(this).serialize();
+            let formData = $(this).serialize();
             $.ajax({
                 type: 'POST',
-                url: '{{ route('proveedores.store') }}',
+                url: "{{ route('administrador.proveedores.store') }}",
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
@@ -229,6 +229,8 @@
                     });
                     $('#botonenviar-cerrar').click();
                     $('#tabla-proveedores').DataTable().ajax.reload();
+                    $('#registro-proveedores')[0].reset();
+                    $('#opciones').val(null).trigger('change');
                 },
                 error: function(xhr) {
                     Swal.fire({
@@ -262,7 +264,7 @@
                         }
                     });
                     $.ajax({
-                        url: `{{ route('proveedores.destroy', ':id') }}`.replace(':id', id_usuario),
+                        url: `{{ route('administrador.proveedores.destroy', ':id') }}`.replace(':id', id_usuario),
                         type: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -301,7 +303,7 @@
             let id_usuario=e.getAttribute('id-usuario-editar');
             idProveedorEditar = id_usuario;
             $.ajax({
-                url: `{{ route('proveedores.show', ':id') }}`.replace(':id', id_usuario),
+                url: `{{ route('administrador.proveedores.show', ':id') }}`.replace(':id', id_usuario),
                 type: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -328,8 +330,15 @@
         $('#registro-proveedores-editar').submit(function(event) {
             event.preventDefault();
             let formData = $(this).serialize();
+            Swal.fire({
+                title: 'Editando Proveedor...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
-                url: `{{ route('proveedores.update', ':id') }}`.replace(':id', idProveedorEditar),
+                url: `{{ route('administrador.proveedores.update', ':id') }}`.replace(':id', idProveedorEditar),
                 type: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -400,7 +409,7 @@
                         }
                     });
                     $.ajax({
-                        url: `{{ route('marcas.destroy', ':id') }}`.replace(':id', e),
+                        url: `{{ route('administrador.marcas.destroy', ':id') }}`.replace(':id', e),
                         type: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
@@ -454,7 +463,7 @@
                     });
                     let nuevaMarca = result.value;
                     $.ajax({
-                        url: '{{ route('marcas.store') }}',
+                        url: "{{ route('administrador.marcas.store') }}",
                         type: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -503,8 +512,15 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     let descripcionActualizada = result.value;
+                    Swal.fire({
+                        title: 'Actualizando...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: `{{ route('marcas.update', ':id') }}`.replace(':id', idMarca),
+                        url: `{{ route('administrador.marcas.update', ':id') }}`.replace(':id', idMarca),
                         type: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -562,7 +578,7 @@
                 if (result.isConfirmed) {
                     let nuevoProveedorId = result.value;
                     $.ajax({
-                        url: `{{ route('marca.mover', ':id') }}`.replace(':id', idMarca),
+                        url: `{{ route('administrador.marca.mover', ':id') }}`.replace(':id', idMarca),
                         type: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')

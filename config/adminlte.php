@@ -30,7 +30,7 @@ return [
     |
     */
 
-    'use_ico_only' => false,
+    'use_ico_only' => true,
     'use_full_favicon' => false,
 
     /*
@@ -305,13 +305,13 @@ return [
         ],
         [
             'text' => 'Permisos',
-            'route' => 'permisos.index',
+            'route' => 'administrador.permisos.index',
             'icon' => 'fas fa-fw fa-user-shield',
             'can' => 'administrador.permisos',
         ],
         [
             'text' => 'Usuarios',
-            'route' => 'usuarios.index',
+            'route' => 'administrador.usuarios.index',
             'icon' => 'fas fa-fw fa-users',
             'can' => 'administrador.permisos',
         ],
@@ -322,20 +322,24 @@ return [
         ],
         [
             'text' => 'Proveedores',
-            'route' => 'proveedores.index',
+            'route' => 'administrador.proveedores.index',
             'icon' => 'fas fa-fw fa-truck-moving',
             'can' => 'administrador.permisos',
         ],
         [
             'text' => 'Lineas',
-            'route' => 'lineas.index',
+            'route' => 'administrador.lineas.index',
             'icon' => 'fas fa-grip-lines',
             'can' => 'administrador.permisos',
         ],
         [
             'text' => 'Productos',
-            'route' => 'productos.index',
+            'route' => 'administrador.productos.index',
             'icon' => 'fas fa-fw fa-boxes',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'header' => '.:: RUTAS Y CLIENTES ::.',
             'can' => 'administrador.permisos',
         ],
         [

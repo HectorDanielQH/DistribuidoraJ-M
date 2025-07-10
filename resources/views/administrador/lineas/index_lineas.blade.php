@@ -139,14 +139,14 @@
         $(document).ready(function(){
             $('#tabla-lineas').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                    url: '/i18n/es-ES.json'
                 },
                 processing:true,
                 serverSide:true,
                 searching: false,
 
                 ajax: {
-                    url: "{{ route('lineas.index') }}",
+                    url: "{{ route('administrador.lineas.index') }}",
                     type: "GET",
                     data: function (d) {
                         d.descripcion_marca = $('#nombre-marca-lineas').val();
@@ -230,7 +230,7 @@
             });
 
             $.ajax({
-                url: "{{ route('lineas.store') }}",
+                url: "{{ route('administrador.lineas.store') }}",
                 type: "POST",
                 data: {
                     _token: "{{ csrf_token() }}",
@@ -289,7 +289,7 @@
                         allowOutsideClick: false
                     });
                     $.ajax({
-                        url: `{{ route('lineas.destroy', ':id')}}`.replace(':id', id),
+                        url: `{{ route('administrador.lineas.destroy', ':id')}}`.replace(':id', id),
                         type: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
@@ -345,7 +345,7 @@
                         allowOutsideClick: false
                     })
                     $.ajax({
-                        url: `{{ route('lineas.update', ':id') }}`.replace(':id', id),
+                        url: `{{ route('administrador.lineas.update', ':id') }}`.replace(':id', id),
                         method: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
@@ -374,7 +374,7 @@
         }
 
         $('#limpiarboton').click(function() {
-                window.location.href = "{{ route('lineas.index') }}";
+                window.location.href = "{{ route('administrador.lineas.index') }}";
         });
     </script>
 

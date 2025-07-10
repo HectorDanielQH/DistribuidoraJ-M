@@ -1,12 +1,19 @@
 <?php
 
 namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
 use App\Models\Marca;
 use Illuminate\Http\Request;
 
 class MarcaController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:administrador.permisos');
+    }
+
     public function index(Request $request)
     {
     }
@@ -40,7 +47,9 @@ class MarcaController extends Controller
             'id_proveedor' => $request->proveedor_id,
         ]);
 
-        return redirect()->route('proveedores.index')->with('success', 'Marca created successfully.');
+        return response()->json([
+            'success' => true,
+        ], 200);
     }
 
     /**
@@ -78,7 +87,10 @@ class MarcaController extends Controller
             'descripcion' => trim(strtoupper($request->descripcion)),
         ]);
 
-        return redirect()->route('proveedores.index')->with('success', 'Marca updated successfully.');          
+        return response()->json([
+            'success' => true,
+        ], 200);
+
     }
 
     /**
@@ -88,7 +100,10 @@ class MarcaController extends Controller
     {
         $marca = Marca::findOrFail($linea);
         $marca->delete();
-        return redirect()->route('proveedores.index');
+
+        return response()->json([
+            'success' => true,
+        ], 200);
     }
 
     public function mover(Request $request, string $marca)
@@ -103,6 +118,9 @@ class MarcaController extends Controller
         $marca = Marca::findOrFail($marca);
         $marca->update(['id_proveedor' => $request->proveedor_id]);
 
-        return redirect()->route('proveedores.index')->with('success', 'Marca moved successfully.');
+        return response()->json([
+            'success' => true,
+        ], 200);
+
     }
 }

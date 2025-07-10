@@ -1,20 +1,22 @@
 <?php
 
 use App\Http\Controllers\Administrador\PermisosController;
+use App\Http\Controllers\Administrador\ProveedorController;
+use App\Http\Controllers\Administrador\LineaController;
+use App\Http\Controllers\Administrador\MarcaController;
+use App\Http\Controllers\Administrador\ProductoController;
+use App\Http\Controllers\Administrador\UsuarioController;
+use App\Http\Controllers\Administrador\FormaVentaController;
+
+
 use App\Http\Controllers\AsignacionController;
 use App\Http\Controllers\AsinacionVendedorController;
 use App\Http\Controllers\ClienteController;
-use App\Http\Controllers\FormaVentaController;
-use App\Http\Controllers\LineaController;
-use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\PedidoAdministradorController;
 use App\Http\Controllers\PedidoController;
-use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProductoVendedorController;
-use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\RendimientoPersonalController;
 use App\Http\Controllers\RutasController;
-use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -26,36 +28,61 @@ Route::get('/', function () {
 Auth::routes(['register' => false]);
 
 Route::middleware(['auth','verificar.estado'])->group(function () {
+
+    //---Rutas para todos los usuarios autenticados---
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
-    //Rutas de permisos
-    Route::get('/permisos', [PermisosController::class, 'index'])->name('permisos.index');
-    Route::post('/permisos/store', [PermisosController::class, 'store'])->name('permisos.store');
-
-
-    //---------------------------------------
-
     Route::get('usuarios/imagenperfil/{id}', [UsuarioController::class, 'imagenPerfil'])->name('usuarios.imagenperfil');
-    Route::post('marcas/mover/{id}', [MarcaController::class, 'mover'])->name('marca.mover');
-    Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
+    //--Rutas Productos para todos los usuarios autenticados---
     Route::get('productos/imagenproducto/{id}', [ProductoController::class, 'imagenProducto'])->name('productos.imagen');
-    Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
-    Route::put('productos/actualizarCantidadProducto/{id}', [ProductoController::class, 'actualizarCantidadProducto'])->name('productos.updateCantidadStock');
-    Route::put('productos/agregarPromocion/{id}',[ProductoController::class, 'agregarPromocion'])->name('productos.agregarPromocion'); 
-    Route::put('productos/editarFotografia/{id}',[ProductoController::class, 'editarFotografia'])->name('productos.editarFotografia');
-    Route::put('productos/editarCodigoManual/{id}',[ProductoController::class, 'editarCodigoManual'])->name('productos.updateCodigo');
-    Route::put('productos/editarCodigoAutogenerar/{id}',[ProductoController::class, 'editarCodigoAutogenerar'])->name('productos.autogenerarCodigo');
-    Route::put('productos/editarNombre/{id}',[ProductoController::class, 'editarNombre'])->name('productos.updateNombre');
-    Route::put('productos/editarProveedorMarcaLinea/{id}',[ProductoController::class, 'editarProveedorMarcaLinea'])->name('productos.updateProveedor');
-    Route::put('productos/editarDescripcion/{id}',[ProductoController::class, 'updateDescripcion'])->name('productos.updateDescripcion');
-    Route::put('productos/editarPrecioCompraProducto/{id}',[ProductoController::class, 'updatePrecioCompraProducto'])->name('productos.updatePrecioCompraProducto');
-    Route::put('productos/editarPrecioDesccripcionProducto/{id}',[ProductoController::class, 'updatePrecioDescripcionProducto'])->name('productos.updatePrecioDescripcionProducto');
-    Route::put('productos/editarPresentacionProducto/{id}',[ProductoController::class, 'updatePresentacionProducto'])->name('productos.updatePresentacionProducto');
 
-    
-    Route::delete('productos/eliminarPromocion/{id}',[ProductoController::class, 'eliminarPromocion'])->name('productos.eliminarPromocion');
-    Route::put('productos/editarPromocion/{id}',[ProductoController::class, 'editarPromocion'])->name('productos.editarPromocion');
-    Route::put('formasventas/editarVisualizacion/{id}', [FormaVentaController::class, 'editarVisualizacion'])->name('formaventas.updateVisualizacion');
+
+    Route::prefix('administrador')->name('administrador.')->group(function () {
+        //Rutas de permisos
+        Route::get('/permisos', [PermisosController::class, 'index'])->name('permisos.index');
+        Route::post('/permisos/store', [PermisosController::class, 'store'])->name('permisos.store');
+        Route::delete('permisos/eliminar/{id}', [PermisosController::class, 'destroy'])->name('permisos.destroy');
+        Route::put('permisos/editar/{id}', [PermisosController::class, 'update'])->name('permisos.update');
+
+        //Rutas de Marcas para Proveedores
+        Route::post('marcas/mover/{id}', [MarcaController::class, 'mover'])->name('marca.mover');
+
+        //Rutas de formas de venta
+        Route::get('formaventas/obtener-formas-venta/{id_producto}', [FormaVentaController::class, 'index'])->name('formaventas.index');
+        Route::post('formaventas/store', [FormaVentaController::class, 'store'])->name('formaventas.store');
+        Route::put('formaventas/editar/{id}', [FormaVentaController::class, 'update'])->name('formaventas.update');
+        Route::delete('formaventas/eliminar/{id}', [FormaVentaController::class, 'destroy'])->name('formaventas.destroy');
+        Route::put('formaventas/editar-visualizacion/{id}', [FormaVentaController::class, 'editarVisualizacion'])->name('formaventas.updateVisualizacion');
+        Route::put('productos/editarPromocion/{id}',[ProductoController::class, 'editarPromocion'])->name('productos.editarPromocion');
+
+        
+        //Rutas de Promocion
+        Route::put('productos/agregarPromocion/{id}',[ProductoController::class, 'agregarPromocion'])->name('productos.agregarPromocion'); 
+        Route::delete('productos/eliminarPromocion/{id}',[ProductoController::class, 'eliminarPromocion'])->name('productos.eliminarPromocion');
+
+        //Rutas de actualizacion de datos de productos
+        Route::put('productos/editarFotografia/{id}',[ProductoController::class, 'editarFotografia'])->name('productos.editarFotografia');
+        Route::put('productos/editarCodigoManual/{id}',[ProductoController::class, 'editarCodigoManual'])->name('productos.updateCodigo');
+        Route::put('productos/editarCodigoAutogenerar/{id}',[ProductoController::class, 'editarCodigoAutogenerar'])->name('productos.autogenerarCodigo');
+        Route::put('productos/editarNombre/{id}',[ProductoController::class, 'editarNombre'])->name('productos.updateNombre');
+        Route::put('productos/editarProveedorMarcaLinea/{id}',[ProductoController::class, 'editarProveedorMarcaLinea'])->name('productos.updateProveedor');
+        Route::put('productos/editarDescripcion/{id}',[ProductoController::class, 'updateDescripcion'])->name('productos.updateDescripcion');
+        Route::put('productos/editarPrecioCompraProducto/{id}',[ProductoController::class, 'updatePrecioCompraProducto'])->name('productos.updatePrecioCompraProducto');
+        Route::put('productos/actualizarCantidadProducto/{id}', [ProductoController::class, 'actualizarCantidadProducto'])->name('productos.updateCantidadStock');
+        Route::put('productos/editarPrecioDesccripcionProducto/{id}',[ProductoController::class, 'updatePrecioDescripcionProducto'])->name('productos.updatePrecioDescripcionProducto');
+        Route::put('productos/editarPresentacionProducto/{id}',[ProductoController::class, 'updatePresentacionProducto'])->name('productos.updatePresentacionProducto');
+
+        
+        //Rutas generales de administrador
+        Route::resource('usuarios', UsuarioController::class);
+        Route::resource('proveedores', ProveedorController::class);
+        Route::resource('marcas', MarcaController::class);
+        Route::resource('lineas', LineaController::class);
+        Route::resource('productos', ProductoController::class);
+    });
+    //---------------------------------------
+    Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
+    Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
+
 
     Route::get('productos/obtener-productos-bajo-stock', [ProductoController::class, 'obtenerProductosBajoStock'])->name('productos.bajostock');
     Route::put('productos/darBajaoAlta/{id}', [ProductoController::class, 'darBaja'])->name('productos.dardealtaobaja');
@@ -125,13 +152,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
 
     //----------------------------
-    Route::resource('usuarios', UsuarioController::class);
-    Route::resource('proveedores', ProveedorController::class);
     Route::resource('clientes', ClienteController::class);
-    Route::resource('lineas', LineaController::class);
-    Route::resource('productos', ProductoController::class);
-    Route::resource('marcas', MarcaController::class);
-    Route::resource('formaventas', FormaVentaController::class);
     Route::resource('asignacionclientes', AsignacionController::class);
     Route::resource('pedidos', PedidoController::class);
     Route::resource('rendimientopersonal', RendimientoPersonalController::class);

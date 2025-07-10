@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
 
+namespace App\Http\Controllers\Administrador;
+
+use App\Http\Controllers\Controller;
 use App\Models\Linea;
 use App\Models\Marca;
-use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -13,6 +14,11 @@ class LineaController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function __construct()
+    {
+        $this->middleware('can:administrador.permisos');
+    }
+
     public function index(Request $request, DataTables $dataTables)
     {
         if($request->ajax()){            
@@ -98,7 +104,7 @@ class LineaController extends Controller
             ]);
         }
 
-        return redirect()->route('lineas.index')->with('success', 'Linea created successfully.');
+        return redirect()->route('administrador.lineas.index')->with('success', 'Linea created successfully.');
     }
 
     /**
@@ -137,7 +143,7 @@ class LineaController extends Controller
             'descripcion_linea' => trim(strtoupper($request->descripcion_linea)),
         ]);
 
-        return redirect()->route('lineas.index')->with('success', 'Linea updated successfully.');
+        return redirect()->route('administrador.lineas.index')->with('success', 'Linea updated successfully.');
     }
 
     /**
@@ -148,6 +154,6 @@ class LineaController extends Controller
         $linea = Linea::findOrFail($linea);
         $linea->delete();
 
-        return redirect()->route('lineas.index')->with('success', 'Linea deleted successfully.');
+        return redirect()->route('administrador.lineas.index')->with('success', 'Linea deleted successfully.');
     }
 }

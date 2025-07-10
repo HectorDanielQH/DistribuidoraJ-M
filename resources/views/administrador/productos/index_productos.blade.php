@@ -23,7 +23,6 @@
     <!--REGISTRO DE PRODUCTO-->
     <x-adminlte-modal id="agregar-producto" size="lg" theme="dark" icon="fas fa-plus" title="Agregar Producto">
             <div class="modal-body px-4">
-                <input type="hidden" id="id-producto-cambiar" value="">
                 <form id="registro-producto" enctype="multipart/form-data">
                     @csrf
                     <div class="row g-3">
@@ -213,8 +212,16 @@
 
 
     <!--MOSTRAR PRODUCTO-->
-    <x-adminlte-modal id="ver-distribuidora-producto" size="lg" theme="dark" icon="fas fa-eye" title="Detalles del Producto" data-backdrop="static">
+    <x-adminlte-modal id="ver-distribuidora-producto"
+        size="lg"
+        theme="dark"
+        icon="fas fa-eye"
+        title="Visualizar Producto"
+        data-backdrop="static"
+        data-keyboard="false"
+    >
         <div class="modal-body px-4" id="modificar-producto-visualizar">
+            <input type="hidden" id="id-producto-cambiar" value="">
             <!-- Foto del Producto -->
             <div class="mb-4 text-center">
                 <label class="form-label text-muted">Foto del Producto</label>
@@ -236,7 +243,7 @@
                         <p id="codigo-mostrar-producto" class="mb-0 fw-bold text-dark"></p>
                         <!-- Botón para cambiar el código -->
                         <div class="mt-2 d-flex flex-column justify-content-center">
-                            <button class="btn btn-primary" id="cambiar-codigo-producto-visualizar">
+                            <button class="btn btn-primary" id="cambiar-codigos-producto-visualizar">
                                 <i class="fas fa-edit"></i> Cambiar Código Manualmente
                             </button>
                             <button class="btn btn-secondary mt-2" id="autogenerar-codigo-producto-visualizar">
@@ -295,20 +302,10 @@
                 <div class="col-md-6">
                     <label class="form-label text-muted">Cantidad</label>
                     <p id="cantidad-mostrar-producto" class="form-control-plaintext fw-semibold text-dark"></p>
-                    <div class="mt-2 d-flex flex-column justify-content-center">
-                        <button class="btn btn-primary" id="cambiar-cantidad-producto-visualizar">
-                            <i class="fas fa-edit"></i> Cambiar Cantidad
-                        </button>
-                    </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label text-muted">Descripción de Cantidad</label>
                     <p id="descripcion-cantidad-mostrar-producto" class="form-control-plaintext fw-semibold text-dark"></p>
-                    <div class="mt-2 d-flex flex-column justify-content-center">
-                        <button class="btn btn-primary" id="cambiar-descripcion-cantidad-producto-visualizar">
-                            <i class="fas fa-edit"></i> Cambiar Descripción de Cantidad
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -347,11 +344,6 @@
                 <div class="col-md-6">
                     <label class="form-label text-muted">Promoción</label>
                     <p id="promocion-mostrar-producto" class="form-control-plaintext fw-semibold text-dark"></p>
-                    <div class="mt-2 d-flex flex-column justify-content-center">
-                        <button class="btn btn-primary" id="cambiar-promocion-producto-visualizar">
-                            <i class="fas fa-edit"></i> Cambiar Promoción
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -370,17 +362,11 @@
                         <!-- Contenido dinámico -->
                     </tbody>
                 </table>
-                <div class="mt-2">
-                    <button class="btn btn-success" id="agregar-forma-venta-producto-visualizar">
-                        <i class="fas fa-plus"></i> Agregar Forma de Venta
-                    </button>
-                </div>
             </div>
         </div>
 
         <x-slot name="footerSlot">
             <div class="w-100 d-flex justify-content-between" id="botones-modal-visualizar-editar">
-                <x-adminlte-button theme="success" id="visualizar-cerrar-actualizar" icon="fas fa-check" label="Cerrar y actualizar datos" class="rounded-3 px-4 py-2" data-dismiss="modal"/>
                 <x-adminlte-button theme="danger" id="cerrar-modal-actualizar-vista" icon="fas fa-times" label="Cerrar" class="rounded-3 px-4 py-2" data-dismiss="modal"/>
             </div>
         </x-slot>
@@ -397,195 +383,63 @@
         data-backdrop="static"
     >
             <div class="modal-body px-4">
-                <table class="table table-bordered table-striped">
+                <table class="table table-bordered table-striped" id="tabla-formas-venta-producto">
                     <thead>
                         <tr>
-                            <th scope="col" style="width: 30%">Forma de Venta</th>
-                            <th scope="col" style="width: 30%">Precio Venta</th>
-                            <th scope="col" style="width: 20%">Conversión Stock</th>
-                            <th scope="col" style="width: 20%">Acciones</th>
+                            <th>Forma de Venta</th>
+                            <th>Precio Venta</th>
+                            <th>Conversión Stock</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tabla-formas-venta">
+                    <tbody>
                     </tbody>
                 </table>
             </div>
         <x-slot name="footerSlot">
             <div class="w-100 d-flex justify-content-between">
-                <x-adminlte-button theme="success" label="Cerrar y Actualizar Valores" id="cerrar-forma-de-ventas-producto" data-dismiss="modal" icon="fas fa-check" class="rounded-3 px-4 py-2" />
                 <x-adminlte-button theme="danger" label="Cerrar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2" />
             </div>
         </x-slot>
     </x-adminlte-modal>
 
-    <div class="d-flex flex-column justify-content-center align-items-center">
-        <div class="card shadow-sm border-0 mb-4" style="background-color: #f9f9fb; border-radius: 16px;">
-            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #2c3e50; color: #ffffff; border-radius: 16px 16px 0 0; padding: 1rem 1.5rem;">
-                <h5 class="mb-0">
-                    <i class="fas fa-filter me-2"></i> Opciones de búsqueda
-                </h5>
-                
-                <button class="btn" id="boton-agregar" data-toggle="modal" data-target="#agregar-producto" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
-                    <i class="fas fa-plus"></i> Nuevo Producto
-                </button>
-
-                @if ($eliminar_busqueda)                    
-                    <button class="btn btn-danger ms-2" id="limpiarboton" style="font-weight: bold; border-radius: 8px;">
-                        <i class="fas fa-times"></i> Limpiar búsqueda
-                    </button>
-                @endif
-            </div>
-            <div class="card-body" style="padding: 2rem;">
-                <p class="text-muted" style="margin-top: -15px">
-                    Puedes buscar el producto por nombre completo o por código con cualquier coincidencia.
-                </p>
-                <form method="GET" action="{{ route('productos.index') }}" class="row g-3">
-                    <div class="col-md-5">
-                        <label for="nombre" class="form-label text-muted">Nombre</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Chocolate" value="{{ request('nombre')}}"  style="border-radius: 8px;">
-                    </div>
-                    <div class="col-md-5">
-                        <label for="ci" class="form-label text-muted">Código</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="codigo" placeholder="Ej: 12345678" value="{{ request('codigo') }}"  style="border-radius: 8px;">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn w-100" style="background-color: #3498db; color: white; font-weight: bold; border-radius: 8px;">
-                            <i class="fas fa-search"></i> Buscar
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="text-dark" style="font-size: 1.75rem; font-weight: 600;">
+                <i class="fas fa-fw fa-boxes me-2"></i> Productos
+            </h2>
+            <button class="btn btn-success" id="boton-agregar-producto" data-toggle="modal" data-target="#agregar-producto" style="border-radius: 8px;">
+                <i class="fas fa-plus me-2"></i> Crear nuevo producto
+            </button>
         </div>
+        <p class="text-muted" style="font-size: 1.2rem; font-weight: 400;">
+            Aquí puedes gestionar todos los productos de la distribuidora.
+        </p>
     </div>
 
 
     <!--TABLA DE PRODUCTOS-->
 
     <div class="container pb-5">
-        <table class="table table-dark table-striped table-bordered shadow-sm" style="border-radius: 16px; overflow: hidden;">
-            <thead class="thead-dark">
+        <table class="table table-bordered table-hover table-striped" id="tabla-productos">
+            <thead>
                 <tr>
-                    <th scope="col" style="width: 15%">Código</th>
-                    <th scope="col" style="width: 12%">Imagen</th>
-                    <th scope="col" style="width: 15%">Nombre Prod.</th>
-                    <th scope="col" style="width: 8%">Marca</th>
-                    <th scope="col" style="width: 13%">Stock</th>
-                    <th scope="col" style="width: 10%">Formas de Venta</th>
-                    <th scope="col" style="width: 12%">Promocion</th>
-                    <th scope="col" style="width: 15%">Acciones</th>
+                    <th>Código</th>
+                    <th>Imagen</th>
+                    <th>Nombre Prod.</th>
+                    <th>Marca</th>
+                    <th>Stock</th>
+                    <th>Formas de Venta</th>
+                    <th>Promocion</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($productos as $producto)
-                    <tr>
-                        <td class="text-center align-middle">{{ $producto->codigo }}</td>
-                        <td class="text-center align-middle">
-                            @if ($producto->foto_producto)
-                                <img src="{{route('productos.imagen', $producto->id)}} ?v={{ time() }}" alt="Imagen del producto" class="img-thumbnail" style="width: 100px; height: 100px;">
-                            @else
-                                <img src="{{ asset('images/logo_color.webp') }} ?v={{ time() }}" alt="No disponible" class="img-thumbnail" style="width: 100px; height: 100px;">
-                            @endif
-                        </td>
-                        <td class="text-center align-middle">{{ $producto->nombre_producto }}</td>
-                        <td class="text-center align-middle">{{ $producto->marca->descripcion }}</td>
-                        <td class="text-center align-middle">
-                            @if ($producto->cantidad > 0)
-                                @if ($producto->cantidad < 15)
-                                    <span>
-                                        Cantidad: {{ $producto->cantidad }} {{ $producto->detalle_cantidad }}
-                                    </span>
-                                    <br> 
-                                    <button class="btn btn-warning btn-sm ms-2 boton-editar-stock-tabla" data-toggle="tooltip" data-placement="top" title="En Stock" id-cantidad-stock="{{ $producto->id }}" cantidad-stock="{{ $producto->cantidad }}" detalle-cantidad-stock="{{ $producto->detalle_cantidad }}" onclick="editarCantidadProductoStock(this)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <br>
-                                    <span class="badge bg-warning text-dark">Bajo Stock</span>
-                                @else
-                                    <span>
-                                        Cantidad: {{ $producto->cantidad }} {{ $producto->detalle_cantidad }}
-                                    </span>
-                                    <br>
-                                    <button class="btn btn-warning btn-sm ms-2 boton-editar-stock-tabla"  data-toggle="tooltip" data-placement="top" title="En Stock" id-cantidad-stock="{{ $producto->id }}" cantidad-stock="{{ $producto->cantidad }}" detalle-cantidad-stock="{{ $producto->detalle_cantidad }}" onclick="editarCantidadProductoStock(this)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <br>
-                                    <span class="badge bg-success">En Stock</span>
-                                @endif
-                            @else
-                                <span class="badge bg-danger">Sin stock</span>
-                                <br>
-                                <button class="btn btn-warning btn-sm ms-2 boton-editar-stock-tabla" data-toggle="tooltip" data-placement="top" title="En Stock" id-cantidad-stock="{{ $producto->id }}" cantidad-stock="{{ $producto->cantidad }}" detalle-cantidad-stock="{{ $producto->detalle_cantidad }}" onclick="editarCantidadProductoStock(this)">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            @endif
-                        </td>
-                        <td class="text-center align-middle">
-                            @if ($producto->formaVentas->isEmpty())
-                                <span class="badge bg-danger">Sin Formas de Venta</span>
-                                <br>
-                                <button class="btn btn-success" id-producto="{{ $producto->id }}" onclick="verFormasVenta(this)" data-toggle="modal" data-target="#formas-venta-producto">
-                                    <i class="fas fa-plus"></i> agregar
-                                </button>
-                            @else
-                                <button class="btn btn-info" id-producto="{{ $producto->id }}" id-producto-detalle="{{ $producto->id }}" onclick="verFormasVenta(this)" data-toggle="modal" data-target="#formas-venta-producto">
-                                    <i class="fas fa-list"></i> Detalle
-                                </button>
-                            @endif
-                        </td>
-
-                        <td class="text-center align-middle" id-usuario-promocion-verificar="{{ $producto->id }}">
-                            @if ($producto->promocion)
-                                <span class="badge bg-success mb-2">Sí Tiene Promoción</span>
-                                <br>
-                                <strong>Descuento:</strong> {{ $producto->descripcion_descuento_porcentaje }}%
-                                <br>
-                                <strong>Regalo:</strong> @if($producto->descripcion_regalo) {{ $producto->descripcion_regalo }} @else No hay regalo @endif
-                                <br>
-                                <div class="mt-2">
-                                    <button class="btn btn-warning" onclick="editarPromocion(this)" id-usuario="{{ $producto->id }}" editar-promocion-procentaje="{{ $producto->descripcion_descuento_porcentaje  }}" editar-promocion-regalo="{{ $producto->descripcion_regalo}}">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-danger" onclick="eliminarPromocion(this)" id-usuario="{{ $producto->id }}">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            @else
-                                <span class="badge bg-danger">No Tiene Promoción</span>
-                                <br>
-                                <button class="btn btn-success" onclick="agregarPromocion(this)" id-usuario="{{ $producto->id }}">
-                                    <i class="fas fa-gift mr-2"></i>Agregar
-                                </button>
-                            @endif
-                        </td>
-                        <td class="text-center align-middle">
-                            <button class="btn btn-warning" data-toggle="modal" data-target="#ver-distribuidora-producto" onclick="visualizarProducto(this)" id-producto="{{ $producto->id }}">
-                                <i class="fas fa-fw fa-cogs"></i>
-                            </button>
-                            <button class="btn btn-danger" onclick="eliminarProducto(this)" id-producto="{{ $producto->id }}" data-toggle="tooltip" data-placement="top" title="Eliminar Producto">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                            @if ($producto->estado_de_baja)
-                                <button class="btn btn-secondary" onclick="ProductoDeAlta(this)" id-producto="{{ $producto->id }}" data-toggle="tooltip" data-placement="top" title="Dar de alta el producto">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            @else
-                                <button class="btn btn-info" onclick="ProductoDeBaja(this)" id-producto="{{ $producto->id }}" data-toggle="tooltip" data-placement="top" title="Dar de baja el producto">
-                                    <i class="fas fa-ban"></i>
-                                </button>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="8" class="text-center">No se encontraron productos.</td>
-                    </tr>
-                @endforelse
+                <tr>
+                    <td colspan="8" class="text-center">Cargando productos...</td>
+                </tr>
             </tbody>
         </table>
-    </div>
-
-    <div class="d-flex justify-content-center mt-3">
-        {{ $productos->appends(request()->query())->links() }}
     </div>
 
 @stop
@@ -593,6 +447,8 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+
 
     <style>
         input.form-control:focus, select.form-control:focus {
@@ -616,44 +472,14 @@
             line-height: 24px;
         }
 
-        @keyframes pulsar {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(2);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .animar-boton {
-            animation: pulsar 0.8s infinite;
-        }
-
-        /* Fondo oscuro de la pantalla */
         #overlay-destacar {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            z-index: 9998;
-            transition: all 0.5s ease-in-out;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 1050;
         }
 
-        /* Clase para resaltar el botón */
-        .destacar-boton {
-            position: relative;
-            z-index: 9999 !important;
-            box-shadow: 0 0 20px 5px yellow;
-            transform: scale(1.2);
-            transition: transform 0.3s ease;
-            transition: all 0.5s ease-in-out;
-
-        }
     </style>
 @stop
 
@@ -662,6 +488,34 @@
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+
+    <script>
+        $(document).ready(function(){
+            $('#tabla-productos').DataTable({
+                language: {
+                    url: '/i18n/es-ES.json'
+                },
+                "processing":true,
+                "serverSide":true,
+                "ajax": {
+                    "url": "{{ route('administrador.productos.index') }}",
+                    "type": "GET",
+                },
+                columns:[
+                    { data: 'codigo'},
+                    { data: 'imagen', orderable: false, searchable:false},
+                    { data: 'nombre_producto'},
+                    { data: 'marca', orderable: false, searchable:false},
+                    { data: 'stock', orderable: false, searchable:false},
+                    { data: 'formas_venta', orderable: false, searchable:false},
+                    { data: 'promocion_vista', orderable: false, searchable:false},
+                    { data: 'acciones', orderable: false, searchable:false}
+                ],
+                
+            });
+        });
+    </script>
     <script>
         $(document).ready(function() {
             $('#proveedor_id').select2({
@@ -681,7 +535,7 @@
                 });
                 let proveedorId = e.params.data.id;
                 $.ajax({
-                    url: "{{ route('marcas.show', ':id') }}".replace(':id', proveedorId),
+                    url: "{{ route('administrador.marcas.show', ':id') }}".replace(':id', proveedorId),
                     type: 'GET',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -726,7 +580,7 @@
                 });
                 let marcaId = e.params.data.id;
                 $.ajax({
-                    url: "{{ route('lineas.show', ':id') }}".replace(':id', marcaId),
+                    url: "{{ route('administrador.lineas.show', ':id') }}".replace(':id', marcaId),
                     type: 'GET',
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -862,7 +716,7 @@
                 }
             });
             $.ajax({
-                url: "{{ route('productos.store') }}",
+                url: "{{ route('administrador.productos.store') }}",
                 type: 'POST',
                 data: formData,
                 contentType: false,
@@ -875,8 +729,11 @@
                         icon: 'success',
                         title: 'Producto agregado',
                         text: 'El producto se ha agregado correctamente.',
+                        showConfirmButton: false,
+                        timer: 2000,
                     }).then(() => {
-                        location.reload();
+                        $('#tabla-productos').DataTable().ajax.reload();
+                        $('#botonenviar-cerrar').click();
                     });
                 },
                 error: function(xhr) {
@@ -914,7 +771,7 @@
                     try {
                         // Realizamos la solicitud AJAX con el método PUT
                         const response = await $.ajax({
-                            url: "{{ route('productos.updateCantidadStock', ':id') }}".replace(':id', idProducto),
+                            url: "{{ route('administrador.productos.updateCantidadStock', ':id') }}".replace(':id', idProducto),
                             type: 'POST',  // Usamos POST por el método _method
                             data: {
                                 cantidadStock: cantidad,
@@ -941,14 +798,14 @@
                         showConfirmButton: false,  // Eliminamos el botón de confirmación
                         timer: 2000  // Se cierra automáticamente después de 2 segundos
                     }).then(() => {
-                        location.reload();  // Recargamos la página
+                        $('#tabla-productos').DataTable().ajax.reload();
                     });
                 }
             });
         }
 
         function agregarPromocion(e){
-            let idProducto = $(e).attr('id-usuario');
+            let idProducto = $(e).attr('id-producto');
             Swal.fire({
                 title: 'Agregar Promoción',
                 html: `
@@ -976,8 +833,16 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Agregando promoción...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('productos.agregarPromocion',':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.agregarPromocion',':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             descuento: result.value.descuento,
@@ -993,7 +858,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -1010,7 +875,7 @@
         }
 
         function eliminarPromocion(e) {
-            let idProducto = $(e).attr('id-usuario');
+            let idProducto = $(e).attr('id-producto');
             Swal.fire({
                 title: '¿Estás seguro de eliminar la promoción?',
                 text: "Esta acción no se puede deshacer.",
@@ -1022,8 +887,16 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando promoción...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('productos.eliminarPromocion', ':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.eliminarPromocion', ':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
@@ -1037,7 +910,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -1054,7 +927,7 @@
         }
 
         function editarPromocion(e) {
-            let idProducto = $(e).attr('id-usuario');
+            let idProducto = $(e).attr('id-producto');
             let descuento = $(e).attr('editar-promocion-procentaje');
             let regalo = $(e).attr('editar-promocion-regalo');
 
@@ -1077,16 +950,20 @@
                 preConfirm: () => {
                     const descuento = $('#descuento').val();
                     const regalo = $('#regalo').val();
-                    if (!descuento && !regalo) {
-                        Swal.showValidationMessage('Por favor, complete todos los campos');
-                        return false;
-                    }
                     return { descuento, regalo, idProducto };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Editando promoción...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('productos.editarPromocion',':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.editarPromocion',':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             descuento: result.value.descuento,
@@ -1102,7 +979,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -1120,139 +997,58 @@
 
         function verFormasVenta(e) {
             let idProducto = $(e).attr('id-producto');
-            //swal de carga de formas de venta
-            Swal.fire({
-                title: 'Cargando formas de venta...',
-                html: 'Por favor espera',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            })
-            $.ajax({
-                url: "{{ route('formaventas.show', ':id') }}".replace(':id', idProducto),
-                type: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+
+            if ($.fn.DataTable.isDataTable('#tabla-formas-venta-producto')) {
+                $('#tabla-formas-venta-producto').DataTable().destroy();
+            }
+
+            $('#tabla-formas-venta-producto').DataTable({
+                "language": {
+                    "url": "/i18n/es-ES.json"
                 },
-                success: function(data) {
-                    Swal.close(); // Cerrar el swal de carga
-                    let parainsetar=$('#tabla-formas-venta');
-                    parainsetar.empty();
-                    if (data.length > 0) {
-                        data.forEach(function(formaVenta) {
-                            parainsetar.append(`
-                                <tr>
-                                    <td>${formaVenta.tipo_venta}</td>
-                                    <td>${formaVenta.precio_venta}</td>
-                                    <td>${formaVenta.equivalencia_cantidad}</td>
-                                    <td class="text-center">
-                                        <button class="btn btn-info btn-sm" onclick="actualizarVisualizacionFormasVentas(${formaVenta.id})">
-                                            ${ formaVenta.activo ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>' }
-                                        </button>
-                                        
-                                        <button class="btn btn-danger btn-sm" onclick="eliminarFormaVenta(${formaVenta.id})">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `);
-                        });
-                        parainsetar.append(`
-                            <tr>
-                                <td colspan="4" class="text-center">
-                                    <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
-                                        <i class="fas fa-plus"></i> Agregar Forma de Venta
-                                    </button>
-                                </td>
-                            </tr>
-                        `);
-                    } else {
-                        parainsetar.append(`
-                            <tr>
-                                <td colspan="4" class="text-center">No hay formas de venta registradas.</td>
-                            </tr>
-                            <tr>
-                                <td colspan="4" class="text-center">
-                                    <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
-                                        <i class="fas fa-plus"></i> Agregar Forma de Venta
-                                    </button>
-                                </td>
-                            </tr>
-                        `);
-                    }
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('administrador.formaventas.index', ':id') }}".replace(':id', idProducto),
+                    "type": "GET",
                 },
-                error: function() {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudieron cargar las formas de venta.',
-                    });
-                }
+                "columns": [
+                    { data: 'tipo_venta', width: '30%' },
+                    { data: 'precio_venta', width: '25%' },
+                    { data: 'conversion_stock', width: '25%' },
+                    { data: 'acciones', width: '20%',orderable: false,searchable: false }
+                ],
             });
         }
 
+        function editarVisualizacion(e){
+            let idFormaVenta = $(e).attr('id-visualizacion');
+            Swal.fire({
+                title: 'Modificando Visualización',
+                showCancelButton: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
-        function actualizarVistaFormasVenta(e) {
-            let idProducto = e;
             $.ajax({
-                url: "{{ route('formaventas.show', ':id') }}".replace(':id', idProducto),
-                type: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                url: "{{ route('administrador.formaventas.updateVisualizacion', ':id') }}".replace(':id', idFormaVenta),
+                type: 'POST',
+                data: {
+                    _method: 'PUT',
+                    _token: "{{ csrf_token() }}"
                 },
                 success: function(data) {
-                    let parainsetar=$('#tabla-formas-venta');
-                    parainsetar.empty();
-                    if (data.length > 0) {
-                        data.forEach(function(formaVenta) {
-                            parainsetar.append(`
-                                <tr>
-                                    <td>${formaVenta.tipo_venta}</td>
-                                    <td>${formaVenta.precio_venta}</td>
-                                    <td>${formaVenta.equivalencia_cantidad}</td>
-                                    <td class="text-center">
-                                        <button class="btn btn-info btn-sm" onclick="actualizarVisualizacionFormasVentas(${formaVenta.id})">
-                                            ${ formaVenta.activo ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>' }
-                                        </button>
-
-                                        <button class="btn btn-danger btn-sm" onclick="eliminarFormaVenta(${formaVenta.id})">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `);
-                        });
-                        parainsetar.append(`
-                            <tr>
-                                <td colspan="4" class="text-center">
-                                    <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
-                                        <i class="fas fa-plus"></i> Agregar Forma de Venta
-                                    </button>
-                                </td>
-                            </tr>
-                        `);
-                    } else {
-                        parainsetar.append(`
-                            <tr>
-                                <td colspan="4" class="text-center">No hay formas de venta registradas.</td>
-                            </tr>
-                            <tr>
-                                <td colspan="4" class="text-center">
-                                    <button class="btn btn-success" id-producto="${idProducto}" onclick="agregarFormasVenta(this)">
-                                        <i class="fas fa-plus"></i> Agregar Forma de Venta
-                                    </button>
-                                </td>
-                            </tr>
-                        `);
-                        
-                    }
+                    Swal.close();
+                    $('#tabla-formas-venta-producto').DataTable().ajax.reload();
+                    $('#tabla-productos').DataTable().ajax.reload();
                 },
-                error: function() {
+                error: function(xhr) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudieron cargar las formas de venta.',
+                        title: 'Error al cargar forma de venta',
+                        text: xhr.responseJSON.message || 'Ocurrió un error al cargar la forma de venta.',
                     });
                 }
             });
@@ -1271,14 +1067,23 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando forma de venta...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('formaventas.destroy', ':id') }}".replace(':id', idFormaVenta),
+                        url: "{{ route('administrador.formaventas.destroy', ':id') }}".replace(':id', idFormaVenta),
                         type: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
                         success: function(response) {
-                            actualizarVistaFormasVenta(response.id_producto);
+                            $('#tabla-formas-venta-producto').DataTable().ajax.reload();
+                            $('#tabla-productos').DataTable().ajax.reload();
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Forma de venta eliminada',
@@ -1291,7 +1096,7 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error al eliminar forma de venta',
-                                text: xhr.responseJSON.message || 'Ocurrió un error al eliminar la forma de venta.',
+                                text: 'Ocurrió un error al eliminar la forma de venta. Existen ventas registradas con esta forma de venta.',
                             });
                         }
                     });
@@ -1333,8 +1138,16 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Agregando forma de venta...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('formaventas.store') }}",
+                        url: "{{ route('administrador.formaventas.store') }}",
                         type: 'POST',
                         data: {
                             tipo_venta: result.value.tipoVenta,
@@ -1344,14 +1157,15 @@
                             _token: "{{ csrf_token() }}"
                         },
                         success: function(response) {
-                            verFormasVenta(e);
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Forma de venta agregada',
                                 text: 'La forma de venta se ha agregado correctamente.',
                                 showConfirmButton: false,
-                                timer: 2000,
+                                timer: 2000
                             });
+
+                            $('#tabla-productos').DataTable().ajax.reload();
                         },
                         error: function(xhr) {
                             Swal.fire({
@@ -1365,61 +1179,8 @@
             });
         }
 
-        $('#cerrar-forma-de-ventas-producto').click(function() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Cerrando...',
-                text: 'Se cerrará la ventana de formas de venta.',
-                showConfirmButton: false,
-                timer: 1500
-            }).then(() => {
-                $('#modal-formas-venta').modal('hide');
-            });
-            window.location.reload();
-        });
-
-
-        function actualizarVisualizacionFormasVentas(idFormasVentas){
-            Swal.fire({
-                title: 'Actualizando visualización...',
-                html: 'Por favor espera',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            $.ajax({
-                url: "{{ route('formaventas.updateVisualizacion', ':id') }}".replace(':id', idFormasVentas),
-                type: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                data: {
-                    _method: 'PUT',
-                    _token: "{{ csrf_token() }}"
-                },
-                success: function(response) {
-                    actualizarVistaFormasVenta(response.id_producto);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Visualización actualizada',
-                        text: 'La visualización de la forma de venta se ha actualizado correctamente.',
-                        showConfirmButton: false,
-                        timer: 2000
-                    });
-                },
-                error: function(xhr) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error al actualizar visualización',
-                        text: xhr.responseJSON.message || 'Ocurrió un error al actualizar la visualización.',
-                    });
-                }
-            });
-        }
-
         function visualizarProducto(e){
-            let idProducto = $(e).attr('id-producto');
+            let idProducto = $(e).attr('data-id-producto');
             $('#id-producto-cambiar').val(idProducto);
             Swal.fire({
                 title: 'Cargando detalles del producto...',
@@ -1430,7 +1191,7 @@
                 }
             });
             $.ajax({
-                url: "{{ route('productos.show', ':id') }}".replace(':id', idProducto),
+                url: "{{ route('administrador.productos.show', ':id') }}".replace(':id', idProducto),
                 type: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -1507,7 +1268,7 @@
                 formData.append('_token', '{{ csrf_token() }}');
                 formData.append('foto_producto', file);
                 $.ajax({
-                    url: "{{ route('productos.editarFotografia', ':id') }}".replace(':id', idProducto),
+                    url: "{{ route('administrador.productos.editarFotografia', ':id') }}".replace(':id', idProducto),
                     type: 'POST',
                     data: formData,
                     contentType: false,
@@ -1536,75 +1297,78 @@
             }
         });
 
-        $('#visualizar-cerrar-actualizar').click(function() {
-            Swal.fire({
-                icon: 'info',
-                title: 'Cerrando...',
-                text: 'Se cerrará la ventana de visualización.',
-                showConfirmButton: false,
-                timer: 1500
-            }).then(() => {
-                $('#modal-visualizar-editar').modal('hide');
-            });
-            window.location.reload();
-        });
-
-        $('#cambiar-codigo-producto-visualizar').click(function(){
+        $('#cambiar-codigos-producto-visualizar').click(function () {
             let idProducto = $('#id-producto-cambiar').val();
             $('#cerrar-modal-actualizar-vista').click();
-            Swal.fire({
-                title: 'Cambiar Código del Producto',
-                html: `
-                    <label for="codigo_producto" class="swal2-label">Nuevo Código</label>
-                    <input type="text" id="codigo_producto" class="swal2-input" placeholder="Ej: PROD12345" required>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Guardar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#dc3545',
-                preConfirm: () => {
-                    const codigoProducto = $('#codigo_producto').val();
-                    if (!codigoProducto) {
-                        Swal.showValidationMessage('Por favor, ingresa un código válido');
-                        return false;
-                    }
-                    return { codigoProducto, idProducto };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: "{{ route('productos.updateCodigo', ':id') }}".replace(':id', idProducto),
-                        type: 'POST',
-                        data: {
-                            codigo_producto: result.value.codigoProducto,
-                            _token: "{{ csrf_token() }}",
-                            _method:'PUT'
-                        },
-                        success: function(response) {
-                            $('#codigo-mostrar-producto').text(response.codigo);
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Código actualizado',
-                                text: 'El código del producto se ha actualizado correctamente.',
-                                showConfirmButton: false,
-                                timer: 2000,
-                                didClose: () => {
-                                    location.reload();
-                                }
-                            });
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error al actualizar código',
-                                text: xhr.responseJSON.message || 'Ocurrió un error al actualizar el código.',
-                            });
+
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Cambiar Código del Producto',
+                    html: `
+                        <label for="codigo_producto_nuevo" class="swal2-label">Nuevo Código</label>
+                        <input type="text" id="codigo_producto_nuevo" class="swal2-input" placeholder="Ej: 1234567890" required>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    preConfirm: () => {
+                        const input = Swal.getPopup().querySelector('#codigo_producto_nuevo');
+                        const nuevoCodigo = input.value.trim();
+
+                        if (!nuevoCodigo) {
+                            Swal.showValidationMessage('Por favor, ingresa un código válido');
+                            return false;
                         }
-                    });
-                }
-            });
+
+                        return { nuevoCodigo, idProducto };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Actualizando código del producto...',
+                            html: 'Por favor espera',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        $.ajax({
+                            url: "{{ route('administrador.productos.updateCodigo', ':id') }}".replace(':id', result.value.idProducto),
+                            type: 'POST',
+                            data: {
+                                codigo_producto: result.value.nuevoCodigo,
+                                _token: "{{ csrf_token() }}",
+                                _method: 'PUT'
+                            },
+                            success: function (response) {
+                                $('#codigo-mostrar-producto').text(response.codigo);
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Código actualizado',
+                                    text: 'El código del producto se ha actualizado correctamente.',
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    didClose: () => {
+                                        $('#tabla-productos').DataTable().ajax.reload();
+                                    }
+                                });
+                            },
+                            error: function (xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error al actualizar código',
+                                    text: xhr.responseJSON?.message || 'Ocurrió un error al actualizar el código.',
+                                });
+                            }
+                        });
+                    }
+                });
+            }, 200);
         });
+
+
         $('#autogenerar-codigo-producto-visualizar').click(function() {
             let idProducto = $('#id-producto-cambiar').val();
             Swal.fire({
@@ -1618,8 +1382,16 @@
                 cancelButtonColor: '#dc3545'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Autogenerando código...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
-                        url: "{{ route('productos.autogenerarCodigo', ':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.autogenerarCodigo', ':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
@@ -1650,58 +1422,71 @@
         $('#cambiar-nombre-producto-visualizar').click(function(){
             let idProducto = $('#id-producto-cambiar').val();
             $('#cerrar-modal-actualizar-vista').click();
-            Swal.fire({
-                title: 'Cambiar Nombre del Producto',
-                html: `
-                    <label for="nombre_producto" class="swal2-label">Nuevo Nombre</label>
-                    <input type="text" id="nombre_producto" class="swal2-input" placeholder="Ej: Jabón Líquido" required>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Guardar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#dc3545',
-                preConfirm: () => {
-                    const nombreProducto = $('#nombre_producto').val();
-                    if (!nombreProducto) {
-                        Swal.showValidationMessage('Por favor, ingresa un nombre válido');
-                        return false;
-                    }
-                    return { nombreProducto, idProducto };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: "{{ route('productos.updateNombre', ':id') }}".replace(':id', idProducto),
-                        type: 'POST',
-                        data: {
-                            nombre_producto: result.value.nombreProducto,
-                            _token: "{{ csrf_token() }}",
-                            _method:'PUT'
-                        },
-                        success: function(response) {
-                            $('#nombre-mostrar-producto').text(response.nombre);
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Nombre actualizado',
-                                text: 'El nombre del producto se ha actualizado correctamente.',
-                                showConfirmButton: false,
-                                timer: 2000,
-                                didClose: () => {
-                                    location.reload();
-                                }
-                            });
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error al actualizar nombre',
-                                text: xhr.responseJSON.message || 'Ocurrió un error al actualizar el nombre.',
-                            });
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Cambiar Nombre del Producto',
+                    html: `
+                        <label for="nuevo_nombre_producto" class="swal2-label">Nuevo Nombre</label>
+                        <input type="text" id="nuevo_nombre_producto" class="swal2-input" placeholder="Ej: Jabón Líquido" required>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    preConfirm: () => {
+                        const input = Swal.getPopup().querySelector('#nuevo_nombre_producto');
+                        const nuevoNombre = input.value.trim();
+
+                        if (!nuevoNombre) {
+                            Swal.showValidationMessage('Por favor, ingresa un nombre válido');
+                            return false;
                         }
-                    });
-                }
-            });
+
+                        return { nuevoNombre, idProducto };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Actualizando nombre del producto...',
+                            html: 'Por favor espera',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        $.ajax({
+                            url: "{{ route('administrador.productos.updateNombre', ':id') }}".replace(':id', result.value.idProducto),
+                            type: 'POST',
+                            data: {
+                                nombre_producto: result.value.nuevoNombre,
+                                _token: "{{ csrf_token() }}",
+                                _method: 'PUT'
+                            },
+                            success: function(response) {
+                                $('#nombre-mostrar-producto').text(response.nombre);
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Nombre actualizado',
+                                    text: 'El nombre del producto se ha actualizado correctamente.',
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    didClose: () => {
+                                        $('#tabla-productos').DataTable().ajax.reload();
+                                    }
+                                });
+                            },
+                            error: function(xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error al actualizar nombre',
+                                    text: xhr.responseJSON?.message || 'Ocurrió un error al actualizar el nombre.',
+                                });
+                            }
+                        });
+                    }
+                });
+            }, 200); // Delay para evitar el bug del aria-hidden
         });
 
 
@@ -1710,358 +1495,258 @@
                 title: 'Renderizando vista...',
                 html: 'Por favor espera',
                 allowOutsideClick: false,
+                timer: 2000,
                 didOpen: () => {
                     Swal.showLoading();
+                    $('#tabla-productos').DataTable().ajax.reload();
                 }
             })
-            window.location.reload();
         };
+
+
         $('#cambiar-proveedor-producto-visualizar').click(function(){
             let idProducto = $('#id-producto-cambiar').val();
-            $('#botones-modal-visualizar-editar').empty();
-            $('#botones-modal-visualizar-editar').append(`
-                <button class="btn btn-primary" id="guardar-cambios-proveedor-producto-visualizar" onclick="guardar_cambios_proveedor_producto_visualizar(this)" id-producto="${idProducto}">Guardar Cambios</button>
-                <button class="btn btn-secondary" id="cerrar-modal-actualizar-vista" onclick="cerrar_modal_actualizar_vista()">Cerrar</button>
-            `);
-            $('#modificar-producto-visualizar').empty();
-            $('#modificar-producto-visualizar').append(`
-                <div class="form-group">
-                    <label for="proveedor_producto-visualizar-editar" class="swal2-label">Seleccionar Proveedor</label>
-                    <br/>
-                    <select id="proveedor_producto-visualizar-editar" class="form-control form-select" onchange="cargarMarcasYLineasVisualizarEditar(this)">
-                        <option value="">Seleccione un proveedor</option>
-                        @foreach($proveedores as $proveedor)
-                            <option value="{{ $proveedor->id }}">{{ $proveedor->nombre_proveedor }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="proveedor-marca-visualizar-editar" class="swal2-label">Seleccionar marca</label>
-                    <br/>
-                    <select id="proveedor-marca-visualizar-editar" class="form-control form-select" onchange="cargarLineasVisualizarEditar(this)">
-                        <option value="">Seleccione una</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="proveedor_producto-linea-visualizar-editar" class="swal2-label">Seleccionar la Linea</label>
-                    <br/>
-                    <select id="proveedor_producto-linea-visualizar-editar" class="form-control form-select" required>
-                        <option value="">Seleccione una linea</option>
-                    </select>
-                </div>
-            `);
-
-        });
-
-        function cargarMarcasYLineasVisualizarEditar(e){
-            let idProveedor = $(e).val();
+            $('#cerrar-modal-actualizar-vista').click();
+            setTimeout(() => {
             Swal.fire({
-                title: 'Cargando marcas y líneas...',
-                html: 'Por favor espera',
+                title: 'Cambiar proveedor del producto',
+                html: `
+                    <div class="form-group text-left">
+                        <label for="proveedor_producto-visualizar-editar" class="swal2-label">Seleccionar Proveedor</label>
+                        <select id="proveedor_producto-visualizar-editar" class="form-control form-select mb-2">
+                            <option value="">Seleccione un proveedor</option>
+                            @foreach($proveedores as $proveedor)
+                                <option value="{{ $proveedor->id }}">{{ $proveedor->nombre_proveedor }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group text-left">
+                        <label for="proveedor-marca-visualizar-editar" class="swal2-label">Seleccionar Marca</label>
+                        <select id="proveedor-marca-visualizar-editar" class="form-control form-select mb-2" disabled>
+                            <option value="">Seleccione una marca</option>
+                        </select>
+                    </div>
+                    <div class="form-group text-left">
+                        <label for="proveedor_producto-linea-visualizar-editar" class="swal2-label">Seleccionar Línea</label>
+                        <select id="proveedor_producto-linea-visualizar-editar" class="form-control form-select" disabled>
+                            <option value="">Seleccione una línea</option>
+                        </select>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar Cambios',
+                cancelButtonText: 'Cerrar',
                 allowOutsideClick: false,
                 didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            if (idProveedor) {
-                $.ajax({
-                    url: "{{ route('marcas.show', ':id') }}".replace(':id', idProveedor),
-                    type: 'GET',
-                    success: function(data) {
-                        Swal.close(); // Cerrar el swal de carga
-                        $('#proveedor-marca-visualizar-editar').empty();
-                        $('#proveedor-marca-visualizar-editar').append('<option value="">Seleccione una marca</option>');
-                        data.forEach(function(marca) {
-                            $('#proveedor-marca-visualizar-editar').append(`<option value="${marca.id}">${marca.descripcion}</option>`);
-                        });
-                    },
-                    error: function() {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'No se pudieron cargar las marcas del proveedor.',
-                        });
-                    }
-                });
-            } else {
-                $('#proveedor-marca-visualizar-editar').empty().append('<option value="">Seleccione una marca</option>');
-            }
-        }
-
-
-        function cargarLineasVisualizarEditar(e){
-            let idMarca = $(e).val();
-            Swal.fire({
-                title: 'Cargando líneas...',
-                html: 'Por favor espera',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            if (idMarca) {
-                $.ajax({
-                    url: "{{ route('lineas.show', ':id') }}".replace(':id', idMarca),
-                    type: 'GET',
-                    success: function(data) {
-                        Swal.close(); // Cerrar el swal de carga
-                        $('#proveedor_producto-linea-visualizar-editar').empty();
-                        $('#proveedor_producto-linea-visualizar-editar').append('<option value="">Seleccione una linea</option>');
-                        data.forEach(function(linea) {
-                            $('#proveedor_producto-linea-visualizar-editar').append(`<option value="${linea.id}">${linea.descripcion_linea}</option>`);
-                        });
-                    },
-                    error: function() {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'No se pudieron cargar las líneas de la marca.',
-                        });
-                    }
-                });
-            } else {
-                $('#proveedor_producto-linea-visualizar-editar').empty().append('<option value="">Seleccione una linea</option>');
-            }
-        }
-
-
-        function guardar_cambios_proveedor_producto_visualizar(e){
-            let idProducto = $(e).attr('id-producto');
-            let idProveedor = $('#proveedor_producto-visualizar-editar').val();
-            let idMarca = $('#proveedor-marca-visualizar-editar').val();
-            let idLinea = $('#proveedor_producto-linea-visualizar-editar').val();
-            if (!idProveedor || !idMarca || !idLinea) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Por favor, complete todos los campos.',
-                });
-                return;
-            }
-            $.ajax({
-                url: "{{ route('productos.updateProveedor', ':id') }}".replace(':id', idProducto),
-                type: 'POST',
-                data: {
-                    id_proveedor: idProveedor,
-                    id_marca: idMarca,
-                    id_linea: idLinea,
-                    _token: "{{ csrf_token() }}",
-                    _method:'PUT'
+                    // Cuando abra el Swal, asignamos eventos a selects:
+                    $('#proveedor_producto-visualizar-editar').on('change', function() {
+                        cargarMarcasYLineasVisualizarEditar(this);
+                    });
+                    $('#proveedor-marca-visualizar-editar').on('change', function() {
+                        cargarLineasVisualizarEditar(this);
+                    });
                 },
-                success: function(response) {
+                preConfirm: () => {
+                    // Validar campos al hacer click en guardar
+                    let idProveedor = $('#proveedor_producto-visualizar-editar').val();
+                    let idMarca = $('#proveedor-marca-visualizar-editar').val();
+                    let idLinea = $('#proveedor_producto-linea-visualizar-editar').val();
+
+                    if (!idProveedor || !idMarca || !idLinea) {
+                        Swal.showValidationMessage('Por favor, complete todos los campos.');
+                        return false;
+                    }
+
+                    return { idProveedor, idMarca, idLinea };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Hacer AJAX para guardar los cambios
+                    let { idProveedor, idMarca, idLinea } = result.value;
+
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Proveedor actualizado',
-                        text: 'El proveedor del producto se ha actualizado correctamente.',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        didClose: () => {
-                            location.reload();
+                        title: 'Guardando cambios...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                            $.ajax({
+                                url: "{{ route('administrador.productos.updateProveedor', ':id') }}".replace(':id', idProducto),
+                                type: 'POST',
+                                data: {
+                                    id_proveedor: idProveedor,
+                                    id_marca: idMarca,
+                                    id_linea: idLinea,
+                                    _token: "{{ csrf_token() }}",
+                                    _method: 'PUT'
+                                },
+                                success: function(response) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Proveedor actualizado',
+                                        text: 'El proveedor del producto se ha actualizado correctamente.',
+                                        timer: 2000,
+                                        showConfirmButton: false,
+                                        didClose: () => {
+                                            $('#tabla-productos').DataTable().ajax.reload();
+                                        }
+                                    });
+                                },
+                                error: function(xhr) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error al actualizar proveedor',
+                                        text: xhr.responseJSON?.message || 'Ocurrió un error al actualizar el proveedor.',
+                                    });
+                                }
+                            });
                         }
                     });
+                }
+            });
+            }, 200); // Delay para evitar el bug del aria-hidden
+        });
+
+        // Función para cargar marcas según proveedor seleccionado
+        function cargarMarcasYLineasVisualizarEditar(e){
+            let idProveedor = $(e).val();
+            let $marcaSelect = $('#proveedor-marca-visualizar-editar');
+            let $lineaSelect = $('#proveedor_producto-linea-visualizar-editar');
+
+            $marcaSelect.prop('disabled', true).empty().append('<option value="">Cargando marcas...</option>');
+            $lineaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una línea</option>');
+
+            if (!idProveedor) {
+                $marcaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una marca</option>');
+                $lineaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una línea</option>');
+                return;
+            }
+
+            $.ajax({
+                url: "{{ route('administrador.marcas.show', ':id') }}".replace(':id', idProveedor),
+                type: 'GET',
+                success: function(data) {
+                    $marcaSelect.prop('disabled', false).empty().append('<option value="">Seleccione una marca</option>');
+                    data.forEach(function(marca) {
+                        $marcaSelect.append(`<option value="${marca.id}">${marca.descripcion}</option>`);
+                    });
+                    $lineaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una línea</option>');
                 },
-                error: function(xhr) {
+                error: function() {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error al actualizar proveedor',
-                        text: xhr.responseJSON.message || 'Ocurrió un error al actualizar el proveedor.',
+                        title: 'Error',
+                        text: 'No se pudieron cargar las marcas del proveedor.',
                     });
+                    $marcaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una marca</option>');
+                    $lineaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una línea</option>');
                 }
             });
         }
 
+        // Función para cargar líneas según marca seleccionada
+        function cargarLineasVisualizarEditar(e){
+            let idMarca = $(e).val();
+            let $lineaSelect = $('#proveedor_producto-linea-visualizar-editar');
 
-        $('#cambiar-cantidad-producto-visualizar').click(function(e){
-            // Cerrar el modal actual
-            $('#cerrar-modal-actualizar-vista').click();
+            $lineaSelect.prop('disabled', true).empty().append('<option value="">Cargando líneas...</option>');
 
-            let idProducto = $('#id-producto-cambiar').val();
-            let boton = $('[id-cantidad-stock="' + idProducto + '"]');
-
-            if (boton.length > 0) {
-                // Crear overlay si no existe
-                if ($('#overlay-destacar').length === 0) {
-                    $('body').append('<div id="overlay-destacar"></div>');
-                }
-
-                // Resaltar el botón
-                boton.addClass('destacar-boton');
-
-                // Opcional: hacer scroll hasta el botón
-                $('html, body').animate({
-                    scrollTop: boton.offset().top - 100
-                }, 500);
-
-                // Quitar el efecto después de un tiempo
-                setTimeout(() => {
-                    $('#overlay-destacar').remove();
-                    boton.removeClass('destacar-boton');
-                }, 2000);
-            } else {
-                console.warn('Botón no encontrado para el producto con ID:', idProducto);
+            if (!idMarca) {
+                $lineaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una línea</option>');
+                return;
             }
-        });
 
-        $('#cambiar-descripcion-cantidad-producto-visualizar').click(function (e) {
-            // Cerrar el modal actual
-            $('#cerrar-modal-actualizar-vista').click();
-
-            let idProducto = $('#id-producto-cambiar').val();
-            let boton = $('[id-cantidad-stock="' + idProducto + '"]');
-
-            if (boton.length > 0) {
-                // Crear overlay si no existe
-                if ($('#overlay-destacar').length === 0) {
-                    $('body').append('<div id="overlay-destacar"></div>');
+            $.ajax({
+                url: "{{ route('administrador.lineas.show', ':id') }}".replace(':id', idMarca),
+                type: 'GET',
+                success: function(data) {
+                    $lineaSelect.prop('disabled', false).empty().append('<option value="">Seleccione una línea</option>');
+                    data.forEach(function(linea) {
+                        $lineaSelect.append(`<option value="${linea.id}">${linea.descripcion_linea}</option>`);
+                    });
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudieron cargar las líneas de la marca.',
+                    });
+                    $lineaSelect.prop('disabled', true).empty().append('<option value="">Seleccione una línea</option>');
                 }
+            });
+        }
 
-                // Resaltar el botón
-                boton.addClass('destacar-boton');
-
-                // Opcional: hacer scroll hasta el botón
-                $('html, body').animate({
-                    scrollTop: boton.offset().top - 100
-                }, 500);
-
-                // Quitar el efecto después de un tiempo
-                setTimeout(() => {
-                    $('#overlay-destacar').remove();
-                    boton.removeClass('destacar-boton');
-                }, 2000);
-            } else {
-                console.warn('Botón no encontrado para el producto con ID:', idProducto);
-            }
-        });
-
-
-        $('#agregar-forma-venta-producto-visualizar').click(function(e){
-            $('#cerrar-modal-actualizar-vista').click();
-
-            let idProducto = $('#id-producto-cambiar').val();
-            let boton = $('[id-producto-detalle="' + idProducto + '"]');
-
-            if (boton.length > 0) {
-                // Crear overlay si no existe
-                if ($('#overlay-destacar').length === 0) {
-                    $('body').append('<div id="overlay-destacar"></div>');
-                }
-
-                // Resaltar el botón
-                boton.addClass('destacar-boton');
-                //editar a box-shadow: 0 0 20px 5px cyan;
-
-                boton.css('box-shadow', '0 0 20px 5px cyan');
-
-                // Opcional: hacer scroll hasta el botón
-                $('html, body').animate({
-                    scrollTop: boton.offset().top - 100
-                }, 500);
-
-                // Quitar el efecto después de un tiempo
-                setTimeout(() => {
-                    $('#overlay-destacar').remove();
-                    boton.removeClass('destacar-boton');
-                    boton.css('box-shadow', 'none');
-                }, 2000);
-            } else {
-                console.warn('Botón no encontrado para el producto con ID:', idProducto);
-            }
-        });
-
-        $('#cambiar-promocion-producto-visualizar').click(function (e) {
-            $('#cerrar-modal-actualizar-vista').click();
-
-            let idProducto = $('#id-producto-cambiar').val();
-
-            let celda=$('[id-usuario-promocion-verificar="' + idProducto + '"]');
-            if (celda.length > 0) {
-                // Crear overlay si no existe
-                if ($('#overlay-destacar').length === 0) {
-                    $('body').append('<div id="overlay-destacar"></div>');
-                }
-
-                // Resaltar la celda
-                celda.addClass('destacar-boton');
-                //editar a box-shadow: 0 0 20px 5px cyan;
-
-                celda.css('box-shadow', '0 0 20px 5px cyan');
-
-                // Opcional: hacer scroll hasta la celda
-                $('html, body').animate({
-                    scrollTop: celda.offset().top - 100
-                }, 500);
-
-                // Quitar el efecto después de un tiempo
-                setTimeout(() => {
-                    $('#overlay-destacar').remove();
-                    celda.removeClass('destacar-boton');
-                    celda.css('box-shadow', 'none');
-                }, 2000);
-            } else {
-                console.warn('Celda no encontrada para el producto con ID:', idProducto);
-            }
-        });
 
         $('#cambiar-descripcion-producto-visualizar').click(function(e){
             $('#cerrar-modal-actualizar-vista').click();
             let idProducto = $('#id-producto-cambiar').val();
-            Swal.fire({
-                title: 'Cambiar Descripción del Producto',
-                html: `
-                    <label for="descripcion_producto" class="swal2-label">Nueva Descripción</label>
-                    <textarea id="descripcion_producto" class="swal2-textarea" placeholder="Ingrese una nueva descripción" required></textarea>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Guardar',
-                cancelButtonText: 'Cancelar',
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#dc3545',
-                preConfirm: () => {
-                    const descripcionProducto = $('#descripcion_producto').val();
-                    if (!descripcionProducto) {
-                        Swal.showValidationMessage('Por favor, ingresa una descripción válida');
-                        return false;
-                    }
-                    return { descripcionProducto, idProducto };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: "{{ route('productos.updateDescripcion', ':id') }}".replace(':id', idProducto),
-                        type: 'POST',
-                        data: {
-                            descripcion_producto: result.value.descripcionProducto,
-                            _token: "{{ csrf_token() }}",
-                            _method:'PUT'
-                        },
-                        success: function(response) {
-                            $('#descripcion-mostrar-producto').text(response.descripcion);
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Descripción actualizada',
-                                text: 'La descripción del producto se ha actualizado correctamente.',
-                                showConfirmButton: false,
-                                timer: 2000,
-                                didClose: () => {
-                                    location.reload();
-                                }
-                            });
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error al actualizar descripción',
-                                text: xhr.responseJSON.message || 'Ocurrió un error al actualizar la descripción.',
-                            });
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Cambiar Descripción del Producto',
+                    html: `
+                        <label for="descripcion_producto" class="swal2-label">Nueva Descripción</label>
+                        <textarea id="descripcion_producto" class="swal2-textarea" placeholder="Ingrese una nueva descripción" required></textarea>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#dc3545',
+                    preConfirm: () => {
+                        const descripcionProducto = $('#descripcion_producto').val();
+                        if (!descripcionProducto) {
+                            Swal.showValidationMessage('Por favor, ingresa una descripción válida');
+                            return false;
                         }
-                    });
-                }
-            });
+                        return { descripcionProducto, idProducto };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Actualizando descripción del producto...',
+                            html: 'Por favor espera',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        $.ajax({
+                            url: "{{ route('administrador.productos.updateDescripcion', ':id') }}".replace(':id', idProducto),
+                            type: 'POST',
+                            data: {
+                                descripcion_producto: result.value.descripcionProducto,
+                                _token: "{{ csrf_token() }}",
+                                _method:'PUT'
+                            },
+                            success: function(response) {
+                                $('#descripcion-mostrar-producto').text(response.descripcion);
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Descripción actualizada',
+                                    text: 'La descripción del producto se ha actualizado correctamente.',
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    didClose: () => {
+                                        $('#tabla-productos').DataTable().ajax.reload();
+                                    }
+                                });
+                            },
+                            error: function(xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error al actualizar descripción',
+                                    text: xhr.responseJSON.message || 'Ocurrió un error al actualizar la descripción.',
+                                });
+                            }
+                        });
+                    }
+                });
+            }, 200); // Delay para evitar el bug del aria-hidden
         });
 
         $('#cambiar-precio-compra-producto-visualizar').click(function(){
             $('#cerrar-modal-actualizar-vista').click();
             let idProducto = $('#id-producto-cambiar').val();
+            setTimeout(() => {
             Swal.fire({
                 title: 'Cambiar Precio de Compra del Producto',
                 html: `
@@ -2084,7 +1769,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('productos.updatePrecioCompraProducto', ':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.updatePrecioCompraProducto', ':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             precio_compra_producto: result.value.precioCompraProducto,
@@ -2101,7 +1786,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -2115,10 +1800,12 @@
                     });
                 }
             });
+            }, 200); // Delay para evitar el bug del aria-hidden
         });
         $('#cambiar-descripcion-compra-producto-visualizar').click(function(){
             $('#cerrar-modal-actualizar-vista').click();
             let idProducto = $('#id-producto-cambiar').val();
+            setTimeout(() => {
             Swal.fire({
                 title: 'Cambiar Descripción del Precio de Compra',
                 html: `
@@ -2141,7 +1828,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('productos.updatePrecioDescripcionProducto', ':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.updatePrecioDescripcionProducto', ':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             descripcion_precio_compra_producto: result.value.descripcionPrecioCompraProducto,
@@ -2157,7 +1844,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -2171,10 +1858,12 @@
                     });
                 }
             });
+            }, 200); // Delay para evitar el bug del aria-hidden
         });
         $('#cambiar-presentacion-producto-visualizar').click(function(){
             $('#cerrar-modal-actualizar-vista').click();
             let idProducto = $('#id-producto-cambiar').val();
+            setTimeout(() => {
             Swal.fire({
                 title: 'Cambiar Presentación del Producto',
                 html: `
@@ -2197,7 +1886,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('productos.updatePresentacionProducto', ':id') }}".replace(':id', idProducto),
+                        url: "{{ route('administrador.productos.updatePresentacionProducto', ':id') }}".replace(':id', idProducto),
                         type: 'POST',
                         data: {
                             presentacion_producto: result.value.presentacionProducto,
@@ -2213,7 +1902,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -2227,10 +1916,11 @@
                     });
                 }
             });
+            }, 200); // Delay para evitar el bug del aria-hidden
         });
 
         $('#limpiarboton').click(function() {
-            window.location.href = "{{ route('productos.index') }}";
+            window.location.href = "{{ route('administrador.productos.index') }}";
         });
 
 
@@ -2248,7 +1938,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('productos.destroy', ':id') }}".replace(':id', id),
+                        url: "{{ route('administrador.productos.destroy', ':id') }}".replace(':id', id),
                         type: 'DELETE',
                         data: {
                             _token: "{{ csrf_token() }}"
@@ -2261,7 +1951,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -2313,7 +2003,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },
@@ -2357,7 +2047,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    location.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload();
                                 }
                             });
                         },

@@ -1,37 +1,169 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
 use App\Models\FormaVenta;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\DataTables;
 
 class ProductoController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, DataTables $dataTables)
     {
-        $query = Producto::query();
+        if($request->ajax())
+        {
+            $query = Producto::query();
 
-        if ($request->filled('nombre')) {
-            $query->where('nombre_producto', 'like', '%' . strtoupper($request->nombre) . '%');
-        }
+            return $dataTables->eloquent($query)
+                ->filterColumn('codigo', function ($query, $keyword) {
+                    $query->where('codigo', 'like', "%{$keyword}%");
+                })
+                ->addColumn('imagen', function ($producto){
+                    if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
+                        return '<img src="' . route('productos.imagen', ['id' => $producto->id]) . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                    }
+                    return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                })
+                ->filterColumn('nombre_producto', function ($query, $keyword) {
+                    $keyword = trim(strtoupper($keyword));
+                    $query->where('nombre_producto', 'like', "%{$keyword}%");
+                })
+                ->addColumn('marca', function ($producto) {
+                    return $producto->marca ? $producto->marca->descripcion : 'Sin Marca';
+                })
+                ->addColumn('stock', function ($producto) {
+                    $claseCantidad = $producto->cantidad <= 15 ? 'badge bg-danger' : 'badge bg-success';
+                    $cantidadHtml = '<span class="' . $claseCantidad . ' fs-6">' . $producto->cantidad . ' ' . $producto->detalle_cantidad . '</span>';
 
-        if ($request->filled('codigo')) {
-            $query->where('codigo', 'like', '%' . $request->codigo . '%');
+                    $boton = '
+                        <div class="mt-2 d-flex justify-content-center">
+                            <button class="btn btn-sm btn-outline-primary" type="button"
+                                onclick="editarCantidadProductoStock(this)"
+                                id-cantidad-stock="' . $producto->id . '" 
+                                cantidad-stock="' . $producto->cantidad . '" 
+                                detalle-cantidad-stock="' . $producto->detalle_cantidad . '"
+                            >
+                                <i class="fas fa-edit me-1"></i> Editar
+                            </button>
+                        </div>
+                    ';
+
+                    return '<div class="text-center">' . $cantidadHtml . $boton . '</div>';
+                })
+                ->addColumn('formas_venta', function ($producto) {
+                    $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
+
+                    if ($formasVenta->isEmpty()) {
+                        return '<span class="text-muted"><i class="fas fa-ban"></i> Sin Formas de Venta</span>';
+                    }
+
+                    $output = '<div class="d-flex flex-column">';
+                    $output.='
+                        <button class="btn btn-sm btn-success mb-2" type="button" id-producto="' . $producto->id . '" onclick="agregarFormasVenta(this)">
+                            <i class="fas fa-plus"></i> Agregar Forma de Venta
+                        </button>
+                    ';
+                    $output .= '
+                        <button class="btn btn-sm btn-warning mb-2" type="button" data-toggle="modal" data-target="#formas-venta-producto" id-producto="' . $producto->id . '" onclick="verFormasVenta(this)">
+                            <i class="fas fa-edit"></i> Editar Formas de Venta
+                        </button>
+                    ';
+
+                    foreach ($formasVenta as $formaVenta) {
+                        $output .= '
+                            <div class="border rounded p-2 '.
+                            ($formaVenta->activo ? 'bg-white' : ' bg-secondary text-white')
+                            .' shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="d-flex align-items-center">
+                                        <strong>' . ucfirst($formaVenta->tipo_venta) . '</strong>
+                                    </div>
+                                    <span class="badge bg-success fs-6">
+                                        Bs.-' . number_format($formaVenta->precio_venta, 2, ',', '.') . '
+                                    </span>
+                                </div>
+                            </div>
+                        ';
+                    }
+
+                    $output .= '</div>';
+
+                    return $output;
+                })
+                ->addColumn('promocion_vista', function($producto){
+                    $descuento = ($producto->descripcion_descuento_porcentaje !== null && $producto->descripcion_descuento_porcentaje !== '')
+                        ? $producto->descripcion_descuento_porcentaje . '%'
+                        : 'N/A';
+
+                    $regalo = ($producto->descripcion_regalo !== null && $producto->descripcion_regalo !== '' )
+                        ? $producto->descripcion_regalo
+                        :'N/A';
+                    $render = '<div class="d-flex flex-column align-items-center justify-content-center mb-2 bg-white">';
+                    if ($producto->promocion) {
+                        $render = '
+                        <span>
+                            Descuento: <strong>' . $descuento . '</strong><br>
+                            Regalo: <strong>' . $regalo . '</strong>
+                        </span>
+                        <br/>
+                        <div class="btn-group mt-2" role="group">
+                            <button class="btn btn-sm btn-warning" type="button" id-producto="' . $producto->id .  
+                            '" editar-promocion-procentaje="' . $producto->descripcion_descuento_porcentaje . '" editar-promocion-regalo="' . $producto->descripcion_regalo .
+                            '" onclick="editarPromocion(this)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" type="button" id-producto="' . $producto->id . '" onclick="eliminarPromocion(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        ';
+                    } else {
+                        $render='
+                            <button class="btn btn-sm btn-success" type="button" id-producto="' . $producto->id . '" onclick="agregarPromocion(this)">
+                                <i class="fas fa-plus"></i> Agregar Promoción
+                            </button>
+                        ';
+                        $render .= '<span class="badge bg-secondary fs-6">Sin Promoción</span>';
+                    }
+                    $render .= '</div>';
+                    return $render;
+                })
+                ->addColumn('acciones', function ($producto) {
+                    $acciones = '<div class="btn-group" role="group">';
+                    $acciones .= '<button type="button" class="btn btn-warning" onclick="visualizarProducto(this)" data-id-producto="' . $producto->id . '" data-toggle="modal" data-target="#ver-distribuidora-producto" title="Ver producto">
+                        <i class="fas fa-cog"></i>
+                    </button>';
+                    if($producto->estado_de_baja) {
+                        $acciones .= '<button type="button" class="btn btn-success" onclick="ProductoDeAlta(this)" id-producto="' . $producto->id . '">
+                            <i class="fas fa-check"></i>
+                        </button>';
+                    } else {
+                        $acciones .= '<button type="button" class="btn btn-info" onclick="ProductoDeBaja(this)" id-producto="' . $producto->id . '">
+                            <i class="fas fa-times"></i>
+                        </button>';
+                    }
+                    $acciones .= '<button type="button" class="btn btn-danger" onclick="eliminarProducto(' . $producto->id . ')">
+                            <i class="fas fa-trash"></i>
+                        </button>';
+                    $acciones .= '</div>';
+                    return $acciones;
+                })
+                ->rawColumns(['acciones', 'imagen', 'formas_venta', 'promocion_vista', 'stock'])
+                ->make(true);
+
         }
 
         $proveedores = Proveedor::all();
-        $productos = $query->paginate(10);
-        
-
         $contar_productos_menores = Producto::where('cantidad', '<=', 15)->where('estado_de_baja',false)->count();
 
-        return view('administrador.productos.index_productos',compact('proveedores','productos','contar_productos_menores'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('codigo'));
+        return view('administrador.productos.index_productos',compact('proveedores', 'contar_productos_menores'));
     }
 
     function obtenerProductosBajoStock()
