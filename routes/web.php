@@ -7,16 +7,17 @@ use App\Http\Controllers\Administrador\MarcaController;
 use App\Http\Controllers\Administrador\ProductoController;
 use App\Http\Controllers\Administrador\UsuarioController;
 use App\Http\Controllers\Administrador\FormaVentaController;
+use App\Http\Controllers\Administrador\RutasController;
+use App\Http\Controllers\Administrador\ClienteController;
+use App\Http\Controllers\Administrador\AsignacionController;
+use App\Http\Controllers\Administrador\ControlRutasController;
 
 
-use App\Http\Controllers\AsignacionController;
 use App\Http\Controllers\AsinacionVendedorController;
-use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\PedidoAdministradorController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProductoVendedorController;
 use App\Http\Controllers\RendimientoPersonalController;
-use App\Http\Controllers\RutasController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -34,7 +35,10 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('usuarios/imagenperfil/{id}', [UsuarioController::class, 'imagenPerfil'])->name('usuarios.imagenperfil');
     //--Rutas Productos para todos los usuarios autenticados---
     Route::get('productos/imagenproducto/{id}', [ProductoController::class, 'imagenProducto'])->name('productos.imagen');
-
+    Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
+    Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
+    //pdf descargar catalogo --VENDEDOR --ADMINISTRADOR
+    Route::get('productos/vendedor/descargar-catalogo', [ProductoVendedorController::class, 'descargarCatalogo'])->name('productos.vendedor.descargarCatalogo');
 
     Route::prefix('administrador')->name('administrador.')->group(function () {
         //Rutas de permisos
@@ -70,28 +74,36 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::put('productos/actualizarCantidadProducto/{id}', [ProductoController::class, 'actualizarCantidadProducto'])->name('productos.updateCantidadStock');
         Route::put('productos/editarPrecioDesccripcionProducto/{id}',[ProductoController::class, 'updatePrecioDescripcionProducto'])->name('productos.updatePrecioDescripcionProducto');
         Route::put('productos/editarPresentacionProducto/{id}',[ProductoController::class, 'updatePresentacionProducto'])->name('productos.updatePresentacionProducto');
+        Route::put('productos/darBajaoAlta/{id}', [ProductoController::class, 'darBaja'])->name('productos.dardealtaobaja');
 
-        
+        //Ruta de informacion de productos de bajo stock
+        Route::get('productos/obtener-productos-bajo-stock', [ProductoController::class, 'obtenerProductosBajoStock'])->name('productos.bajostock');
+
+        //Rutas para subir clientes desde archivo
+        Route::post('clientes/importar', [ClienteController::class, 'importarClientes'])->name('clientes.importar');
+
+        //Rutas para ver asignaciones
+        Route::get('clientesasignadosavendedores/{id}', [AsignacionController::class, 'clientesAsignadosAVendedores'])->name('asignacionclientes.getClientesAsignados');
+        Route::get('rutas/asignadosavendedores/{id}', [AsignacionController::class, 'rutasAsignadasAVendedores'])->name('asignacionclientes.getRutasAsignadas');
+        Route::delete('rutasasignadosavendedoreseliminar/{id_ruta}', [AsignacionController::class, 'rutasAsignadasAVendedoresEliminar'])->name('asignacionrutas.destroyasignacion');
+
+        //Rutas de control de rutas
+        Route::get('controlrutas', [ControlRutasController::class, 'index'])->name('controlrutas.index');
+        Route::get('controlrutas/{id}', [ControlRutasController::class, 'indexPreventista'])->name('controlrutas.preventista');
+
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
         Route::resource('proveedores', ProveedorController::class);
         Route::resource('marcas', MarcaController::class);
         Route::resource('lineas', LineaController::class);
         Route::resource('productos', ProductoController::class);
+        Route::resource('rutas', RutasController::class);
+        Route::resource('clientes', ClienteController::class);
+        Route::resource('asignacionclientes', AsignacionController::class);
     });
     //---------------------------------------
-    Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
-    Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
-
-
-    Route::get('productos/obtener-productos-bajo-stock', [ProductoController::class, 'obtenerProductosBajoStock'])->name('productos.bajostock');
-    Route::put('productos/darBajaoAlta/{id}', [ProductoController::class, 'darBaja'])->name('productos.dardealtaobaja');
 
     Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
-    Route::get('clientesasignadosavendedores/{id}', [AsignacionController::class, 'clientesAsignadosAVendedores'])->name('asignacionclientes.getClientesAsignados');
-    Route::get('rutas/asignadosavendedores/{id}', [AsignacionController::class, 'rutasAsignadasAVendedores'])->name('asignacionclientes.getRutasAsignadas');
-    Route::delete('clientesasignadosavendedoreseliminar/{id_cliente}/{id_vendedor}', [AsignacionController::class, 'clientesAsignadosAVendedoresEliminar'])->name('asignacionclientes.destroyasignacion');
-    Route::delete('rutasasignadosavendedoreseliminar/{id_ruta}/{id_vendedor}', [AsignacionController::class, 'rutasAsignadasAVendedoresEliminar'])->name('asignacionrutas.destroyasignacion');
 
     Route::get('asignacionclientes/obtener-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'obtenerVendedoresRuta'])->name('vendedores.obtenerRuta');
     Route::put('asignacionclientes/resetear-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'resetearVendedoresRuta'])->name('vendedores.resetearRuta');
@@ -121,9 +133,6 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('productos/vendedor/ver-detalle-productos-formas-venta/{id}', [ProductoVendedorController::class, 'verDetalleFormaVenta'])->name('productos.vendedor.verFormasVenta');
     Route::get('productos/vendedor/ver-detalle-productos-promocion/{id}', [ProductoVendedorController::class, 'verDetallePromocion'])->name('productos.vendedor.verDetallePromocion');
 
-    //pdf descargar catalogo
-    Route::get('productos/vendedor/descargar-catalogo', [ProductoVendedorController::class, 'descargarCatalogo'])->name('productos.vendedor.descargarCatalogo');
-
     //pedido administrador Controller
     Route::get('pedidos/administrador/visualizacion', [PedidoAdministradorController::class,'index'])->name('pedidos.administrador.visualizacion');
     Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
@@ -152,10 +161,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
 
     //----------------------------
-    Route::resource('clientes', ClienteController::class);
-    Route::resource('asignacionclientes', AsignacionController::class);
     Route::resource('pedidos', PedidoController::class);
     Route::resource('rendimientopersonal', RendimientoPersonalController::class);
     Route::resource('ventas', VentaController::class);
-    Route::resource('rutas', RutasController::class);
 });

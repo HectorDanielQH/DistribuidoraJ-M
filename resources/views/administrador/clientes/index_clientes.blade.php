@@ -13,6 +13,9 @@
             </span>
         </div>
     </div>
+
+    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css"/>
+    <script src="https://unpkg.com/nprogress@0.2.0/nprogress.js"></script>
 @stop
 
 @section('content')
@@ -29,35 +32,61 @@
                     <i class="fas fa-user-plus"></i> Nuevo Usuario
                 </button>
 
-                @if ($eliminar_busqueda)                    
-                    <button class="btn btn-danger ms-2" id="limpiarboton" style="font-weight: bold; border-radius: 8px;">
-                        <i class="fas fa-times"></i> Limpiar búsqueda
-                    </button>
-                @endif
+
+                <button class="btn" id="boton-excel" data-toggle="modal" data-target="#agregar-archivo-excel" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
+                    <i class="fas fa-file-excel"></i> Cargar clientes de Excel
+                </button>
+
             </div>
             <div class="card-body" style="padding: 2rem;">
                 <p class="text-muted" style="margin-top: -15px">
                     Puedes buscar cliente por nombre completo o cédula de identidad con cualquier coincidencia.
                 </p>
-                <form method="GET" action="{{ route('clientes.index') }}" class="row g-3">
-                    <div class="col-md-5">
+                <div class="row g-3">
+                    <div class="col-md-6">
                         <label for="nombre" class="form-label text-muted">Nombre completo</label>
                         <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Juan Pérez" value="{{ $request->nombre ?? '' }}"  style="border-radius: 8px;">
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-6">
                         <label for="ci" class="form-label text-muted">Cédula de identidad</label>
                         <input type="text" class="form-control shadow-sm border-0" name="ci" placeholder="Ej: 12345678" value="{{ $request->ci ?? '' }}"  style="border-radius: 8px;">
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn w-100" style="background-color: #3498db; color: white; font-weight: bold; border-radius: 8px;">
-                            <i class="fas fa-search"></i> Buscar
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 
+    <!--Modal apra Excel-->
+    <x-adminlte-modal id="agregar-archivo-excel" size="lg" theme="dark" icon="fas fa-user-plus" title="Agregar Clientes">
+            <div class="modal-body px-4">
+                <form id="archivo-registro-cliente" enctype="multipart/form-data">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <x-adminlte-input-file name="archivo_excel" label="Selecciona el archivo Excel" placeholder="Selecciona un archivo" label-class="text-dark" accept=".xlsx, .xls, .csv">
+                                <x-slot name="prependSlot">
+                                    <div class="input-group-text">
+                                        <i class="fas fa-file-excel text-muted"></i>
+                                    </div>
+                                </x-slot>
+                            </x-adminlte-input-file>
+                        </div>
+                        <div class="col-md-12">
+                            <p class="text-muted">
+                                Asegúrate de que el archivo Excel tenga las siguientes columnas: C.I., Nombres, Apellido Paterno, Apellido Materno, Celular, Dirección, Ruta.
+                            </p>
+                            <p class="text-muted">
+                                Puedes descargar un <a href="{{ asset('plantillas/plantilla_clientes.xlsx') }}" class="text-decoration-underline">ejemplo de plantilla</a> para cargar los clientes.
+                            </p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        <x-slot name="footerSlot">
+            <x-adminlte-button type="submit" id="botonenviararchivo" theme="success" icon="fas fa-check" label="Aceptar" class="rounded-3 px-4 py-2" />
+            <x-adminlte-button theme="danger" id="botonenviararchivo-cerrar" label="Cancelar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2" />
+        </x-slot>
+    </x-adminlte-modal>
 
 
     <!--AGREGAR USUARIO-->
@@ -126,17 +155,13 @@
                         </div>
 
                         <div class="col-md-6">
-                            <x-adminlte-select name="ruta" id="ruta" label="Selecciona la Ruta" label-class="text-dark" igroup-size="lg">
-                                <x-slot name="prependSlot">
-                                    <div class="input-group-text bg-dark">
-                                        <i class="fas fa-route"></i>
-                                    </div>
-                                </x-slot>
+                            <label for="ruta" class="form-label text-muted">Selecciona la Ruta</label>
+                            <select name="ruta" id="ruta" class="form-control shadow-sm border-0" style="border-radius: 8px;">
                                 <option value="">Seleccione una ruta</option>
                                 @foreach ($rutas as $ruta)
                                     <option value="{{ $ruta->id }}" {{ old('ruta') == $ruta->id ? 'selected' : '' }}>{{ $ruta->nombre_ruta }}</option>
                                 @endforeach
-                            </x-adminlte-select>
+                            </select>
                         </div>
                     </div>
                 </form>
@@ -216,17 +241,13 @@
                         </div>
 
                         <div class="col-md-6">
-                            <x-adminlte-select name="ruta"  id="rutaEditar" label="Selecciona la Ruta" label-class="text-dark" igroup-size="lg">
-                                <x-slot name="prependSlot">
-                                    <div class="input-group-text bg-dark">
-                                        <i class="fas fa-route"></i>
-                                    </div>
-                                </x-slot>
+                            <label for="rutaEditar" class="form-label text-muted">Selecciona la Ruta</label>
+                            <select name="ruta" id="rutaEditar" class="form-control shadow-sm border-0" style="border-radius: 8px;">
                                 <option value="">Seleccione una ruta</option>
                                 @foreach ($rutas as $ruta)
                                     <option value="{{ $ruta->id }}" {{ old('ruta') == $ruta->id ? 'selected' : '' }}>{{ $ruta->nombre_ruta }}</option>
                                 @endforeach
-                            </x-adminlte-select>
+                            </select>
                         </div>
                     </div>
                 </form>
@@ -241,7 +262,7 @@
     <!-- TABLA -->
     <div class="container pb-5">
         <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
-            <table class="table table-bordered align-middle text-center" style="min-width: 800px;">
+            <table class="table table-bordered align-middle text-center" style="min-width: 800px;" id="tabla-clientes">
                 <thead class="table-dark">
                     <tr>
                         <th scope="col">#</th>
@@ -254,78 +275,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($clientes as $cliente)
-                        <tr>
-                            <td>{{ $cliente->id }}</td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-id-card mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $cliente->cedula_identidad }}
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-user-circle mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $cliente->nombres }} {{ $cliente->apellido_paterno }} {{ $cliente->apellido_materno }}
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-mobile-alt mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $cliente->celular }}
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-map-marker-alt mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $cliente->ubicacion }}
-                                
-                            </td>
-                            <td style="text-align: left;">
-                                <i class="fas fa-route mr-3" style="font-size: 1.5rem; color: #2c3e50;"></i>
-                                {{ $cliente->ruta ? $cliente->ruta->nombre_ruta : 'Sin ruta asignada' }}
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group" role="group" aria-label="Acciones del usuario">
-                                    <button 
-                                        class="btn btn-warning btn-sm rounded-3 me-2" 
-                                        data-toggle="modal"
-                                        data-target="#modalEditarCliente"
-                                        id-cliente="{{ $cliente->id }}"
-                                        id-cliente-cedula="{{ $cliente->cedula_identidad }}"
-                                        id-cliente-nombres="{{ $cliente->nombres }}"
-                                        id-cliente-paterno="{{ $cliente->apellido_paterno }}"
-                                        id-cliente-materno="{{ $cliente->apellido_materno }}"
-                                        id-cliente-celular="{{ $cliente->celular }}"
-                                        id-cliente-ubicacion="{{ $cliente->ubicacion }}"
-                                        onclick="editarUsuario(this)">
-                                        <i class="fas fa-user-edit"></i>
-                                    </button>
-
-                                    <button class="btn btn-danger btn-sm rounded-3" id-cliente="{{ $cliente->id }}" onclick="eliminarUsuario(this)">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <div class="alert alert-warning mb-0" role="alert">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    No se encontraron resultados para la búsqueda, quizas con otra coincidencia.
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
                 </tbody>
             </table>
-        </div>
-
-        <div class="d-flex justify-content-center mt-3">
-            {{ $clientes->appends(request()->query())->links() }}
         </div>
     </div>
 
 @stop
 
 @section('css')
-    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -340,6 +300,21 @@
         .btn:hover {
             opacity: 0.9;
         }
+        .select2-container .select2-selection--single {
+            height: 35px;
+            padding: 6px 12px;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 24px;
+        }
+
+        #overlay-destacar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 1050;
+        }
     </style>
 @stop
 
@@ -347,8 +322,54 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
 
+    <script>
+        $(document).ready(function(){
+            // Inicializar Select2
+            $('#ruta').select2({
+                placeholder: 'Seleccione una ruta',
+                width: '100%'
+            });
+            $('#rutaEditar').select2({
+                placeholder: 'Seleccione una ruta',
+                width: '100%'
+            });
+
+            $('#tabla-clientes').DataTable({
+                processing: true,
+                serverSide: true,
+                language: {
+                    url: '/i18n/es-ES.json'
+                },
+                "searching": false,
+                ajax: {
+                    url: "{{ route('administrador.clientes.index') }}",
+                    type: 'GET',
+                    data: function (d) {
+                        d.nombre = $('input[name="nombre"]').val();
+                        d.ci = $('input[name="ci"]').val();
+                    }
+                },
+                columns: [
+                    { data: 'id', searchable: false },
+                    { data: 'cedula_identidad', name: 'cedula_identidad' },
+                    { data: 'nombres_completos', name: 'nombres_completos' },
+                    { data: 'celular', name: 'celular' },
+                    { data: 'ubicacion', name: 'ubicacion' },
+                    { data: 'ruta', name: 'ruta' },
+                    { data: 'acciones', name: 'acciones', orderable: false, searchable: false }
+                ],
+                order: [[0, 'asc']],
+            });
+
+            // Evento de búsqueda
+            $('input[name="nombre"], input[name="ci"]').on('keyup change', function() {
+                $('#tabla-clientes').DataTable().ajax.reload();
+            });
+        });
+    </script>
 
     <script>
         $('#botonenviar').click(function(){
@@ -358,8 +379,15 @@
         $('#registro-cliente').submit(function (e){
             e.preventDefault();
             var formData = $(this).serialize();
+            Swal.fire({
+                title: 'Agregando cliente...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
-                url: `{{ route('clientes.store') }}`,
+                url: `{{ route('administrador.clientes.store') }}`,
                 type: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -373,7 +401,9 @@
                         timer: 1500
                     });
                     $('#botonenviar-cerrar').click();
-                    setTimeout(() => location.reload(), 1600);
+                    $('#tabla-clientes').DataTable().ajax.reload();
+                    $('#registro-cliente')[0].reset();
+                    $('#ruta').val('').trigger('change'); // Limpiar el select2
                 },
                 error: function(xhr) {
                     let errorMessage = xhr.responseJSON?.message || 'Ocurrió un error inesperado.';
@@ -394,6 +424,7 @@
             const idClienteMaterno = $(element).attr('id-cliente-materno');
             const idClienteCelular = $(element).attr('id-cliente-celular');
             const idClienteUbicacion = $(element).attr('id-cliente-ubicacion');
+            const idClienteRuta = $(element).attr('id-cliente-ruta');
 
             $('#idclienteeditar').val(idCliente);
             $('#cedulaidentidadeditar').val(idClienteCedula);
@@ -402,6 +433,7 @@
             $('#apellidomaternoeditar').val(idClienteMaterno);
             $('#celulareditar').val(idClienteCelular);
             $('#direccioneditar').val(idClienteUbicacion);
+            $('#rutaEditar').val(idClienteRuta).trigger('change');
         }
 
         function eliminarUsuario(element){
@@ -425,7 +457,7 @@
                         }
                     });
                     $.ajax({
-                        url: `{{ route('clientes.destroy', ':id') }}`.replace(':id', idCliente),
+                        url: `{{ route('administrador.clientes.destroy', ':id') }}`.replace(':id', idCliente),
                         type: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -437,13 +469,13 @@
                                 showConfirmButton: false,
                                 timer: 1500
                             });
-                            location.reload();
+                            $('#tabla-clientes').DataTable().ajax.reload();
                         },
                         error: function(xhr, status, error) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error al eliminar el cliente',
-                                text: xhr.responseJSON.message,
+                                text: 'Ocurrió un error al intentar eliminar el cliente. Por favor, inténtalo de nuevo más tarde.',
                             });
                         }
                     });
@@ -461,8 +493,15 @@
             let formData=$(this).serialize();
             let params = new URLSearchParams(formData);
             let id_cliente = params.get('idcliente'); 
+            Swal.fire({
+                title: 'Editando cliente...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             $.ajax({
-                url: `{{ route('clientes.update', ':id') }}`.replace(':id', id_cliente),
+                url: `{{ route('administrador.clientes.update', ':id') }}`.replace(':id', id_cliente),
                 type: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -476,7 +515,16 @@
                         timer: 1500
                     });
                     $('#botonenviar-cerrar-editar').click();
-                    location.reload();
+                    $('#tabla-clientes').DataTable().ajax.reload();
+                    $('#registro-cliente-editar')[0].reset();
+                    $('#idclienteeditar').val(''); // Limpiar el campo oculto
+                    $('#cedulaidentidadeditar').val('');
+                    $('#nombreseditar').val('');
+                    $('#apellidopaternoeditar').val('');
+                    $('#apellidomaternoeditar').val('');
+                    $('#celulareditar').val('');
+                    $('#direccioneditar').val('');
+                    $('#rutaEditar').val('').trigger('change'); // Limpiar el select2
                 },
                 error: function(xhr, status, error) {
                     Swal.fire({
@@ -508,7 +556,54 @@
                             Swal.showLoading();
                         }
                     })
-                    window.location.href = "{{ route('clientes.index') }}";
+                    window.location.href = "{{ route('administrador.clientes.index') }}";
+                }
+            });
+        });
+    </script>
+
+    <script>
+        $('#botonenviararchivo').click(function() {
+            $('#archivo-registro-cliente').submit();
+        });
+
+        $('#archivo-registro-cliente').submit(function(e) {
+            e.preventDefault();
+            let formData = new FormData(this);
+            Swal.fire({
+                title: 'Cargando archivo...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            $.ajax({
+                url: `{{ route('administrador.clientes.importar') }}`,
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Clientes cargados con éxito',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    $('#botonenviararchivo-cerrar').click();
+                    $('#tabla-clientes').DataTable().ajax.reload();
+                    $('#archivo-registro-cliente')[0].reset();
+                },
+                error: function(xhr) {
+                    let errorMessage = xhr.responseJSON?.message || 'Ocurrió un error inesperado.';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al cargar el archivo',
+                        text: errorMessage,
+                    });
                 }
             });
         });

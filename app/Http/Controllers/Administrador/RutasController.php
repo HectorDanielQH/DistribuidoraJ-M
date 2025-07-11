@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
 use App\Models\Rutas;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;

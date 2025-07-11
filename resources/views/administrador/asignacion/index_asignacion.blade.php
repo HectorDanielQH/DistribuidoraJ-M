@@ -13,6 +13,16 @@
             </span>
         </div>
     </div>
+     <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="text-dark" style="font-size: 1.75rem; font-weight: 600;">
+                <i class="fas fa-route me-2"></i> Asignación de Rutas a Preventistas
+            </h2>
+        </div>
+        <p class="text-muted" style="font-size: 1.2rem; font-weight: 400;">
+            Aquí puedes asignar rutas a los preventistas y gestionar sus asignaciones
+        </p>
+    </div>
 @stop
 
 @section('content')
@@ -22,14 +32,14 @@
             <div class="modal-header">
                 <h1 class="modal-title text-lg" id="staticBackdropLabel">
                     <i class="fas fa-user-plus me-2"></i>
-                    Asignar rutas a Vendedor
+                    Asignar rutas al Preventista
                 </h1>
                 <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <select class="form-select mb-3 text-black" id="clienteSelect" name="clientes" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar cliente">
+                <select class="form-select mb-3 text-black" id="clienteSelect" name="clientes" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar rutas">
                     @foreach($rutas as $ruta)
                         <option value="{{ $ruta->id }}" class="text-black">{{ $ruta->nombre_ruta }}</option>
                     @endforeach
@@ -43,6 +53,29 @@
         </div>
     </div>
 
+    <div class="modal fade" id="asignarPorClientes" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title text-lg" id="staticBackdropLabel">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Asignar clientes al Preventista
+                </h1>
+                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <select class="form-select mb-3 text-black" id="porclientesSelect" name="clientes" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar rutas">
+                </select>
+            </div>
+            <div class="modal-footer d-flex justify-content-between align-content-center">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="cancelar-asignacion-cliente">Cancelar</button>
+                <button type="button" class="btn btn-success" id="guardarclientesasignados">Guardar</button>
+            </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="visualizarClientes" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg">
@@ -58,7 +91,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered align-middle text-center">
+                        <table class="table table-bordered align-middle text-center" id="clientesAsignadosTable">
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">#</th>
@@ -96,15 +129,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered align-middle text-center">
+                        <table class="table table-bordered align-middle text-center" id="rutasAsignadasTable">
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">#</th>
                                     <th scope="col">Nombre Ruta</th>
+                                    <th scope="col">Nro. Clientes</th>
                                     <th scope="col">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="rutasAsignadasBody">
+                            <tbody>
                                 <!-- Aquí se llenarán los clientes asignados mediante AJAX -->
                             </tbody>
                         </table>
@@ -117,85 +151,25 @@
         </div>
     </div>
 
-
+    
 
 
     <div class="container">
-        <nav>
-            <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                <button class="nav-link active btn btn-primary" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">
-                    <i class="fas fa-users me-2"></i> Vendedores Asignados
-                </button>
-                <button class="nav-link btn btn-primary ml-2" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false">
-                    <i class="fas fa-route mr-2"></i> Controles de rutas
-                </button>
-            </div>
-        </nav>
-        <div class="tab-content" id="nav-tabContent">
-            <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab" tabindex="0">
-                <div class="container py-5">
-                    <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
-                        <table id="tabla-asignaciones" class="table table-bordered align-middle text-center" style="min-width: 800px;">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">C.I.</th>
-                                    <th scope="col">Nombre Completo</th>
-                                    <th scope="col">Celular</th>
-                                    <th scope="col">Asignaciones</th>
-                                    <th scope="col">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab" tabindex="0">
-                <!--caja para seleccionar el vendedor-->
-                <div class="container py-5">
-                    <div class="row mb-3 d-flex justify-content-center align-items-center">
-                        <div class="col-md-6 d-flex flex-column">
-                            <label for="vendedorSelectControl" class="form-label me-2">Seleccionar Vendedor:</label>
-                            <select class="form-select" id="vendedorSelectControl" onchange="valordeusuariovendedor(this)" style="width: 100%;">
-                                <option value="" disabled selected>Seleccione un vendedor</option>
-                                @foreach($vendedores as $vendedor)
-                                    <option value="{{ $vendedor->id }}" data-id="{{ $vendedor->id }}">{{ $vendedor->nombres }} {{ $vendedor->apellido_paterno }} {{ $vendedor->apellido_materno }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 d-flex justify-content-center align-items-center">
-                            <button class="btn btn-primary mt-3" id="buscarRutaVendedor">
-                                <i class="fas fa-search me-2"></i> Buscar
-                            </button>
-                            <button class="btn btn-danger mt-3 ml-2" id="buscarRutaVendedorReset">
-                                <i class="fas fa-undo-alt me-2"></i> Resetear Asignaciones
-                            </button>
-                        </div>
-                    </div>
-                    <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
-                        <table class="table table-bordered align-middle text-center" style="min-width: 800px;">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th scope="col">#</th>
-                                    <th scope="col">Cliente</th>
-                                    <th scope="col">Dirección</th>
-                                    <th scope="col">Fecha de Asignacion</th>
-                                    <th scope="col">Fecha de Atencion</th>
-                                    <th scope="col">Pedido</th>
-                                </tr>
-                            </thead>
-                            <tbody id="clientesAsignadosBodyrutas">
-                                <tr>
-                                    <td colspan="6" class="text-center">Seleccione un vendedor para ver los clientes asignados.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+        <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
+            <table id="tabla-asignaciones" class="table table-bordered align-middle text-center" style="min-width: 800px;">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">C.I.</th>
+                        <th scope="col">Nombre Completo</th>
+                        <th scope="col">Celular</th>
+                        <th scope="col">Asignaciones</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
     </div>
 @stop
@@ -234,17 +208,13 @@
         $(document).ready(function() {
             $('#tabla-asignaciones').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                    url: '/i18n/es-ES.json'
                 },
                 "processing":true,
                 "serverSide":true,
                 "ajax": {
-                    "url": "{{ route('asignacionclientes.index') }}",
+                    "url": "{{ route('administrador.asignacionclientes.index') }}",
                     "type": "GET",
-                    /*"data": function (d) {
-                        d.nombres_completos = $('#cajabusquedanombre').val();
-                        d.cedulaidentidad = $('#cajabusquedacedula').val();
-                    }*/
                 },
                 columns:[
                     { data: 'id', width: '5%'},
@@ -260,7 +230,7 @@
     </script>
     <script>
         $('#clienteSelect').select2({
-            placeholder: "Seleccione un cliente",
+            placeholder: "Seleccione una ruta",
             width: '100%',
             theme: 'classic',
             parents: true
@@ -325,7 +295,7 @@
                 }
             });
             $.ajax({
-                url: "{{ route('asignacionclientes.store') }}",
+                url: "{{ route('administrador.asignacionclientes.store') }}",
                 type: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
@@ -369,30 +339,29 @@
                     Swal.showLoading();
                 }
             });
-            $.ajax({
-                url: "{{ route('asignacionclientes.getClientesAsignados',':id') }}".replace(':id', id_vendedor),
-                type: 'GET',
-                data: { id_vendedor: id_vendedor },
-                success: function(data) {
-                    Swal.close();
-                    $('#clientesAsignadosBody').empty();
-                    if (data.length > 0) {
-                        data.forEach((cliente, index) => {
-                            $('#clientesAsignadosBody').append(`
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td>${cliente.cedula_identidad}</td>
-                                    <td>${cliente.nombres} ${cliente.apellido_paterno} ${cliente.apellido_materno}</td>
-                                    <td>${cliente.celular}</td>
-                                    <td>${cliente.ubicacion}</td>
-                                </tr>
-                            `);
-                        });
-                    } else {
-                        $('#clientesAsignadosBody').append('<tr><td colspan="6">No hay clientes asignados.</td></tr>');
-                    }
+            $('#clientesAsignadosTable').DataTable().destroy();
+            $('#clientesAsignadosTable').DataTable({
+                language: {
+                    url: '/i18n/es-ES.json'
                 },
-                error: function(xhr) {
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('administrador.asignacionclientes.getClientesAsignados', ':id') }}".replace(':id', id_vendedor),
+                    "type": "GET",
+                },
+                columns: [
+                    { data: 'id', width: '5%' },
+                    { data: 'cedula_identidad', width: '15%' },
+                    { data: 'nombre_completo', width: '35%' },
+                    { data: 'celular', width: '15%' },
+                    { data: 'ubicacion', width: '30%' }
+                ],
+                "destroy": true,
+                "initComplete": function(settings, json) {
+                    Swal.close();
+                },
+                "error": function(xhr, error, code) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -402,7 +371,8 @@
             });
         }
 
-        function eliminarCliente(clienteId, vendedorId) {
+        function eliminarRutaAsignada(e) {
+            let rutaId = $(e).attr('data-id');
             Swal.fire({
                 title: '¿Estás seguro?',
                 text: "¡Esta acción no se puede deshacer!",
@@ -415,7 +385,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: `/clientesasignadosavendedoreseliminar/${clienteId}/${vendedorId}`,
+                        url: `{{ route('administrador.asignacionrutas.destroyasignacion', ':id') }}`.replace(':id', rutaId),
                         type: 'DELETE',
                         data: { _token: '{{ csrf_token() }}' },
                         success: function(response) {
@@ -428,6 +398,7 @@
                                 timer: 2000,
                             }).then(() => {
                                 $('#tabla-asignaciones').DataTable().ajax.reload();
+                                $('#rutasAsignadasTable').DataTable().ajax.reload();
                             });
                         },
                         error: function(xhr) {
@@ -442,123 +413,6 @@
             });
         }
 
-        $('#buscarRutaVendedor').click(function(){
-            let id_vendedor = $('#vendedorSelectControl').val();
-            if (!id_vendedor) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Advertencia',
-                    text: 'Por favor, seleccione un vendedor.',
-                });
-                return;
-            }
-            Swal.fire({
-                title: 'Cargando clientes asignados...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            $.ajax({
-                url: "{{ route('vendedores.obtenerRuta', ':id') }}".replace(':id', id_vendedor),
-                type: 'GET',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                 },
-
-                success: function(data) {
-                    Swal.close();
-                    $('#clientesAsignadosBodyrutas').empty();
-                    if (data.length > 0) {
-                        data.forEach((cliente, index) => {
-                            $('#clientesAsignadosBodyrutas').append(`
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td>${cliente.nombres} ${cliente.apellido_paterno} ${cliente.apellido_materno}</td>
-                                    <td>${cliente.ubicacion}</td>
-                                    <td>${cliente.asignacion_fecha_hora}</td>
-                                    <td>${cliente.atencion_fecha_hora || '<span class="badge bg-danger">No atendido</span>'}</td>
-                                    <td>${
-                                        cliente.atencion_fecha_hora ? 
-                                            cliente.estado_pedido ?
-                                                `<span class="badge bg-success">Existe Pedido</span>` :
-                                                `<span class="badge bg-danger">No Existe Pedido</span>` 
-                                            : 
-                                            `<span class="badge bg-danger">No Atendido</span>`
-                                        }</td>
-                                </tr>
-                            `);
-                        });
-                    } else {
-                        $('#clientesAsignadosBodyrutas').append('<tr><td colspan="6">No hay clientes asignados.</td></tr>');
-                    }
-                },
-                error: function(xhr) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Ocurrió un error al cargar los clientes asignados.',
-                    });
-                }
-            })
-        });
-
-        $('#buscarRutaVendedorReset').click(()=>{
-            let id_vendedor = $('#vendedorSelectControl').val();
-            if (!id_vendedor) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Advertencia',
-                    text: 'Por favor, seleccione un vendedor.',
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "¡Esta acción reseteará todas las asignaciones del vendedor!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, resetear',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: "{{ route('vendedores.resetearRuta', ':id') }}".replace(':id', id_vendedor),
-                        type: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}',
-                            _method: 'PUT'
-                        },
-                        success: function(response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Éxito',
-                                text: 'Asignaciones de ruta reiniciadas correctamente.',
-                                showCancelButton: false,
-                                showConfirmButton: false,
-                                timer: 2000,
-                            }).then(() => {
-                                $('#vendedorSelectControl').val(null).trigger('change');
-                                $('#clientesAsignadosBodyrutas').empty();
-                                $('#clientesAsignadosBodyrutas').append('<tr><td colspan="6">Seleccione un vendedor para ver los clientes asignados.</td></tr>');
-                            });
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Ocurrió un error al reiniciar las asignaciones.',
-                            });
-                        }
-                    });
-                }
-            });
-        })
-
-
         function rutasAsignadas(e) {
             let id_vendedor = $(e).attr('data-id');
             Swal.fire({
@@ -568,32 +422,27 @@
                     Swal.showLoading();
                 }
             });
-            $.ajax({
-                url: "{{ route('asignacionclientes.getRutasAsignadas',':id') }}".replace(':id', id_vendedor),
-                type: 'GET',
-                data: { id_vendedor: id_vendedor },
-                success: function(data) {
-                    Swal.close();
-                    $('#rutasAsignadasBody').empty();
-                    if (data.length > 0) {
-                        data.forEach((ruta, index) => {
-                            $('#rutasAsignadasBody').append(`
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td>${ruta.nombre_ruta}</td>
-                                    <td>
-                                        <button class="btn btn-danger btn-sm" onclick="eliminarRuta(${ruta.id}, ${id_vendedor})">
-                                            <i class="fas fa-trash-alt"></i> Eliminar
-                                        </button>
-                                    </td>
-                                </tr>
-                            `);
-                        });
-                    } else {
-                        $('#rutasAsignadasBody').append('<tr><td colspan="3">No hay rutas asignadas.</td></tr>');
-                    }
+            $('#rutasAsignadasTable').DataTable().destroy();
+            $('#rutasAsignadasTable').DataTable({
+                language: {
+                    url: '/i18n/es-ES.json'
                 },
-                error: function(xhr) {
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "{{ route('administrador.asignacionclientes.getRutasAsignadas', ':id') }}".replace(':id', id_vendedor),
+                    "type": "GET",
+                },
+                columns: [
+                    { data: 'id', width: '5%' },
+                    { data: 'nombre_ruta', width: '75%' },
+                    { data: 'numero_clientes', width: '10%' },
+                    { data: 'action', width: '10%', orderable: false, searchable: false }
+                ],
+                "initComplete": function(settings, json) {
+                    Swal.close();
+                },  
+                "error": function(xhr, error, code) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -603,44 +452,12 @@
             });
         }
 
-        function eliminarRuta(rutaId, vendedorId) {
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "¡Esta acción no se puede deshacer!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/rutasasignadosavendedoreseliminar/${rutaId}/${vendedorId}`,
-                        type: 'DELETE',
-                        data: { _token: '{{ csrf_token() }}' },
-                        success: function(response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Éxito',
-                                text: 'Ruta eliminada correctamente.',
-                                showCancelButton: false,
-                                showConfirmButton: false,
-                                timer: 2000,
-                            }).then(() => {
-                                $('#tabla-asignaciones').DataTable().ajax.reload();
-                            });
-                        },
-                        error: function(xhr) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Ocurrió un error al eliminar la ruta.',
-                            });
-                        }
-                    });
-                }
-            });
-        }
+        $('#porclientesSelect').select2({
+            placeholder: "Seleccione un cliente",
+            width: '100%',
+            theme: 'classic',
+            parents: true
+        });
+        
     </script>
 @stop

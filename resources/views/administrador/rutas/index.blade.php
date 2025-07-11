@@ -16,11 +16,18 @@
 @stop
 
 @section('content')
-
-    <div class="container">
-        <button class="btn btn-success mb-3" data-toggle="modal" data-target="#modalCrearRuta">
-            <i class="fas fa-plus me-2"></i> Crear Nueva Ruta
-        </button>
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="text-dark" style="font-size: 1.75rem; font-weight: 600;">
+                <i class="fas fa-fw fa-route"></i>Rutas de Distribución
+            </h2>
+            <button class="btn btn-success mb-3" data-toggle="modal" data-target="#modalCrearRuta">
+                <i class="fas fa-plus"></i> Crear Nueva Ruta
+            </button>
+        </div>
+        <p class="text-muted" style="font-size: 1.2rem; font-weight: 400;">
+            Aquí puedes gestionar las rutas de distribución.
+        </p>
     </div>
 
      <!--REGISTRO DE LINEA-->
@@ -95,12 +102,12 @@
         $(document).ready(function(){
             $('#tablaRutas').DataTable({
                 language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                    url: '/i18n/es-ES.json'
                 },
                 "processing":true,
                 "serverSide":true,
                 "ajax": {
-                    "url": "{{ route('rutas.index') }}",
+                    "url": "{{ route('administrador.rutas.index') }}",
                     "type": "GET",
                     /*"data": function (d) {
                         d.nombres_completos = $('#cajabusquedanombre').val();
@@ -139,7 +146,7 @@
                 }
             });
             $.ajax({
-                url: "{{ route('rutas.store') }}",
+                url: "{{ route('administrador.rutas.store') }}",
                 type: "POST",
                 data: {
                     _token: '{{ csrf_token() }}',
@@ -178,7 +185,8 @@
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, eliminar'
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({
@@ -190,7 +198,7 @@
                         }
                     });
                     $.ajax({
-                        url: "{{ route('rutas.destroy', ':id') }}".replace(':id', idRuta),
+                        url: "{{ route('administrador.rutas.destroy', ':id') }}".replace(':id', idRuta),
                         type: "DELETE",
                         data: {
                             _token: '{{ csrf_token() }}'
@@ -246,7 +254,7 @@
                         }
                     });
                     $.ajax({
-                        url: "{{ route('rutas.update', ':id') }}".replace(':id', idRuta),
+                        url: "{{ route('administrador.rutas.update', ':id') }}".replace(':id', idRuta),
                         type: "POST",
                         data: {
                             _token: '{{ csrf_token() }}',

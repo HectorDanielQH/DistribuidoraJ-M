@@ -141,12 +141,12 @@ class ProductoController extends Controller
                         <i class="fas fa-cog"></i>
                     </button>';
                     if($producto->estado_de_baja) {
-                        $acciones .= '<button type="button" class="btn btn-success" onclick="ProductoDeAlta(this)" id-producto="' . $producto->id . '">
-                            <i class="fas fa-check"></i>
+                        $acciones .= '<button type="button" class="btn btn-secondary" onclick="ProductoDeAlta(this)" id-producto="' . $producto->id . '">
+                            <i class="fas fa-eye-slash"></i>
                         </button>';
                     } else {
                         $acciones .= '<button type="button" class="btn btn-info" onclick="ProductoDeBaja(this)" id-producto="' . $producto->id . '">
-                            <i class="fas fa-times"></i>
+                            <i class="fas fa-eye"></i>
                         </button>';
                     }
                     $acciones .= '<button type="button" class="btn btn-danger" onclick="eliminarProducto(' . $producto->id . ')">

@@ -344,13 +344,13 @@ return [
         ],
         [
             'text' => 'Rutas',
-            'route' => 'rutas.index',
+            'route' => 'administrador.rutas.index',
             'icon' => 'fas fa-fw fa-route',
             'can' => 'administrador.permisos',
         ],
         [
             'text' => 'Clientes',
-            'route' => 'clientes.index',
+            'route' => 'administrador.clientes.index',
             'icon' => 'fas fa-fw fa-users-cog',
             'can' => 'administrador.permisos',
 
@@ -361,8 +361,14 @@ return [
         ],
         [
             'text' => 'Asignaciones',
-            'route' => 'asignacionclientes.index',
+            'route' => 'administrador.asignacionclientes.index',
             'icon' => 'fas fa-fw fa-tasks',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Control de Rutas',
+            'route' => 'administrador.controlrutas.index',
+            'icon' => 'fas fa-fw fa-map-marked-alt',
             'can' => 'administrador.permisos',
         ],
         [

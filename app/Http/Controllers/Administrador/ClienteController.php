@@ -1,40 +1,72 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
+use App\Imports\ClientesImport;
 use App\Models\Cliente;
 use App\Models\Rutas;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Yajra\DataTables\DataTables;
 
 class ClienteController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, DataTables $dataTables)
     {
-        $query = Cliente::query();
+        if ($request->ajax()) {
+            
+            $query = Cliente::query();
 
-        if ($request->filled('nombre')) {
-            $keywords = explode(' ', $request->nombre);
-            $query->where(function ($q) use ($keywords) {
-                foreach ($keywords as $word) {
-                    $q->where(function ($subquery) use ($word) {
-                        $subquery->where('nombres', 'like', '%' . $word . '%')
-                                ->orWhere('apellido_paterno', 'like', '%' . $word . '%')
-                                ->orWhere('apellido_materno', 'like', '%' . $word . '%');
-                    });
-                }
-            });
+            if ($request->filled('nombre')) {
+                $keywords = trim(strtoupper($request->nombre));
+                $query->where(function ($q) use ($keywords) {
+                    $q->where('nombres', 'like', '%' . $keywords . '%')
+                      ->orWhere('apellido_paterno', 'like', '%' . $keywords . '%')
+                      ->orWhere('apellido_materno', 'like', '%' . $keywords . '%');
+                });
+            }
+
+            if ($request->filled('ci')) {
+                $query->where('cedula_identidad', 'like', '%' . $request->ci . '%');
+            }
+
+            return $dataTables->eloquent($query)
+                ->addColumn('nombres_completos', function ($cliente) {
+                    return trim($cliente->nombres . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno);
+                })
+                ->addColumn('ruta', function ($cliente) {
+                    return $cliente->ruta ? $cliente->ruta->nombre_ruta : 'No asignada';
+                })
+                ->addColumn('acciones', function ($cliente) {
+                    $botones = '<div class="btn-group" role="group">';
+                    $botones .= '
+                    <button type="button" class="btn btn-primary btn-sm" onclick="editarUsuario(this)"
+                        id-cliente="' . $cliente->id . '"
+                        id-cliente-cedula="' . $cliente->cedula_identidad . '"
+                        id-cliente-nombres="' . $cliente->nombres . '"
+                        id-cliente-paterno="' . $cliente->apellido_paterno . '"
+                        id-cliente-materno="' . $cliente->apellido_materno . '"
+                        id-cliente-celular="' . $cliente->celular . '"
+                        id-cliente-ubicacion="' . $cliente->ubicacion . '"
+                        id-cliente-ruta="' . $cliente->ruta_id . '"
+
+                        data-toggle="modal" data-target="#modalEditarCliente"
+                    >
+                        <i class="fas fa-edit"></i> Editar
+                    </button>';
+                    $botones .= '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarUsuario(this)" id-cliente="' . $cliente->id . '"><i class="fas fa-trash"></i> Eliminar</button>';
+                    $botones .= '</div>';
+                    return $botones;
+                })
+                ->rawColumns(['acciones'])
+                ->toJson();
         }
-
-        if ($request->filled('ci')) {
-            $query->where('cedula_identidad', 'like', '%' . $request->ci . '%');
-        }
-
-        $clientes = $query->paginate(10);
         $rutas = Rutas::all();
-        return view('administrador.clientes.index_clientes', compact('clientes', 'rutas', 'request'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('ci'));
+        return view('administrador.clientes.index_clientes', compact('rutas'));
     }
 
     /**
@@ -154,6 +186,23 @@ class ClienteController extends Controller
         $cliente->delete();
         return response()->json([
             "message"=> "Cliente eliminado con exito"
+        ]);
+    }
+
+    public function importarClientes(Request $request)
+    {
+        $request->validate([
+            'archivo_excel' => 'required|file|mimes:xlsx,xls,csv',
+        ], [
+            'archivo_excel.required' => 'El archivo es obligatorio.',
+            'archivo_excel.mimes' => 'El archivo debe ser un archivo de Excel o CSV.',
+        ]);
+
+        Excel::import(new ClientesImport, $request->file('archivo_excel'));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Clientes importados correctamente.',
         ]);
     }
 }

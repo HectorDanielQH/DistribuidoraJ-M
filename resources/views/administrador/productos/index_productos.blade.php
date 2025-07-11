@@ -1989,7 +1989,7 @@
                         }
                     });
                     $.ajax({
-                        url: "{{ route('productos.dardealtaobaja', ':id') }}".replace(':id', id),
+                        url: "{{ route('administrador.productos.dardealtaobaja', ':id') }}".replace(':id', id),
                         type: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
@@ -2033,7 +2033,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('productos.dardealtaobaja', ':id') }}".replace(':id', id),
+                        url: "{{ route('administrador.productos.dardealtaobaja', ':id') }}".replace(':id', id),
                         type: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
@@ -2091,7 +2091,7 @@
                             }
                         });
                         $.ajax({
-                            url: "{{ route('productos.bajostock') }}",
+                            url: "{{ route('administrador.productos.bajostock') }}",
                             type: 'GET',
                             success: function(data) {
                                 let html = '<table class="table table-striped"><thead><tr><th>Código</th><th>Producto</th><th>Stock</th></tr></thead><tbody>';

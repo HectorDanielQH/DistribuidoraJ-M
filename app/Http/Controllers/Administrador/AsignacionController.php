@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Administrador;
 
+use App\Http\Controllers\Controller;
 use App\Models\Asignacion;
 use App\Models\Cliente;
 use App\Models\RendimientoPersonal;
 use App\Models\Rutas;
 use App\Models\User;
+use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -32,14 +34,14 @@ class AsignacionController extends Controller
                 })
                 ->addColumn('action', function ($vendedor) {
                     return "
-                        <button class='btn btn-primary btn-sm' data-bs-target='#visualizarClientes' data-bs-toggle='modal' data-id='$vendedor->id' onclick='clientesAsignados(this)'>
-                            <i class='fas fa-eye mr-1'></i>
+                        <button class='btn btn-info btn-sm' data-bs-target='#visualizarClientes' data-bs-toggle='modal' data-id='$vendedor->id' onclick='clientesAsignados(this)'>
+                            <i class='fas fa-users'></i>
                         </button>
-                        <button class='btn btn-warning btn-sm' data-bs-target='#visualizarRutas' data-bs-toggle='modal' data-id='$vendedor->id' onclick='rutasAsignadas(this)'>
-                            <i class='fas fa-eye mr-1'></i>
+                        <button class='btn btn-secondary btn-sm' data-bs-target='#visualizarRutas' data-bs-toggle='modal' data-id='$vendedor->id' onclick='rutasAsignadas(this)'>
+                            <i class='fas fa-route'></i>
                         </button>
                         <button class='btn btn-success btn-sm' data-bs-target='#asignarCliente' data-bs-toggle='modal' data-id='$vendedor->id' onclick='valordeusuariovendedor(this)'>
-                            <i class='fas fa-plus mr-1'></i>
+                            <i class='fas fa-random'></i>
                         </button>
                     ";
                 })
@@ -141,12 +143,22 @@ class AsignacionController extends Controller
         return response()->json($rutasNoAsignados);
     }
 
-    public function clientesAsignadosAVendedores(string $id_vendedor){
+    public function clientesAsignadosAVendedores(string $id_vendedor)
+    {
         $clientesAsignados = Cliente::whereHas('asignaciones', function ($query) use ($id_vendedor) {
             $query->where('id_usuario', $id_vendedor);
-        })->get();
-        return response()->json($clientesAsignados);
-    } 
+        });
+
+        return DataTables::of($clientesAsignados)
+            ->addColumn('nombre_completo', function($cliente) {
+                return $cliente->nombres . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno;
+            })
+            ->filterColumn('nombre_completo', function($query, $keyword) {
+                $query->whereRaw("CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?", ["%{$keyword}%"]);
+            })
+            ->make(true);
+    }
+
 
     public function obtenerVendedoresRuta(string $id_vendedor)
     {
@@ -184,14 +196,33 @@ class AsignacionController extends Controller
     {
         $rutasAsignadas = Rutas::whereHas('asignaciones', function ($query) use ($id_vendedor) {
             $query->where('id_usuario', $id_vendedor);
-        })->get();
-        return response()->json($rutasAsignadas);
+        });
+
+        return DataTables::of($rutasAsignadas)
+            ->addColumn('nombre_ruta', function($ruta) {
+                return $ruta->nombre_ruta;
+            })
+            ->filterColumn('nombre_ruta', function($query, $keyword) {
+                $query->whereRaw("nombre_ruta LIKE ?", ["%{$keyword}%"]);
+            })
+            ->addColumn('numero_clientes', function($ruta) {
+                $numeroClientes = Asignacion::where('id_ruta', $ruta->id)->count();
+                return $numeroClientes;
+            })
+            ->addColumn('action', function ($ruta) {
+                return "
+                    <button class='btn btn-danger btn-sm' data-id='$ruta->id' onclick='eliminarRutaAsignada(this)'>
+                        <i class='fas fa-trash'></i>
+                    </button>
+                ";
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
-    public function rutasAsignadasAVendedoresEliminar(string $id_ruta, string $id_vendedor)
+    public function rutasAsignadasAVendedoresEliminar(string $id_ruta)
     {
-        $asignacion = Asignacion::where('id_ruta', $id_ruta)
-            ->where('id_usuario', $id_vendedor)->delete();
+        $asignacion = Asignacion::where('id_ruta', $id_ruta)->delete();
         if ($asignacion) {
             return response()->json(['message' => 'Asignación de ruta eliminada exitosamente.'], 200);
         }
