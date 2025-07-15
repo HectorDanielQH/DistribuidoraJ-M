@@ -498,6 +498,8 @@
                 },
                 "processing":true,
                 "serverSide":true,
+                pageLength: 5,
+                lengthMenu: [ [5, 10, 25, 50], [5, 10, 25, 50] ],
                 "ajax": {
                     "url": "{{ route('administrador.productos.index') }}",
                     "type": "GET",
@@ -513,6 +515,24 @@
                     { data: 'acciones', orderable: false, searchable:false}
                 ],
                 
+            });
+
+            // Mostrar SweetAlert antes del request AJAX
+            $('#tabla-productos').on('preXhr.dt', function () {
+                Swal.fire({
+                    title: 'Cargando productos...',
+                    text: 'Espere un momento.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            });
+
+            // Cerrar SweetAlert cuando termine de cargar
+            $('#tabla-productos').on('xhr.dt', function () {
+                Swal.close();
             });
         });
     </script>
