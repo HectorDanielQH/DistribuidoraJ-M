@@ -734,7 +734,7 @@
                         showConfirmButton: false,
                         timer: 2000,
                     }).then(() => {
-                        $('#tabla-productos').DataTable().ajax.reload();
+                        $('#tabla-productos').DataTable().ajax.reload(null, false);
                         $('#botonenviar-cerrar').click();
                     });
                 },
@@ -860,7 +860,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
@@ -912,7 +912,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
@@ -981,7 +981,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
@@ -1043,8 +1043,8 @@
                 },
                 success: function(data) {
                     Swal.close();
-                    $('#tabla-formas-venta-producto').DataTable().ajax.reload();
-                    $('#tabla-productos').DataTable().ajax.reload();
+                    $('#tabla-formas-venta-producto').DataTable().ajax.reload(null, false);
+                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                 },
                 error: function(xhr) {
                     Swal.fire({
@@ -1084,8 +1084,8 @@
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
                         success: function(response) {
-                            $('#tabla-formas-venta-producto').DataTable().ajax.reload();
-                            $('#tabla-productos').DataTable().ajax.reload();
+                            $('#tabla-formas-venta-producto').DataTable().ajax.reload(null, false);
+                            $('#tabla-productos').DataTable().ajax.reload(null, false);
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Forma de venta eliminada',
@@ -1167,7 +1167,7 @@
                                 timer: 2000
                             });
 
-                            $('#tabla-productos').DataTable().ajax.reload();
+                            $('#tabla-productos').DataTable().ajax.reload(null, false);
                         },
                         error: function(xhr) {
                             Swal.fire({
@@ -1353,7 +1353,7 @@
                                     showConfirmButton: false,
                                     timer: 2000,
                                     didClose: () => {
-                                        $('#tabla-productos').DataTable().ajax.reload();
+                                        $('#tabla-productos').DataTable().ajax.reload(null, false);
                                     }
                                 });
                             },
@@ -1474,7 +1474,7 @@
                                     showConfirmButton: false,
                                     timer: 2000,
                                     didClose: () => {
-                                        $('#tabla-productos').DataTable().ajax.reload();
+                                        $('#tabla-productos').DataTable().ajax.reload(null, false);
                                     }
                                 });
                             },
@@ -1500,7 +1500,7 @@
                 timer: 2000,
                 didOpen: () => {
                     Swal.showLoading();
-                    $('#tabla-productos').DataTable().ajax.reload();
+                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                 }
             })
         };
@@ -1589,7 +1589,7 @@
                                         timer: 2000,
                                         showConfirmButton: false,
                                         didClose: () => {
-                                            $('#tabla-productos').DataTable().ajax.reload();
+                                            $('#tabla-productos').DataTable().ajax.reload(null, false);
                                         }
                                     });
                                 },
@@ -1728,7 +1728,7 @@
                                     showConfirmButton: false,
                                     timer: 2000,
                                     didClose: () => {
-                                        $('#tabla-productos').DataTable().ajax.reload();
+                                        $('#tabla-productos').DataTable().ajax.reload(null, false);
                                     }
                                 });
                             },
@@ -1788,7 +1788,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
@@ -1846,7 +1846,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
@@ -1904,7 +1904,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
