@@ -800,7 +800,7 @@
                         showConfirmButton: false,  // Eliminamos el botón de confirmación
                         timer: 2000  // Se cierra automáticamente después de 2 segundos
                     }).then(() => {
-                        $('#tabla-productos').DataTable().ajax.reload();
+                        $('#tabla-productos').DataTable().ajax.reload(null,false);
                     });
                 }
             });
@@ -2013,7 +2013,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
@@ -2057,7 +2057,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
