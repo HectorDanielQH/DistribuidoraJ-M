@@ -1961,7 +1961,7 @@
                                 showConfirmButton: false,
                                 timer: 2000,
                                 didClose: () => {
-                                    $('#tabla-productos').DataTable().ajax.reload();
+                                    $('#tabla-productos').DataTable().ajax.reload(null, false);
                                 }
                             });
                         },
