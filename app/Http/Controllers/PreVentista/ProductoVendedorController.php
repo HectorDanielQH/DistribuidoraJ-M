@@ -94,21 +94,7 @@ class ProductoVendedorController extends Controller
     public function descargarCatalogo() {
         $productos = Producto::where('estado_de_baja', false)
             ->where('cantidad', '>', 0)
-            ->get()
-            ->map(function ($producto) {
-                $ruta = $producto->foto_producto; // Ya contiene 'foto_producto/....'
-
-                if (Storage::disk('local')->exists($ruta)) {
-                    $contenido = Storage::disk('local')->get($ruta);
-                    $tipo = pathinfo($ruta, PATHINFO_EXTENSION);
-                    $producto->imagen_base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($contenido);
-                } else {
-                    $producto->imagen_base64 = null;
-                }
-
-                return $producto;
-            });
-        
+            ->get();
         $marcas = Marca::all();
         $lineas = Linea::all();
 

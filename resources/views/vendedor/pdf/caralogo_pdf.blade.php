@@ -67,22 +67,9 @@
                             @if(!$producto->estado_de_baja && $producto->cantidad > 0)
                                 <div class="producto row">
                                     <div class="col-3 text-center">
-                                        @php
-                                            $ruta = $producto->foto_producto;
-                                            if (Storage::disk('local')->exists($ruta)) {
-                                                $contenido = Storage::disk('local')->get($ruta);
-                                                $tipo = pathinfo($ruta, PATHINFO_EXTENSION);
-                                                $imagen_base64 = 'data:image/' . $tipo . ';base64,' . base64_encode($contenido);
-                                            } else {
-                                                $imagen_base64 = null;
-                                            }
-                                        @endphp
-                                        @if($imagen_base64)
-                                            <img src="{{ $imagen_base64 }}" alt="Producto">
-                                        @else
-                                            <p>No imagen</p>
-                                        @endif
+                                        <img src="{{ storage_path('app/private/' . $producto->foto_producto) }}" class="img-fluid" alt="{{ $producto->nombre_producto }}">
                                     </div>
+
                                     <div class="col-9">
                                         <table style="width: 100%; margin-top: 10px; font-size: 13px;">
                                             <tr>
