@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administrador;
 use App\Http\Controllers\Controller;
 use App\Models\Asignacion;
 use App\Models\Cliente;
+use App\Models\NoAtendidos;
 use App\Models\RendimientoPersonal;
 use App\Models\Rutas;
 use App\Models\User;
@@ -43,6 +44,9 @@ class AsignacionController extends Controller
                         <button class='btn btn-success btn-sm' data-bs-target='#asignarCliente' data-bs-toggle='modal' data-id='$vendedor->id' onclick='valordeusuariovendedor(this)'>
                             <i class='fas fa-random'></i>
                         </button>
+                        <button class='btn btn-warning btn-sm' data-bs-target='#asignarClienteUnitario' data-bs-toggle='modal' data-id='$vendedor->id' onclick='agregarClienteUnitario(this)'>
+                            <i class='fas fa-user-plus'></i>
+                        </button>
                     ";
                 })
                 ->rawColumns(['action'])
@@ -51,7 +55,8 @@ class AsignacionController extends Controller
         // Si no es una solicitud AJAX, mostramos la vista normal
         $vendedores=User::where('estado','ACTIVO')->role('vendedor')->get();
         $rutas=Rutas::all();
-        return view('administrador.asignacion.index_asignacion', compact('vendedores','rutas'));
+        $no_atendidos=NoAtendidos::all();
+        return view('administrador.asignacion.index_asignacion', compact('vendedores','rutas', 'no_atendidos'));
     }
 
     /**
@@ -170,27 +175,6 @@ class AsignacionController extends Controller
         return response()->json($conjuntoTablas);
     }
 
-    public function resetearVendedoresRuta(string $id_vendedor)
-    {
-        $asignaciones = Asignacion::where('id_usuario', $id_vendedor)->get();
-        foreach ($asignaciones as $asignacion) {
-            RendimientoPersonal::create([
-                'id_usuario' => $asignacion->id_usuario,
-                'id_cliente' => $asignacion->id_cliente,
-                'id_ruta' => $asignacion->id_ruta,
-                'numero_pedido' => $asignacion->numero_pedido,
-                'asignacion_fecha_hora' => $asignacion->asignacion_fecha_hora,
-                'atencion_fecha_hora' => $asignacion->atencion_fecha_hora,
-                'estado_pedido' => $asignacion->estado_pedido,
-            ]);
-            $asignacion->asignacion_fecha_hora = now();
-            $asignacion->atencion_fecha_hora = null;
-            $asignacion->estado_pedido = false;
-            $asignacion->save();
-        }
-        return response()->json(['message' => 'Ruta de vendedor reseteada exitosamente.'], 200);
-    }
-
 
     public function rutasAsignadasAVendedores(string $id_vendedor)
     {
@@ -227,5 +211,31 @@ class AsignacionController extends Controller
             return response()->json(['message' => 'Asignación de ruta eliminada exitosamente.'], 200);
         }
         return response()->json(['message' => 'Asignación de ruta no encontrada.'], 404);
+    }
+
+    public function clientesUnitarios(Request $request)
+    {
+        $request->validate([
+            'id_vendedor' => 'required|exists:users,id',
+            'clientes' => 'required|array',
+            'clientes.*' => 'exists:clientes,id',
+        ]);
+        foreach ($request->clientes as $cliente) {
+            $cliente = Cliente::find($cliente);
+            if(!Asignacion::where('id_usuario', $request->id_vendedor)->where('id_cliente', $cliente->id)->exists()){    
+                Asignacion::create([
+                    'id_usuario' => $request->id_vendedor,
+                    'id_cliente' => $cliente->id,
+                    'id_ruta' => $cliente->ruta_id,
+                    'numero_pedido' => null,
+                    'asignacion_fecha_hora' => now(),
+                    'atencion_fecha_hora' => null,
+                    'estado_pedido' => false,
+                ])->save();
+            }
+        }
+        return response()->json([
+            'message' => 'Clientes asignados exitosamente.',
+        ], 201);
     }
 }

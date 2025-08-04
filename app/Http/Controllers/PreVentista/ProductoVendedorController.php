@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\PreVentista;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\FormaVenta;
 use App\Models\Linea;
@@ -9,29 +11,40 @@ use App\Models\Producto;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Yajra\DataTables\DataTables;
 
 class ProductoVendedorController extends Controller
 {
-    public function obtenerProductos(Request $request)
+    public function obtenerProductos(Request $request, DataTables $dataTables)
     {
-        $query = Producto::query()->where('estado_de_baja', false)->where('cantidad', '>', 0);
+        if($request->ajax())
+        {
+            $query = Producto::query()->where('estado_de_baja', false)->where('cantidad', '>', 0);
+            if ($request->filled('nombre')) {
+                $query->where('nombre_producto', 'like', '%' . strtoupper($request->nombre) . '%');
+            }
 
-        if ($request->filled('nombre')) {
-            $query->where('nombre_producto', 'like', '%' . strtoupper($request->nombre) . '%');
+            if ($request->filled('codigo')) {
+                $query->where('codigo', 'like', '%' . $request->codigo . '%');
+            }
+
+            return $dataTables->eloquent($query)
+                ->addColumn('acciones', function ($producto) {
+                    return view('vendedor.productos.partials.acciones', compact('producto'));
+                })
+                ->editColumn('foto_producto', function ($producto) {
+                    return view('vendedor.productos.partials.foto_producto', compact('producto'));
+                })
+                ->rawColumns(['acciones', 'foto_producto'])
+                ->make(true);
         }
-
-        if ($request->filled('codigo')) {
-            $query->where('codigo', 'like', '%' . $request->codigo . '%');
-        }
-
-        $productos = $query->paginate(10);
 
         $contar_productos_promocion = Producto::where('promocion', true)
-            ->where('estado_de_baja', false)
-            ->where('cantidad', '>', 0)
-            ->count();
+                ->where('estado_de_baja', false)
+                ->where('cantidad', '>', 0)
+                ->count();
 
-        return view('vendedor.productos.index',compact('productos', 'contar_productos_promocion'))->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('codigo'));
+        return view('vendedor.productos.index', compact('contar_productos_promocion'));
     }
 
     public function verDetalleProductosPromocion(){

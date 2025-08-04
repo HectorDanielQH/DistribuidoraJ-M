@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asignacion;
+use App\Models\NoAtendidos;
+use App\Models\RendimientoPersonal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
@@ -137,4 +139,31 @@ class ControlRutasController extends Controller
             ->make(true);
     }
     // Otros métodos como create, store, show, edit, update, destroy pueden ser añadidos aquí según sea necesario.
+
+    public function cerrarAsignaciones(){
+        $asignaciones = Asignacion::all();
+        if ($asignaciones->isEmpty()) {
+            return response()->json(['message' => 'No hay asignaciones para cerrar.'], 404);
+        }
+        foreach ($asignaciones as $asignacion) {
+            RendimientoPersonal::create([
+                'id_usuario' => $asignacion->id_usuario,
+                'id_cliente' => $asignacion->id_cliente,
+                'id_ruta' => $asignacion->id_ruta,
+                'numero_pedido' => $asignacion->numero_pedido,
+                'asignacion_fecha_hora' => $asignacion->asignacion_fecha_hora,
+                'atencion_fecha_hora' => $asignacion->atencion_fecha_hora,
+                'estado_pedido' => $asignacion->estado_pedido,
+            ]);
+
+            if($asignacion->atencion_fecha_hora == null){
+                NoAtendidos::create([
+                    'id_cliente' => $asignacion->id_cliente,
+                ]);
+            }
+        }
+        // Eliminar todas las asignaciones
+        Asignacion::truncate();
+        return response()->json(['message' => 'Ruta de vendedor reseteada exitosamente.'], 200);
+    }
 }

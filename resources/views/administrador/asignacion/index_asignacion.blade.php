@@ -47,8 +47,34 @@
             </div>
             <div class="modal-footer d-flex justify-content-between align-content-center">
                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="cancelar-asignacion-cliente">Cancelar</button>
-                <button type="button" class="btn btn-success" id="guardarclientesasignados">Guardar</button>
+                <button type="button" class="btn btn-success" id="guardarclientesasignados">Asignar</button>
             </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="asignarClienteUnitario" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title text-lg" id="staticBackdropLabel">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Asignar Cliente al Preventista
+                    </h1>
+                    <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <input type="hidden" id="id_vendedor_cliente_unitario" value="">
+                <div class="modal-body">
+                    <select class="form-select mb-3 text-black" id="clienteunitario" name="clientesunitarios" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar cliente">
+                    </select>
+                </div>
+                <div class="modal-footer d-flex justify-content-between align-content-center">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="cancelar-asignacion-cliente-unitario">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="guardarclientesasignadosunitarios">Guardar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -236,6 +262,13 @@
             parents: true
         });
 
+        $('#clienteunitario').select2({
+            placeholder: "Seleccione un cliente",
+            width: '100%',
+            theme: 'classic',
+            parents: true
+        });
+
         $('#vendedorSelectControl').select2({
             placeholder: "Seleccione un vendedor",
             width: '100%',
@@ -370,7 +403,7 @@
                 }
             });
         }
-
+ 
         function eliminarRutaAsignada(e) {
             let rutaId = $(e).attr('data-id');
             Swal.fire({
@@ -458,6 +491,175 @@
             theme: 'classic',
             parents: true
         });
-        
+
+        //cliente unitario busqueda por ajax select2
+        $('#clienteunitario').select2({
+            placeholder: "Seleccione un cliente",
+            width: '100%',
+            theme: 'classic',
+            ajax: {
+                url: "{{ route('administrador.clientes.buscar') }}",
+                type: 'GET',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        term: params.term // este es el texto buscado
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.map(cliente => ({
+                            id: cliente.id,
+                            text: cliente.nombres + ' ' + cliente.apellido_paterno + ' ' + cliente.apellido_materno + ' - ' + cliente.cedula_identidad,
+                        }))
+                    };
+                },
+                cache: true
+            }
+        });
+
+
+        function agregarClienteUnitario(e)
+        {
+            let id_vendedor = $(e).attr('data-id');
+            $('#id_vendedor_cliente_unitario').val(id_vendedor);
+        }
+
+        $('#cancelar-asignacion-cliente-unitario').click(function() {
+            $('#clienteunitario').val(null).trigger('change');
+            $('#id_vendedor_cliente_unitario').val('');
+        });
+
+        $('#guardarclientesasignadosunitarios').click(function() {
+            let selectclientes = $('#clienteunitario').val();
+            let id_vendedor = $('#id_vendedor_cliente_unitario').val();
+
+            if (selectclientes.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Debe seleccionar al menos un cliente.',
+                });
+                return;
+            }
+            Swal.fire({
+                title: 'Asignando cliente unitario...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            $.ajax({
+                url: "{{ route('administrador.asignacionclientes.storeUnitario') }}",
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    id_vendedor: id_vendedor,
+                    clientes: selectclientes
+                },
+                success: function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Éxito',
+                        text: 'Cliente asignado correctamente.',
+                        showCancelButton: false,
+                        showConfirmButton: false,
+                        timer: 2000,
+                    }).then(() => {
+                        $('#cancelar-asignacion-cliente-unitario').click();
+                        $('#clienteunitario').val(null).trigger('change');
+                        $('#tabla-asignaciones').DataTable().ajax.reload();
+                    });
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al asignar el cliente.',
+                    });
+                }
+            });
+        });
     </script>
+
+    @if($no_atendidos->count() > 0)
+        <script>
+            Swal.fire({
+                title: 'Clientes No Atendidos',
+                html: `
+                    <p>Hay clientes que no han sido atendidos. ¿Qué deseas hacer?</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                        <button id="btn-reporte" class="swal2-confirm swal2-styled" style="background-color: #3085d6;">Sí, ver reporte</button>
+                        <button id="btn-subsanadas" class="swal2-confirm swal2-styled" style="background-color: #28a745;">Observaciones subsanadas</button>
+                        <button id="btn-luego" class="swal2-cancel swal2-styled" style="background-color: #d33;">En otro momento</button>
+                    </div>
+                `,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didRender: () => {
+                    // Botón 1: Descargar PDF
+                    document.getElementById('btn-reporte').addEventListener('click', () => {
+                        Swal.close();
+                        // Reemplaza esta URL por la ruta real de tu PDF
+                        window.open("{{ route('administrador.noatendidos.pdf') }}", '_blank');
+                    });
+
+                    // Botón 2: Subsanadas
+                    document.getElementById('btn-subsanadas').addEventListener('click', () => {
+                        Swal.fire({
+                            title: 'Observaciones Subsanadas',
+                            text: 'Por favor, asegúrate de que las observaciones de los clientes no atendidos hayan sido subsanadas.',
+                            icon: 'info',
+                            confirmButtonText: 'Entendido',
+                            cancelButtonText: 'Cancelar',
+                            showCancelButton: true,
+                            allowOutsideClick: false,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                Swal.fire({
+                                    title: 'Subsanando observaciones...',
+                                    allowOutsideClick: false,
+                                    didOpen: () => {
+                                        Swal.showLoading();
+                                    }
+                                });
+
+                                $.ajax({
+                                    url: "{{ route('administrador.noatendidos.subsanadas') }}",
+                                    type: 'POST',
+                                    data: {
+                                        _token: '{{ csrf_token() }}'
+                                    },
+                                    success: function(response) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Éxito',
+                                            text: 'Observaciones subsanadas correctamente.',
+                                            showConfirmButton: false,
+                                            timer: 2000,
+                                        });
+                                    },
+                                    error: function(xhr) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error',
+                                            text: 'Ocurrió un error al subsanar las observaciones.',
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+
+                    // Botón 3: Más tarde
+                    document.getElementById('btn-luego').addEventListener('click', () => {
+                        Swal.fire('Entendido', 'Puedes atenderlos más tarde.', 'info');
+                    });
+                }
+            });
+        </script>
+    @endif
 @stop

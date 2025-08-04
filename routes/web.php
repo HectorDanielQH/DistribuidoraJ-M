@@ -11,12 +11,13 @@ use App\Http\Controllers\Administrador\RutasController;
 use App\Http\Controllers\Administrador\ClienteController;
 use App\Http\Controllers\Administrador\AsignacionController;
 use App\Http\Controllers\Administrador\ControlRutasController;
-
+use App\Http\Controllers\Administrador\NoAtendidosController;
+//---------------------------------------------------------------
+use App\Http\Controllers\PreVentista\ProductoVendedorController;
 
 use App\Http\Controllers\AsinacionVendedorController;
 use App\Http\Controllers\PedidoAdministradorController;
 use App\Http\Controllers\PedidoController;
-use App\Http\Controllers\ProductoVendedorController;
 use App\Http\Controllers\RendimientoPersonalController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +40,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
     //pdf descargar catalogo --VENDEDOR --ADMINISTRADOR
     Route::get('productos/vendedor/descargar-catalogo', [ProductoVendedorController::class, 'descargarCatalogo'])->name('productos.vendedor.descargarCatalogo');
+
 
     Route::prefix('administrador')->name('administrador.')->group(function () {
         //Rutas de permisos
@@ -86,10 +88,21 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('clientesasignadosavendedores/{id}', [AsignacionController::class, 'clientesAsignadosAVendedores'])->name('asignacionclientes.getClientesAsignados');
         Route::get('rutas/asignadosavendedores/{id}', [AsignacionController::class, 'rutasAsignadasAVendedores'])->name('asignacionclientes.getRutasAsignadas');
         Route::delete('rutasasignadosavendedoreseliminar/{id_ruta}', [AsignacionController::class, 'rutasAsignadasAVendedoresEliminar'])->name('asignacionrutas.destroyasignacion');
+        Route::post('asignacionclientes/registrar', [AsignacionController::class, 'clientesUnitarios'])->name('asignacionclientes.storeUnitario');
 
         //Rutas de control de rutas
         Route::get('controlrutas', [ControlRutasController::class, 'index'])->name('controlrutas.index');
         Route::get('controlrutas/{id}', [ControlRutasController::class, 'indexPreventista'])->name('controlrutas.preventista');
+        Route::post('controlrutas/cerrar-asignaciones', [ControlRutasController::class, 'cerrarAsignaciones'])->name('controlrutas.cerrarAsignaciones');
+
+        //rutas de busqueda de clientes
+        Route::get('clientes/buscar', [ClienteController::class, 'buscarClientes'])->name('clientes.buscar');
+
+        //Ruta pdf de clientes no atendidos
+        Route::get('noatendidos/pdf', [NoAtendidosController::class, 'pdfNoAtendidos'])->name('noatendidos.pdf');
+
+        //Rutas de clientes no atendidos
+        Route::post('noatendidos/subsanar-observaciones', [NoAtendidosController::class, 'subsanarObservaciones'])->name('noatendidos.subsanadas');
 
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
@@ -103,6 +116,14 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     });
     //---------------------------------------
 
+    Route::prefix('preventistas')->name('preventistas.')->group(function () {
+        //Producto vendedor Controller
+        Route::get('productos/vendedor/obtener-productos', [ProductoVendedorController::class, 'obtenerProductos'])->name('productos.vendedor.obtenerProductos');
+
+        Route::get('productos/vendedor/ver-detalle-productos-promocion', [ProductoVendedorController::class, 'verDetalleProductosPromocion'])->name('productos.vendedor.verDetalleProductosPromocion');
+        Route::get('productos/vendedor/ver-detalle-productos-formas-venta/{id}', [ProductoVendedorController::class, 'verDetalleFormaVenta'])->name('productos.vendedor.verFormasVenta');
+        Route::get('productos/vendedor/ver-detalle-productos-promocion/{id}', [ProductoVendedorController::class, 'verDetallePromocion'])->name('productos.vendedor.verDetallePromocion');
+    });
     Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
 
     Route::get('asignacionclientes/obtener-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'obtenerVendedoresRuta'])->name('vendedores.obtenerRuta');
@@ -125,13 +146,6 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
     //pdf vendedor
     Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
-
-    //Producto vendedor Controller
-    Route::get('productos/vendedor/obtener-productos', [ProductoVendedorController::class, 'obtenerProductos'])->name('productos.vendedor.obtenerProductos');
-
-    Route::get('productos/vendedor/ver-detalle-productos-promocion', [ProductoVendedorController::class, 'verDetalleProductosPromocion'])->name('productos.vendedor.verDetalleProductosPromocion');
-    Route::get('productos/vendedor/ver-detalle-productos-formas-venta/{id}', [ProductoVendedorController::class, 'verDetalleFormaVenta'])->name('productos.vendedor.verFormasVenta');
-    Route::get('productos/vendedor/ver-detalle-productos-promocion/{id}', [ProductoVendedorController::class, 'verDetallePromocion'])->name('productos.vendedor.verDetallePromocion');
 
     //pedido administrador Controller
     Route::get('pedidos/administrador/visualizacion', [PedidoAdministradorController::class,'index'])->name('pedidos.administrador.visualizacion');

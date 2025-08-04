@@ -516,24 +516,6 @@
                 ],
                 
             });
-
-            // Mostrar SweetAlert antes del request AJAX
-            $('#tabla-productos').on('preXhr.dt', function () {
-                Swal.fire({
-                    title: 'Cargando productos...',
-                    text: 'Espere un momento.',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-            });
-
-            // Cerrar SweetAlert cuando termine de cargar
-            $('#tabla-productos').on('xhr.dt', function () {
-                Swal.close();
-            });
         });
     </script>
     <script>
@@ -1957,6 +1939,14 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando producto...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
                     $.ajax({
                         url: "{{ route('administrador.productos.destroy', ':id') }}".replace(':id', id),
                         type: 'DELETE',
@@ -2084,7 +2074,7 @@
         }
     </script>
     @if($contar_productos_menores > 0)
-        <script>
+        <script defer>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'warning',

@@ -61,7 +61,14 @@ class ProductoController extends Controller
                     $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
 
                     if ($formasVenta->isEmpty()) {
-                        return '<span class="text-muted"><i class="fas fa-ban"></i> Sin Formas de Venta</span>';
+                        $output = '<div class="d-flex flex-column">';
+                        $output.='
+                            <button class="btn btn-sm btn-success mb-2" type="button" id-producto="' . $producto->id . '" onclick="agregarFormasVenta(this)">
+                                <i class="fas fa-plus"></i> Agregar Forma de Venta
+                            </button>';
+                        $output .= '</div>';
+                        $output .= '<span class="text-muted"><i class="fas fa-ban"></i> Sin Formas de Venta</span>';
+                        return $output;
                     }
 
                     $output = '<div class="d-flex flex-column">';
@@ -149,7 +156,7 @@ class ProductoController extends Controller
                             <i class="fas fa-eye"></i>
                         </button>';
                     }
-                    $acciones .= '<button type="button" class="btn btn-danger" onclick="eliminarProducto(' . $producto->id . ')">
+                    $acciones .= '<button type="button" class="btn btn-danger" id-producto="' . $producto->id . '" onclick="eliminarProducto(this)">
                             <i class="fas fa-trash"></i>
                         </button>';
                     $acciones .= '</div>';

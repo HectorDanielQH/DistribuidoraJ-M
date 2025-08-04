@@ -418,7 +418,7 @@ return [
         ],
         [
             'text' => 'Productos',
-            'route' => 'productos.vendedor.obtenerProductos',
+            'route' => 'preventistas.productos.vendedor.obtenerProductos',
             'icon' => 'fas fa-fw fa-shopping-cart',
             'can' => 'vendedor.permisos',
         ],

@@ -27,7 +27,7 @@
 
 @section('content')
 
-    <div class="container">
+    <div class="container mb-5">
         <div class="table-responsive rounded shadow-sm" style="overflow-x: auto;">
             <h3 class="text-center mb-4" style="font-size: 1.5rem; font-weight: 600;">
                 <i class="fas fa-users me-2"></i> Información de Clientes Asignados a Preventistas
@@ -45,6 +45,11 @@
                         <option value="{{ $vendedor->id }}" data-id="{{ $vendedor->id }}">{{ $vendedor->nombres }} {{ $vendedor->apellido_paterno }} {{ $vendedor->apellido_materno }}</option>
                     @endforeach
                 </select>
+                <div class="mt-2">
+                    <button class="btn btn-danger" onclick="cerrarAsignaciones()">
+                        <i class="fas fa-lock"></i> Cerrar Asignaciones de todo el personal
+                    </button>
+                </div>
             </div>
             <table id="tabla-asignaciones" class="table table-bordered align-middle text-center" style="min-width: 800px;">
                 <thead class="table-dark">
@@ -159,5 +164,44 @@
             });
         }
     </script>
-        
+
+    <script>
+        function cerrarAsignaciones() {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Esta acción cerrará las asignaciones de todo el personal.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, cerrar asignaciones',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('administrador.controlrutas.cerrarAsignaciones') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            Swal.fire(
+                                'Cerrado!',
+                                'Las asignaciones han sido cerradas.',
+                                'success'
+                            );
+                            $('#tabla-asignaciones').DataTable().ajax.reload();
+                        },
+                        error: function(xhr) {
+                            Swal.fire(
+                                'Error!',
+                                'No se pudieron cerrar las asignaciones. Inténtalo de nuevo más tarde.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
+        }
+    </script>
 @stop
