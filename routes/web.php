@@ -59,6 +59,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::delete('formaventas/eliminar/{id}', [FormaVentaController::class, 'destroy'])->name('formaventas.destroy');
         Route::put('formaventas/editar-visualizacion/{id}', [FormaVentaController::class, 'editarVisualizacion'])->name('formaventas.updateVisualizacion');
         Route::put('productos/editarPromocion/{id}',[ProductoController::class, 'editarPromocion'])->name('productos.editarPromocion');
+        Route::put('productos/editarStock/{id}',[FormaVentaController::class, 'editarStock'])->name('productos.editarStock');
 
         
         //Rutas de Promocion

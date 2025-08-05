@@ -26,6 +26,7 @@ class FormaVentaController extends Controller
             ->addColumn('acciones', function ($formaVenta) {
                 $acciones = '<div class="btn-group" role="group">';
                 $acciones .= '<button class="btn btn-sm btn-danger" onclick="eliminarFormaVenta(' . $formaVenta->id . ')"><i class="fas fa-trash"></i></button>';
+                $acciones .= '<button class="btn btn-sm btn-warning" onclick="editarFormaVenta(' . $formaVenta->id . ')"><i class="fas fa-edit"></i></button>';
                 $acciones .= $formaVenta->activo?'<button class="btn btn-sm btn-info" id-visualizacion="' . $formaVenta->id . '" onclick="editarVisualizacion(this)"><i class="fas fa-eye"></i></button>': '<button class="btn btn-sm btn-secondary" id-visualizacion="' . $formaVenta->id . '" onclick="editarVisualizacion(this)"><i class="fas fa-eye-slash"></i></button>';
                 $acciones .= '</div>';
                 return $acciones;
@@ -105,6 +106,22 @@ class FormaVentaController extends Controller
 
         return response()->json([
             'id_producto' => $formaVenta->id_producto,
+        ]);
+    }
+
+    public function editarStock(Request $request, string $id)
+    {
+        $request->validate([
+            'equivalencia_cantidad' => 'required|numeric|min:1',
+        ]);
+
+        $formaVenta = FormaVenta::findOrFail($id);
+        $formaVenta->equivalencia_cantidad = $request->equivalencia_cantidad;
+        $formaVenta->save();
+
+        return response()->json([
+            'id_producto' => $formaVenta->id_producto,
+            'mensaje' => 'Stock actualizado correctamente.'
         ]);
     }
 }

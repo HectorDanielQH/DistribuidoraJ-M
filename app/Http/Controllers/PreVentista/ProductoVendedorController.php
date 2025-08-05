@@ -98,7 +98,7 @@ class ProductoVendedorController extends Controller
         $marcas = Marca::all();
         $lineas = Linea::all();
 
-        $pdf = Pdf::loadView('vendedor.pdf.caralogo_pdf', compact('productos','marcas','lineas'));
+        $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
         $pdf->setPaper('letter', 'horizontal');
         return $pdf->stream('caralogo.pdf');
     }

@@ -748,6 +748,66 @@
             });
         });
 
+        function editarFormaVenta(idFormaVenta){
+            Swal.fire({
+                title: 'Editar la conversión del stock',
+                input: 'number',
+                inputLabel: 'Forma de Venta',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#dc3545',
+                preConfirm: () => {
+                    const formaVenta = Swal.getInput().value;
+                    if (!formaVenta) {
+                        Swal.showValidationMessage('Por favor, ingresa una forma de venta válida');
+                        return false;
+                    }
+                    return { idFormaVenta, formaVenta };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Actualizando forma de venta...',
+                        html: 'Por favor espera',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    $.ajax({
+                        url: "{{ route('administrador.productos.editarStock', ':id') }}".replace(':id', result.value.idFormaVenta),
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            _method: 'PUT',
+                            equivalencia_cantidad: result.value.formaVenta,
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Forma de venta actualizada',
+                                text: 'La forma de venta se ha actualizado correctamente.',
+                                showConfirmButton: false,
+                                timer: 2000,
+                            }).then(() => {
+                                $('#tabla-productos').DataTable().ajax.reload(null, false);
+                                $('#tabla-formas-venta-producto').DataTable().ajax.reload(null, false);
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error al actualizar forma de venta',
+                                text: xhr.responseJSON.message || 'Ocurrió un error al actualizar la forma de venta.',
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
         function editarCantidadProductoStock(e) {
             const idProducto = $(e).attr('id-cantidad-stock');
             const cantidadStock = $(e).attr('cantidad-stock');
