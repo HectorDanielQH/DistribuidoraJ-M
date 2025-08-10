@@ -103,6 +103,7 @@ class ProductoVendedorController extends Controller
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => false,   // nada por HTTP/HTTPS
             'chroot' => base_path(),      // <— cubre /public y /storage
+            'enable_font_subsetting' => true,
         ])
         ->loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'))
         ->setPaper('letter', 'horizontal'); // 'landscape' (no 'horizontal')

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Catálogo de Productos</title>
-    <link rel="stylesheet" href="{{ public_path('css/bootstrap.min.css') }}">
     <style>
         /* Fuente estándar PDF-friendly */
         body {
