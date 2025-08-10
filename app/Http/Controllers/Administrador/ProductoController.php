@@ -173,10 +173,29 @@ class ProductoController extends Controller
         return view('administrador.productos.index_productos',compact('proveedores', 'contar_productos_menores'));
     }
 
-    function obtenerProductosBajoStock()
+    function obtenerProductosBajoStock(Request $request,DataTables $datatables)
     {
-        $productos = Producto::where('cantidad', '<=', 15)->get();
-        return response()->json($productos);
+        if($request->ajax()){
+            $productos = Producto::query('cantidad', '<=', 15);
+            return $datatables->eloquent($productos)
+                ->addColumn('codigo', function ($producto) {
+                    return $producto->codigo;
+                })
+                ->filterColumn('codigo', function ($query, $keyword) {
+                    $query->where('codigo', 'like', "%{$keyword}%");
+                })
+                ->addColumn('nombre_producto', function ($producto) {
+                    return $producto->nombre_producto;
+                })
+                ->filterColumn('nombre_producto', function ($query, $keyword) {
+                    $keyword = trim(strtoupper($keyword));
+                    $query->where('nombre_producto', 'like', "%{$keyword}%");
+                })
+                ->addColumn('stock', function ($producto) {
+                    return $producto->cantidad . ' ' . $producto->detalle_cantidad;
+                })
+                ->make(true);
+        }
     }
     /**
      * Show the form for creating a new resource.

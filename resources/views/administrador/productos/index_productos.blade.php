@@ -11,7 +11,12 @@
             <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
                 Panel de administración de productos
             </span>
-            <a class="btn btn-success mt-3" id="boton-agregar" style="border-radius: 8px;" href="{{ route('productos.vendedor.descargarCatalogo') }}" target="_blank">
+            <a 
+                class="btn btn-success mt-3"
+                id="boton-agregar"
+                style="border-radius: 8px;"
+                href="{{ route('productos.vendedor.descargarCatalogo') }}"
+            >
                 <i class="fas fa-file-pdf"></i> Descargar Catalogo de Productos
             </a>
         </div>
@@ -209,6 +214,27 @@
     </x-adminlte-modal>
 
 
+
+    <!--REGISTRO DE PRODUCTO-->
+    <x-adminlte-modal id="tabla-productos-bajo-stock-modal" size="lg" theme="dark" icon="fas fa-info-circle" title="Productos con bajo stock">
+        <div class="modal-body px-4">
+            <table class="table table-bordered table-striped" id="tabla-productos-bajo-stock">
+                <thead>
+                    <tr>
+                        <th scope="col">Código</th>
+                        <th scope="col">Producto</th>
+                        <th scope="col">Stock</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>  
+        <x-slot name="footerSlot">
+            <div class="w-100 d-flex justify-content-between">
+                <x-adminlte-button theme="danger" id="boton-cerrar-bajostock-cerrar" label="Cerrar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2" />
+            </div>
+        </x-slot>
+    </x-adminlte-modal>
 
 
     <!--MOSTRAR PRODUCTO-->
@@ -2134,62 +2160,49 @@
         }
     </script>
     @if($contar_productos_menores > 0)
-        <script defer>
+        <script>
             document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Productos con stock bajo',
-                    text: 'Hay productos con stock menor a 15 unidades. Por favor, revisa el inventario.',
-                    confirmButtonText: 'Revisar',
-                    confirmButtonColor: '#c21500',
-                    cancelButtonText: 'Más tarde',
-                    cancelButtonColor: '#6c757d',
-                    showConfirmButton: true,
-                    showCancelButton: true,
-                    allowOutsideClick: false,     // No cerrar al hacer clic fuera
-                    allowEscapeKey: false,        // No cerrar con Escape
-                    reverseButtons: true          // Para que "Más tarde" esté a la izquierda
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Hacer la solicitud AJAX solo si se confirmó
-                        Swal.fire({
-                            title: 'Cargando productos con stock bajo...',
-                            html: 'Por favor espera',
-                            allowOutsideClick: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
+                    html: `
+                    <p class="mb-3">Hay productos con stock menor a 15 unidades. Por favor, revisa el inventario.</p>
+                    <div class="d-flex justify-content-center">
+                        <button id="btn-revisar" class="btn btn-danger mr-2" data-toggle="modal" data-target="#tabla-productos-bajo-stock-modal">Revisar</button>
+                        <button id="btn-later"  class="btn btn-secondary">Más tarde</button>
+                    </div>
+                    `,
+                    showConfirmButton: false,
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        // click "Revisar" -> cerrar swal y abrir modal por código
+                        document.getElementById('btn-revisar').addEventListener('click', () => {
+                            Swal.close();
+                            $('#tabla-productos-bajo-stock').DataTable({
+                                processing: true,
+                                serverSide: true,
+                                language: {
+                                    url: '/i18n/es-ES.json'
+                                },
+                                ajax: {
+                                    url: "{{ route('administrador.productos.bajostock') }}",
+                                    type: 'GET',
+                                },
+                                columns: [
+                                    { data: 'codigo', name: 'codigo' },
+                                    { data: 'nombre_producto', name: 'nombre_producto' },
+                                    { data: 'stock', name: 'stock', searchable: false}
+                                ],
+                            });
                         });
-                        $.ajax({
-                            url: "{{ route('administrador.productos.bajostock') }}",
-                            type: 'GET',
-                            success: function(data) {
-                                let html = '<table class="table table-striped"><thead><tr><th>Código</th><th>Producto</th><th>Stock</th></tr></thead><tbody>';
-                                data.forEach(function(producto) {
-                                    html += `<tr><td>${producto.codigo}</td><td>${producto.nombre_producto}</td><td>${producto.cantidad}</td></tr>`;
-                                });
-                                html += '</tbody></table>';
-                                Swal.fire({
-                                    title: 'Productos con stock bajo',
-                                    html: html,
-                                    icon: 'info',
-                                    confirmButtonText: 'Cerrar',
-                                    confirmButtonColor: '#28a745',
-                                    allowOutsideClick: false,
-                                    allowEscapeKey: false
-                                });
-                            },
-                            error: function() {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: 'No se pudieron cargar los productos con stock bajo.',
-                                });
-                            }
-                        });
+
+                        // click "Más tarde"
+                        document.getElementById('btn-later').addEventListener('click', () => Swal.close());
                     }
                 });
             });
-        </script>
+            </script>
     @endif
 @stop
