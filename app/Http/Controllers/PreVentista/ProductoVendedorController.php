@@ -90,18 +90,25 @@ class ProductoVendedorController extends Controller
             'producto' => $producto
         ]);
     }
-
-    public function descargarCatalogo() {
+    
+    public function descargarCatalogo()
+    {
         $productos = Producto::where('estado_de_baja', false)
             ->where('cantidad', '>', 0)
             ->get();
         $marcas = Marca::all();
         $lineas = Linea::all();
 
-        $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
-        $pdf->setOptions(['dpi' => 96]);
-        $pdf->setPaper('letter', 'horizontal');
-        return $pdf->stream('caralogo.pdf');
+        $pdf = Pdf::setOptions([
+                'dpi' => 96,
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => false,   // true solo si usas http(s) en <img>
+                'chroot' => public_path(),    // restringe a /public
+            ])
+            ->loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'))
+            ->setPaper('letter', 'landscape');
+
+        return $pdf->stream('catalogo.pdf');
     }
     
 }
