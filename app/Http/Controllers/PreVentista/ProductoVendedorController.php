@@ -119,7 +119,7 @@ class ProductoVendedorController extends Controller
         $in  = escapeshellarg($original);
         $out = escapeshellarg($comprimido);
         $cmd = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen ".
-            "-dDownsampleColorImages=true -dColorImageResolution=300".
+            "-dDownsampleColorImages=true -dColorImageResolution=300 ".
             "-dNOPAUSE -dQUIET -dBATCH -sOutputFile=$out $in";
         @exec($cmd, $o, $code);
 
