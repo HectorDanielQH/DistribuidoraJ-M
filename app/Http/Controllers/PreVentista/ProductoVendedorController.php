@@ -98,17 +98,38 @@ class ProductoVendedorController extends Controller
         $marcas = Marca::all();
         $lineas = Linea::all();
 
-        $pdf = Pdf::setOptions([
-            'dpi' => 96,
+        $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
+        $pdf->setOptions([
+            'dpi' => 72, // ya ayuda
             'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => false,   // nada por HTTP/HTTPS
-            'chroot' => base_path(),      // <— cubre /public y /storage
-            'enable_font_subsetting' => true,
-        ])
-        ->loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'))
-        ->setPaper('letter', 'horizontal'); // 'landscape' (no 'horizontal')
+            'isRemoteEnabled' => false,
+            'defaultFont' => 'Helvetica',
+            'chroot' => base_path(),
+        ])->setPaper('letter', 'horizontal'); // 'landscape' (no 'horizontal')
 
-        return $pdf->stream('caralogo.pdf');
+        $dir = storage_path('app/private/catalogos');
+        @mkdir($dir, 0775, true);
+
+        $original = $dir.'/catalogo_raw.pdf';
+        $comprimido = $dir.'/catalogo.pdf';
+
+        file_put_contents($original, $pdf->output());
+
+        // Comprimir con Ghostscript
+        $in  = escapeshellarg($original);
+        $out = escapeshellarg($comprimido);
+        $cmd = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen ".
+            "-dDownsampleColorImages=true -dColorImageResolution=72 ".
+            "-dNOPAUSE -dQUIET -dBATCH -sOutputFile=$out $in";
+        @exec($cmd, $o, $code);
+
+        // Si falla gs, sirve el original; si no, sirve el comprimido
+        $fileToServe = (file_exists($comprimido) && filesize($comprimido) > 0) ? $comprimido : $original;
+
+        return response()->file($fileToServe, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="catalogo.pdf"',
+        ]);
     }
     
 }
