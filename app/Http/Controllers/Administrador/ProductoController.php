@@ -176,7 +176,7 @@ class ProductoController extends Controller
     function obtenerProductosBajoStock(Request $request,DataTables $datatables)
     {
         if($request->ajax()){
-            $productos = Producto::query('cantidad', '<=', 15);
+            $productos = Producto::query('cantidad', '<=', 15)->where('estado_de_baja', false);
             return $datatables->eloquent($productos)
                 ->addColumn('codigo', function ($producto) {
                     return $producto->codigo;
