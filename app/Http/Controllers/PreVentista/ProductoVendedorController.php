@@ -100,7 +100,7 @@ class ProductoVendedorController extends Controller
 
         $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
         $pdf->setOptions([
-            'dpi' => 300,
+            'dpi' => 96,
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => false,
             'defaultFont' => 'Helvetica',
@@ -119,7 +119,7 @@ class ProductoVendedorController extends Controller
         $in  = escapeshellarg($original);
         $out = escapeshellarg($comprimido);
         $cmd = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen ".
-            "-dDownsampleColorImages=true -dColorImageResolution=300 ".
+            "-dDownsampleColorImages=true -dColorImageResolution=96 ".
             "-dNOPAUSE -dQUIET -dBATCH -sOutputFile=$out $in";
         @exec($cmd, $o, $code);
 
