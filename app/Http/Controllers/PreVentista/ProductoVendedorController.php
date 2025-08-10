@@ -98,8 +98,15 @@ class ProductoVendedorController extends Controller
         $marcas = Marca::all();
         $lineas = Linea::all();
 
-        $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
-        $pdf->setPaper('letter', 'horizontal');
+        $pdf = Pdf::setOptions([
+            'dpi' => 96,
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => false,   // nada por HTTP/HTTPS
+            'chroot' => base_path(),      // <— cubre /public y /storage
+        ])
+        ->loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'))
+        ->setPaper('letter', 'horizontal'); // 'landscape' (no 'horizontal')
+
         return $pdf->stream('caralogo.pdf');
     }
     
