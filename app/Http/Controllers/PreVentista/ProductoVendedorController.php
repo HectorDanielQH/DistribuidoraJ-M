@@ -99,6 +99,7 @@ class ProductoVendedorController extends Controller
         $lineas = Linea::all();
 
         $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
+        $pdf->setOptions(['dpi' => 96]);
         $pdf->setPaper('letter', 'horizontal');
         return $pdf->stream('caralogo.pdf');
     }
