@@ -5,109 +5,128 @@
     <title>Catálogo de Productos</title>
     <link rel="stylesheet" href="{{ public_path('css/bootstrap.min.css') }}">
     <style>
+        /* Fuente estándar PDF-friendly */
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: DejaVu Sans, Arial, sans-serif; /* DejaVu Sans asegura compatibilidad UTF-8 */
             font-size: 11px;
             color: #222;
-            background: #f6f7fa;
+            background-color: #ffffff; /* Evita fondos grises que Dompdf a veces imprime feos */
+            margin: 0;
+            padding: 0;
         }
+
         .logo {
             width: 80px;
             margin-bottom: 6px;
+            display: block;
         }
+
         .catalogo-title {
             font-weight: bold;
-            font-size: 1.18rem;
+            font-size: 14px; /* valor fijo mejor que rem */
             color: #234e70;
-            margin-bottom: 5px;
+            margin: 0 0 5px 0;
+            text-align: center;
         }
+
         .marca-title {
-            background: #e3e9f9;
-            padding: 7px 12px;
+            background-color: #e3e9f9;
+            padding: 5px 10px;
             border-left: 4px solid #234e70;
-            font-size: 1rem;
+            font-size: 12px;
             font-weight: bold;
             color: #234e70;
-            margin-bottom: 7px;
-            margin-top: 18px;
+            margin: 18px 0 7px 0;
         }
+
         .linea-title {
-            font-size: .93rem;
+            font-size: 11px;
             font-weight: bold;
             color: #205072;
-            margin-bottom: 6px;
-            margin-left: 4px;
-            margin-top: 8px;
-            border-left: 3px solid #2f80ed77;
+            margin: 8px 0 6px 4px;
+            border-left: 3px solid #2f80ed;
             padding-left: 5px;
         }
+
         .producto-table {
             width: 100%;
             border: 1px solid #e3e9f9;
-            background: #fff;
+            background-color: #fff;
             margin-bottom: 8px;
-            border-radius: 7px;
+            border-radius: 4px; /* menos costoso de renderizar que 7px */
+            border-collapse: collapse;
         }
+
         .producto-table td {
             vertical-align: top;
-            padding: 6px 6px 2px 6px;
+            padding: 4px 6px;
         }
+
         .producto-img {
             width: 54px;
             height: 54px;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 3px;
             border: 1px solid #d1d9e6;
-            background: #f3f6fa;
+            background-color: #f3f6fa;
+            display: block;
         }
+
         .producto-nombre {
-            font-size: .93rem;
+            font-size: 11px;
             font-weight: bold;
             color: #205072;
             margin-bottom: 1px;
         }
+
         .promo-badge {
-            font-size: 0.81rem;
-            background: #e5fae5;
+            font-size: 10px;
+            background-color: #e5fae5;
             color: #27ae60;
             font-weight: bold;
-            padding: 1px 6px;
-            border-radius: 7px;
+            padding: 1px 4px;
+            border-radius: 4px;
             margin-left: 4px;
+            display: inline-block;
         }
+
         .precios-table {
             width: 100%;
-            border-radius: 5px;
+            border-radius: 3px;
             border: 1px solid #e9e9ef;
-            margin-top: 5px;
-            margin-bottom: 2px;
+            margin-top: 4px;
+            border-collapse: collapse;
         }
+
         .precios-table th {
-            background: #f7fbfc;
+            background-color: #f7fbfc;
             color: #205072;
             font-weight: bold;
-            padding: 3px 4px;
-            font-size: .82rem;
+            padding: 3px;
+            font-size: 10px;
             border-bottom: 1px solid #e4e7ee;
+            text-align: left;
         }
+
         .precios-table td {
-            padding: 3px 4px;
-            font-size: .85rem;
+            padding: 3px;
+            font-size: 10px;
             color: #333;
-            background: #fff;
+            background-color: #fff;
         }
+
         .promo-info {
-            font-size: .86rem;
+            font-size: 10px;
             color: #25b352;
             margin-bottom: 2px;
         }
     </style>
+
 </head>
 <body>
     <div class="container text-center my-2">
         <img src="{{ public_path('images/logo_distribuidora.jpg') }}" alt="Logo" class="logo">
         <div class="catalogo-title">Catálogo de Productos</div>
-        <hr style="border-top:1px solid #234e701a; width:120px; margin:auto 0 8px 0;">
     </div>
     <div class="container">
 
