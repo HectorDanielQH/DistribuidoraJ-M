@@ -100,7 +100,8 @@ class ProductoVendedorController extends Controller
 
         $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
         $pdf->setOptions([
-            'dpi' => 72, // ya ayuda
+            'dpi' => 96
+            , // ya ayuda
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => false,
             'defaultFont' => 'Helvetica',
