@@ -25,7 +25,7 @@
                     <i class="fas fa-filter me-2"></i> Opciones de búsqueda
                 </h5>
                 
-                <a class="btn" id="boton-agregar" href="{{route('preventistas.productos.vendedor.descargarCatalogo')}}" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
+                <a class="btn" id="boton-agregar" href="{{route('productos.vendedor.descargarCatalogo')}}" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
                     <i class="fas fa-file-pdf"></i> Descargar Catálogo
                 </a>
             </div>
