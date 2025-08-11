@@ -23,32 +23,40 @@
             Aquí puedes asignar rutas a los preventistas y gestionar sus asignaciones
         </p>
     </div>
+    @if($no_atendidos->count() > 0)
+        <div class="container">
+            <div class="alert alert-warning m-3" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Hay clientes que no han sido atendidos. <button class="btn btn-dark" onclick="abrirModalNoAtendidos()">Haz clic aquí</button> para más detalles.
+            </div>
+        </div>
+    @endif
 @stop
 
 @section('content')
     <div class="modal fade" id="asignarCliente" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title text-lg" id="staticBackdropLabel">
-                    <i class="fas fa-user-plus me-2"></i>
-                    Asignar rutas al Preventista
-                </h1>
-                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <select class="form-select mb-3 text-black" id="clienteSelect" name="clientes" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar rutas">
-                    @foreach($rutas as $ruta)
-                        <option value="{{ $ruta->id }}" class="text-black">{{ $ruta->nombre_ruta }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="modal-footer d-flex justify-content-between align-content-center">
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="cancelar-asignacion-cliente">Cancelar</button>
-                <button type="button" class="btn btn-success" id="guardarclientesasignados">Asignar</button>
-            </div>
+                <div class="modal-header">
+                    <h1 class="modal-title text-lg" id="staticBackdropLabel">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Asignar rutas al Preventista
+                    </h1>
+                    <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select mb-3 text-black" id="clienteSelect" name="clientes" multiple="multiple" style="width: 100%; height: 25px;" aria-label="Seleccionar rutas">
+                        @foreach($rutas as $ruta)
+                            <option value="{{ $ruta->id }}" class="text-black">{{ $ruta->nombre_ruta }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-footer d-flex justify-content-between align-content-center">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="cancelar-asignacion-cliente">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="guardarclientesasignados">Asignar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -583,15 +591,15 @@
         });
     </script>
 
-    @if($no_atendidos->count() > 0)
-        <script>
+    <script>
+        function abrirModalNoAtendidos() {
             Swal.fire({
                 title: 'Clientes No Atendidos',
                 html: `
                     <p>Hay clientes que no han sido atendidos. ¿Qué deseas hacer?</p>
                     <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
                         <button id="btn-reporte" class="swal2-confirm swal2-styled" style="background-color: #3085d6;">Sí, ver reporte</button>
-                        <button id="btn-subsanadas" class="swal2-confirm swal2-styled" style="background-color: #28a745;">Observaciones subsanadas</button>
+                        <button id="btn-subsanadas" class="swal2-confirm swal2-styled" style="background-color: #28a745;">Subsanar Observaciones</button>
                         <button id="btn-luego" class="swal2-cancel swal2-styled" style="background-color: #d33;">En otro momento</button>
                     </div>
                 `,
@@ -605,7 +613,6 @@
                         // Reemplaza esta URL por la ruta real de tu PDF
                         window.open("{{ route('administrador.noatendidos.pdf') }}", '_blank');
                     });
-
                     // Botón 2: Subsanadas
                     document.getElementById('btn-subsanadas').addEventListener('click', () => {
                         Swal.fire({
@@ -625,7 +632,6 @@
                                         Swal.showLoading();
                                     }
                                 });
-
                                 $.ajax({
                                     url: "{{ route('administrador.noatendidos.subsanadas') }}",
                                     type: 'POST',
@@ -652,14 +658,25 @@
                             }
                         });
                     });
-
-
                     // Botón 3: Más tarde
                     document.getElementById('btn-luego').addEventListener('click', () => {
-                        Swal.fire('Entendido', 'Puedes atenderlos más tarde.', 'info');
+                        Swal.fire({
+                            title: 'Recordatorio',
+                            text: 'Recuerda revisar los clientes no atendidos más tarde.',
+                            icon: 'info',
+                            confirmButtonText: 'Entendido',
+                            allowOutsideClick: false,
+                        });
                     });
                 }
             });
+        }
+    </script>
+
+    @if($no_atendidos->count() > 0)
+        <script>
+            abrirModalNoAtendidos();
         </script>
     @endif
+
 @stop

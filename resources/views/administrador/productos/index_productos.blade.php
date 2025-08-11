@@ -11,14 +11,13 @@
             <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
                 Panel de administración de productos
             </span>
-            <a 
+            <button
                 class="btn btn-success mt-3"
-                id="boton-agregar"
+                id="descargar-catalogo-productos"
                 style="border-radius: 8px;"
-                href="{{ route('productos.vendedor.descargarCatalogo') }}"
             >
                 <i class="fas fa-file-pdf"></i> Descargar Catalogo de Productos
-            </a>
+            </button>
         </div>
     </div>
 @stop
@@ -2158,6 +2157,19 @@
                 }
             });
         }
+
+
+        $('#descargar-catalogo-productos').click(function() {
+            Swal.fire({
+                title: 'Descargando catálogo de productos...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                    window.location.href = "{{ route('productos.vendedor.descargarCatalogo') }}";
+                }
+            });
+        });
     </script>
     @if($contar_productos_menores > 0)
         <script>
@@ -2203,6 +2215,6 @@
                     }
                 });
             });
-            </script>
+        </script>
     @endif
 @stop
