@@ -156,10 +156,10 @@ class AsignacionController extends Controller
 
         return DataTables::of($clientesAsignados)
             ->addColumn('nombre_completo', function($cliente) {
-                return $cliente->nombres . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno;
+                return $cliente->nombres . ' ' . $cliente->apellidos;
             })
             ->filterColumn('nombre_completo', function($query, $keyword) {
-                $query->whereRaw("CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?", ["%{$keyword}%"]);
+                $query->whereRaw("CONCAT(nombres, ' ', apellidos) LIKE ?", ["%{$keyword}%"]);
             })
             ->make(true);
     }
