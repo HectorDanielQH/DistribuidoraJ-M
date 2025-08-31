@@ -33,7 +33,7 @@ class ProductoController extends Controller
                 })
                 ->filterColumn('nombre_producto', function ($query, $keyword) {
                     $keyword = trim(strtoupper($keyword));
-                    $query->where('nombre_producto', 'like', "%{$keyword}%");
+                    $query->where('nombre_producto', 'like', "%".$keyword."%");
                 })
                 ->addColumn('marca', function ($producto) {
                     return $producto->marca ? $producto->marca->descripcion : 'Sin Marca';
