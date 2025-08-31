@@ -210,8 +210,7 @@ class ClienteController extends Controller
         $term = trim(strtoupper($request->get('term')));
 
         $clientes = Cliente::where('nombres', 'LIKE', "%{$term}%")
-            ->orWhere('apellido_paterno', 'LIKE', "%{$term}%")
-            ->orWhere('apellido_materno', 'LIKE', "%{$term}%")
+            ->orWhere('apellidos', 'LIKE', "%{$term}%")
             ->orWhere('cedula_identidad', 'LIKE', "%{$term}%")
             ->limit(10)
             ->get();
