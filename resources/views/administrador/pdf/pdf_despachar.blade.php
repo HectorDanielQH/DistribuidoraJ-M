@@ -79,7 +79,7 @@
                 </tr>
                 <tr>
                     <td style="padding: 8px; font-weight: bold;">Ubicación:</td>
-                    <td style="padding: 8px;">{{ $lista_pedido->ubicacion }}</td>
+                    <td style="padding: 8px;">{{ $lista_pedido->calle_avenida }}</td>
                 </tr>
             </tbody>
         </table>
