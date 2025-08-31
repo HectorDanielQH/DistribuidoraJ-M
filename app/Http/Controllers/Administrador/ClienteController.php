@@ -212,7 +212,6 @@ class ClienteController extends Controller
         $clientes = Cliente::where('nombres', 'LIKE', "%{$term}%")
             ->orWhere('apellidos', 'LIKE', "%{$term}%")
             ->orWhere('cedula_identidad', 'LIKE', "%{$term}%")
-            ->limit(10)
             ->get();
 
         return response()->json($clientes);
