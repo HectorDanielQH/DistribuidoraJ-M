@@ -176,7 +176,7 @@ class ProductoController extends Controller
     function obtenerProductosBajoStock(Request $request,DataTables $datatables)
     {
         if($request->ajax()){
-            $productos = Producto::query('cantidad', '<=', 15)->where('estado_de_baja', false);
+            $productos = Producto::query('cantidad', '<=', 15)->where('estado_de_baja', false)->orderBy('cantidad', 'asc');
             return $datatables->eloquent($productos)
                 ->addColumn('codigo', function ($producto) {
                     return $producto->codigo;
@@ -221,6 +221,7 @@ class ProductoController extends Controller
             'descripcionCantidad' => 'required|string|max:255',
             'precioCompra' => 'required|numeric|min:0',
             'descripcionCompra' => 'required|string|max:255',
+            'vencimientoProducto' => 'nullable|date|after:today',
             'presentacionProducto' => 'nullable|string|max:255',
             'habilitarPromocion' => 'nullable',
             'promocionDescuento' => 'nullable|integer|min:0|max:100',
@@ -245,6 +246,7 @@ class ProductoController extends Controller
             'precioCompra.numeric' => 'El precio de compra debe ser un número.',
             'precioCompra.min' => 'El precio de compra no puede ser negativo.',
             'descripcionCompra.required' => 'La descripción del precio de compra es obligatoria.',
+            'vencimientoProducto.date' => 'La fecha de vencimiento no es una fecha válida.',
             'presentacionProducto.max' => 'La presentación no puede exceder los 255 caracteres.',
             'promocionDescuento.integer' => 'El descuento de la promoción debe ser un número entero.',
             'promocionDescuento.min' => 'El descuento de la promoción no puede ser negativo.',
@@ -278,6 +280,7 @@ class ProductoController extends Controller
                 'detalle_cantidad' => $request->descripcionCantidad,
                 'precio_compra' => str_replace(',', '.', $request->precioCompra),
                 'detalle_precio_compra' => $request->descripcionCompra,
+                'fecha_vencimiento' => $request->vencimientoProducto ?? null,
                 'presentacion' => $request->presentacionProducto,
                 'promocion' => $request->habilitarPromocion ? true : false,
                 'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? 0,
@@ -297,6 +300,7 @@ class ProductoController extends Controller
                 'detalle_cantidad' => $request->descripcionCantidad,
                 'precio_compra' => str_replace(',', '.', $request->precioCompra),
                 'detalle_precio_compra' => $request->descripcionCompra,
+                'fecha_vencimiento' => $request->vencimientoProducto ?? null,
                 'presentacion' => $request->presentacionProducto,
                 'promocion' => $request->habilitarPromocion ? true : false,
                 'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? 0,

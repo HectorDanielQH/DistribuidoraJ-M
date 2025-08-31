@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Cliente extends Model
 {
     protected $fillable = [
+        'codigo_cliente',
         'cedula_identidad',
         'nombres',
-        'apellido_paterno',
-        'apellido_materno',
+        'apellidos',
         'celular',
-        'ubicacion',
-        'creador_por_usuario',
+        'calle_avenida',
+        'zona_barrio',
+        'referencia_direccion',
+        'latitud',
+        'longitud',
         'ruta_id',
     ];
 

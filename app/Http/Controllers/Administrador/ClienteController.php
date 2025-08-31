@@ -25,8 +25,7 @@ class ClienteController extends Controller
                 $keywords = trim(strtoupper($request->nombre));
                 $query->where(function ($q) use ($keywords) {
                     $q->where('nombres', 'like', '%' . $keywords . '%')
-                      ->orWhere('apellido_paterno', 'like', '%' . $keywords . '%')
-                      ->orWhere('apellido_materno', 'like', '%' . $keywords . '%');
+                      ->orWhere('apellidos', 'like', '%' . $keywords . '%');
                 });
             }
 
@@ -36,7 +35,7 @@ class ClienteController extends Controller
 
             return $dataTables->eloquent($query)
                 ->addColumn('nombres_completos', function ($cliente) {
-                    return trim($cliente->nombres . ' ' . $cliente->apellido_paterno . ' ' . $cliente->apellido_materno);
+                    return trim($cliente->nombres . ' ' . $cliente->apellidos);
                 })
                 ->addColumn('ruta', function ($cliente) {
                     return $cliente->ruta ? $cliente->ruta->nombre_ruta : 'No asignada';

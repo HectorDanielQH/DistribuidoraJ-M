@@ -13,15 +13,17 @@ return new class extends Migration
     {
         Schema::create('clientes', function (Blueprint $table) {
             $table->id();
-            $table->string('cedula_identidad')->unique();
+            $table->string('codigo_cliente')->unique();
+            $table->string('cedula_identidad')->unique()->nullable();
             $table->string('nombres');
-            $table->string('apellido_paterno')->nullable();
-            $table->string('apellido_materno')->nullable();
-            $table->string('celular');
-            $table->string('ubicacion');
-            $table->unsignedInteger('ruta_id');
-            $table->unsignedBigInteger('creador_por_usuario');
-            $table->foreign('creador_por_usuario')->references('id')->on('users');
+            $table->string('apellidos')->nullable();
+            $table->string('celular')->nullable();
+            $table->string('calle_avenida')->nullable();
+            $table->string('zona_barrio')->nullable();
+            $table->string('referencia_direccion')->nullable();
+            $table->string('latitud')->nullable();
+            $table->string('longitud')->nullable();
+            $table->unsignedBigInteger('ruta_id');
             $table->foreign('ruta_id')->references('id')->on('rutas');
             $table->timestamps();
         });

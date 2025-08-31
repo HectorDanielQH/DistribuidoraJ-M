@@ -5,6 +5,7 @@ use App\Http\Controllers\Administrador\ProveedorController;
 use App\Http\Controllers\Administrador\LineaController;
 use App\Http\Controllers\Administrador\MarcaController;
 use App\Http\Controllers\Administrador\ProductoController;
+use App\Http\Controllers\Administrador\LotesController;
 use App\Http\Controllers\Administrador\UsuarioController;
 use App\Http\Controllers\Administrador\FormaVentaController;
 use App\Http\Controllers\Administrador\RutasController;
@@ -105,12 +106,16 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //Rutas de clientes no atendidos
         Route::post('noatendidos/subsanar-observaciones', [NoAtendidosController::class, 'subsanarObservaciones'])->name('noatendidos.subsanadas');
 
+        //Lotes de productos
+        Route::get('lotes/obtenerProducto', [LotesController::class, 'obtenerProducto'])->name('lote.productos.buscarProducto');
+
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
         Route::resource('proveedores', ProveedorController::class);
         Route::resource('marcas', MarcaController::class);
         Route::resource('lineas', LineaController::class);
         Route::resource('productos', ProductoController::class);
+        Route::resource('lotes', LotesController::class);
         Route::resource('rutas', RutasController::class);
         Route::resource('clientes', ClienteController::class);
         Route::resource('asignacionclientes', AsignacionController::class);

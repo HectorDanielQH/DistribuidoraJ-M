@@ -266,10 +266,10 @@
                 <thead class="table-dark">
                     <tr>
                         <th scope="col">#</th>
-                        <th scope="col">C.I.</th>
                         <th scope="col">Nombre Completo</th>
                         <th scope="col">Celular</th>
-                        <th scope="col">Direccion</th>
+                        <th scope="col">Dirección</th>
+                        <th scope="col">Zona</th>
                         <th scope="col">Ruta</th>
                         <th scope="col">Acciones</th>
                     </tr>
@@ -340,6 +340,7 @@
             $('#tabla-clientes').DataTable({
                 processing: true,
                 serverSide: true,
+                responsive: true,
                 language: {
                     url: '/i18n/es-ES.json'
                 },
@@ -354,10 +355,10 @@
                 },
                 columns: [
                     { data: 'id', searchable: false },
-                    { data: 'cedula_identidad', name: 'cedula_identidad' },
                     { data: 'nombres_completos', name: 'nombres_completos' },
                     { data: 'celular', name: 'celular' },
-                    { data: 'ubicacion', name: 'ubicacion' },
+                    { data: 'calle_avenida', name: 'calle_avenida' },
+                    { data: 'zona_barrio', name: 'zona_barrio' },
                     { data: 'ruta', name: 'ruta' },
                     { data: 'acciones', name: 'acciones', orderable: false, searchable: false }
                 ],

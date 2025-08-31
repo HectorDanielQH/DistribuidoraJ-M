@@ -339,6 +339,12 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'text' => 'Lotes',
+            'route' => 'administrador.lotes.index',
+            'icon' => 'fas fa-fw fa-boxes',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'header' => '.:: RUTAS Y CLIENTES ::.',
             'can' => 'administrador.permisos',
         ],

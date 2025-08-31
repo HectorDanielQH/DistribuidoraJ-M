@@ -107,9 +107,24 @@
                 language: {
                     url: '/i18n/es-ES.json'
                 },
-                responsive: true,
-                order: [[0, 'asc']],
-
+                "processing":true,
+                "serverSide":true,
+                pageLength: 5,
+                lengthMenu: [ [5, 10, 25, 50], [5, 10, 25, 50] ],
+                "ajax": {
+                    "url": "{{ route('preventistas.productos.vendedor.obtenerProductos') }}",
+                    "type": "GET",
+                },
+                columns:[
+                    { data: 'codigo'},
+                    { data: 'imagen', orderable: false, searchable:false},
+                    { data: 'nombre_producto'},
+                    { data: 'marca', orderable: false, searchable:false},
+                    { data: 'stock', orderable: false, searchable:false},
+                    { data: 'formas_venta', orderable: false, searchable:false},
+                    { data: 'promocion_vista', orderable: false, searchable:false},
+                    { data: 'acciones', orderable: false, searchable:false}
+                ],
             });
         });
     </script>

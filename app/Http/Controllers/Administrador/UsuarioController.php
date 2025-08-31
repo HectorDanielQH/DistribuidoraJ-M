@@ -44,9 +44,10 @@ class UsuarioController extends Controller
                     return $usuario->cedulaidentidad;
                 })
                 ->addColumn('foto_perfil', function ($usuario) {
-                    if ($usuario->foto_perfil && Storage::exists($usuario->foto_perfil)) {
-                        return '<img src="' . route('usuarios.imagenperfil', $usuario->id) . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
+                    if ($usuario->foto_perfil && Storage::disk('public')->exists($usuario->foto_perfil)) {
+                        return '<img src="' . Storage::url($usuario->foto_perfil) . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
                     }
+
                     return '<img src="' . asset('images/logo_profile.webp') . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
                 })
                 ->addColumn('nombres_completos', function ($usuario) {
@@ -119,8 +120,7 @@ class UsuarioController extends Controller
 
         if($request->hasFile('fotoperfil')) {
             
-            $file = $request->file('fotoperfil');
-            $path=$file->store('fotosperfil','local');
+            $path = $request->file('fotoperfil')->store('foto_perfil', 'public');
 
             User::create([
                 'username' => trim(strtoupper($request->cedulaidentidad)),
@@ -221,7 +221,7 @@ class UsuarioController extends Controller
                 Storage::delete($usuario->foto_perfil);
             }
             $file = $request->file('fotoperfil');
-            $path = $file->store('fotosperfil', 'local');
+            $path = $file->store('foto_perfil', 'public');
         } else {
             $path = $usuario->foto_perfil;
         }

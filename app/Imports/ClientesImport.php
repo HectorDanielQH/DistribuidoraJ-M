@@ -16,36 +16,24 @@ class ClientesImport implements ToModel, WithHeadingRow
     */
     public function model(array $row)
     {
-        if(Rutas::where('nombre_ruta', trim(strtoupper($row['zona'])))->exists()) {
-            $ruta = Rutas::where('nombre_ruta', trim(strtoupper($row['zona'])))->first();
+        if(Rutas::where('nombre_ruta', trim(strtoupper($row['ruta'])))->exists()) {
+            $ruta = Rutas::where('nombre_ruta', trim(strtoupper($row['ruta'])))->first();
         } 
         else {
-            $ruta = Rutas::create(['nombre_ruta' => trim(strtoupper($row['zona']))]);
+            $ruta = Rutas::create(['nombre_ruta' => trim(strtoupper($row['ruta']))]);
         }
-        if (Cliente::where('cedula_identidad', trim(strtoupper($row['cedulaidentidad'])))->exists()) {
-            $cliente = Cliente::where('cedula_identidad', trim(strtoupper($row['cedulaidentidad'])))->first();
-            $cliente->update([
-                'nombres' => trim(strtoupper($row['nombres'])),
-                'apellido_paterno' => trim(strtoupper($row['apellidopaterno'])),
-                'apellido_materno' => trim(strtoupper($row['apellidomaterno'])),
-                'celular' => trim($row['celular']) ?? null,
-                'ubicacion' => trim(strtoupper($row['direccion'])) ?? null,
-                'creador_por_usuario' => auth()->user()->id,
-                'ruta_id' => $ruta->id,
-            ]);
-            return $cliente;
-        }
-        else{
-            return new Cliente([
-                'cedula_identidad' => trim(strtoupper($row['cedulaidentidad'])),
-                'nombres' => trim(strtoupper($row['nombres'])),
-                'apellido_paterno' => trim(strtoupper($row['apellidopaterno'])),
-                'apellido_materno' => trim(strtoupper($row['apellidomaterno'])),
-                'celular' => trim($row['celular']) ?? null,
-                'ubicacion' => trim(strtoupper($row['direccion'])) ?? null,
-                'creador_por_usuario' => auth()->user()->id,
-                'ruta_id' => $ruta->id,
-            ]);
-        }
+        return new Cliente([
+            'codigo_cliente' => 'CL'.str_pad(Cliente::count()+1, 6, '0', STR_PAD_LEFT),
+            'cedula_identidad' => isset($row['cedula_identidad'])?trim(strtoupper($row['cedula_identidad'])): null,
+            'nombres' => trim(strtoupper($row['nombres'])),
+            'apellidos' => isset($row['apellidos']) ? trim(strtoupper($row['apellidos'])) : null,
+            'celular' => isset($row['celular']) ? trim($row['celular']) : null,
+            'calle_avenida' => isset($row['direccion']) ? trim(strtoupper($row['direccion'])) : null,
+            'zona_barrio' => isset($row['zona']) ? trim(strtoupper($row['zona'])) : null,
+            'referencia_direccion' => isset($row['referencia_direccion']) ? trim(strtoupper($row['referencia_direccion'])) : null,
+            'latitud' => isset($row['latitud']) ? trim($row['latitud']) : null,
+            'longitud' => isset($row['longitud']) ? trim($row['longitud']) : null,
+            'ruta_id' => $ruta->id,
+        ]);
     }
 }

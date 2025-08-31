@@ -116,7 +116,18 @@
                     </div>
 
                     <div class="row g-3 mt-3">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
+                            <label for="vencimientoProducto" class="form-label text-muted">Fecha de Vencimiento</label>
+                            <x-adminlte-input name="vencimientoProducto" id="vencimientoProducto" type="date" required
+                                class="form-control shadow-sm border-2" style="border-radius: 8px;" disabled/>
+                            <!--check-->
+                            <div class="d-flex">
+                                <input type="checkbox" id="habilitarVencimiento" class="form-check mr-2">
+                                <label for="habilitarVencimiento" class="form-check-label text-muted">Habilitar vencimiento</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="presentacionProducto" class="form-label text-muted">Presentación del Producto</label>
                             <x-adminlte-input name="presentacionProducto" id="presentacionProducto" type="text" placeholder="Ej: 25gr cada bolsa" required
                                 class="form-control shadow-sm border-2" style="border-radius: 8px;" disabled/>
@@ -675,6 +686,15 @@
             });
         });
 
+        $('#habilitarVencimiento').change(function() {
+            if ($(this).is(':checked')) {
+                $('#vencimientoProducto').prop('disabled', false);
+                $('#vencimientoProducto').val(''); 
+            } else {
+                $('#vencimientoProducto').prop('disabled', true).val('');
+            }
+        });
+
         $('#habilitarPresentacion').change(function() {
             if ($(this).is(':checked')) {
                 $('#presentacionProducto').prop('disabled', false);
@@ -748,6 +768,7 @@
                 data: formData,
                 contentType: false,
                 processData: false,
+                responsive: true,
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },

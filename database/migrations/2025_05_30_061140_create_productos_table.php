@@ -32,6 +32,7 @@ return new class extends Migration
             $table->foreign('id_marca')->references('id')->on('marcas');
             $table->foreign('id_linea')->references('id')->on('lineas');
             $table->boolean('estado_de_baja')->default(false);
+            $table->date('fecha_vencimiento')->nullable();
             $table->timestamps();
         });
     }
