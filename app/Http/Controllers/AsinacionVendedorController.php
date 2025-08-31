@@ -21,8 +21,7 @@ class AsinacionVendedorController extends Controller
                 foreach ($keywords as $word) {
                     $q->where(function ($subquery) use ($word) {
                         $subquery->where('nombres', 'like', '%' . $word . '%')
-                                ->orWhere('apellido_paterno', 'like', '%' . $word . '%')
-                                ->orWhere('apellido_materno', 'like', '%' . $word . '%');
+                                ->orWhere('apellidos', 'like', '%' . $word . '%');
                     });
                 }
             });
