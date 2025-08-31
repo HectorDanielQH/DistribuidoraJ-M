@@ -109,9 +109,9 @@
                                         @foreach($asignaciones as $asignacion)
                                             <tr>
                                                 <td>{{ $loop->iteration }}</td>
-                                                <td>{{ $asignacion->cliente->nombres }} {{ $asignacion->cliente->apellido_paterno }} {{ $asignacion->cliente->apellido_materno }}</td>
+                                                <td>{{ $asignacion->cliente->nombres }} {{ $asignacion->cliente->apellidos }}</td>
                                                 <td><i class="fas fa-mobile-alt text-secondary me-1"></i>{{ $asignacion->cliente->celular }}</td>
-                                                <td><i class="fas fa-map-pin text-danger me-1"></i> {{ $asignacion->cliente->ubicacion }}</td>
+                                                <td><i class="fas fa-map-pin text-danger me-1"></i> {{ $asignacion->cliente->calle_avenida }}</td>
                                                 <td><span class="badge bg-primary">{{ $asignacion->asignacion_fecha_hora }}</span></td>
                                                 <td>
                                                     @if($asignacion->atencion_fecha_hora)

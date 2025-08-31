@@ -60,14 +60,17 @@ class User extends Authenticatable
 
     public function adminlte_image()
     {
-        if (auth()->user()->foto_perfil) {
+                    return 'https://ui-avatars.com/api/?name=' 
+                . urlencode(auth()->user()->nombres . ' ' . auth()->user()->apellido_paterno)
+                . '&color=7F9CF5&background=EBF4FF';
+        /*if (auth()->user()->foto_perfil) {
             return Storage::url(auth()->user()->foto_perfil);
         } else {
             return 'https://ui-avatars.com/api/?name=' 
                 . urlencode(auth()->user()->nombres . ' ' . auth()->user()->apellido_paterno)
                 . '&color=7F9CF5&background=EBF4FF';
         
-        }
+        }*/
     }
 
     public function adminlte_desc()

@@ -173,9 +173,8 @@ class PedidoController extends Controller
             ->select(
                 'asignacions.*',
                 'clientes.nombres',
-                'clientes.apellido_paterno',
-                'clientes.apellido_materno',
-                'clientes.ubicacion',
+                'clientes.apellidos',
+                'clientes.calle_avenida',
                 'clientes.celular',
             )
             ->orderBy('clientes.ruta_id', 'asc')
