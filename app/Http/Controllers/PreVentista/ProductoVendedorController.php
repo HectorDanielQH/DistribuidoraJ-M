@@ -30,12 +30,72 @@ class ProductoVendedorController extends Controller
 
             return $dataTables->eloquent($query)
                 ->addColumn('acciones', function ($producto) {
-                    return view('vendedor.productos.partials.acciones', compact('producto'));
+                    return '';
                 })
-                ->editColumn('foto_producto', function ($producto) {
-                    return view('vendedor.productos.partials.foto_producto', compact('producto'));
+                ->editColumn('imagen', function ($producto) {
+                    if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
+                        return '<img src="' . route('productos.imagen', ['id' => $producto->id]) . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                    }
+                    return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                }) 
+                ->addColumn('marca', function ($producto) {
+                    return $producto->marca ? $producto->marca->descripcion : 'Sin Marca';
                 })
-                ->rawColumns(['acciones', 'foto_producto'])
+                ->addColumn('stock', function ($producto) {
+                    $claseCantidad = $producto->cantidad <= 15 ? 'badge bg-danger' : 'badge bg-success';
+                    $cantidadHtml = '<span class="' . $claseCantidad . ' fs-6">' . $producto->cantidad . ' ' . $producto->detalle_cantidad . '</span>';
+                    return $cantidadHtml;
+                })
+                ->addColumn('formas_venta', function ($producto) {
+                    $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
+                    if ($formasVenta->isEmpty()) {
+                        $output = '<div class="d-flex flex-column">';
+                        foreach ($formasVenta as $formaVenta) {
+                            $output .= '
+                                <div class="border rounded p-2 '.
+                                ($formaVenta->activo ? 'bg-white' : ' bg-secondary text-white')
+                                .' shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="d-flex align-items-center">
+                                            <strong>' . ucfirst($formaVenta->tipo_venta) . '</strong>
+                                        </div>
+                                        <span class="badge bg-success fs-6">
+                                            Bs.-' . number_format($formaVenta->precio_venta, 2, ',', '.') . '
+                                        </span>
+                                    </div>
+                                </div>
+                            ';
+                        }
+                        $output .= '</div>';
+                    return $output;
+                    } else {
+                        return '<span class="badge bg-secondary fs-6">Sin Forma de Venta</span>';
+                    }
+                })
+                ->addColumn('promocion_vista', function($producto){
+                    $descuento = ($producto->descripcion_descuento_porcentaje !== null && $producto->descripcion_descuento_porcentaje !== '')
+                        ? $producto->descripcion_descuento_porcentaje . '%'
+                        : 'N/A';
+
+                    $regalo = ($producto->descripcion_regalo !== null && $producto->descripcion_regalo !== '' )
+                        ? $producto->descripcion_regalo
+                        :'N/A';
+                    $render = '<div class="d-flex flex-column align-items-center justify-content-center mb-2 bg-white">';
+                    if ($producto->promocion) {
+                        $render = '
+                        <span>
+                            Descuento: <strong>' . $descuento . '</strong><br>
+                            Regalo: <strong>' . $regalo . '</strong>
+                        </span>
+                        <br/>
+                        ';
+                    } else {
+                        $render .= '<span class="badge bg-secondary fs-6">Sin Promoción</span>';
+                    }
+                    $render .= '</div>';
+                    return $render;
+                })
+                ->rawColumns(['acciones', 'imagen', 'stock', 'formas_venta','promocion_vista'])
                 ->make(true);
         }
 

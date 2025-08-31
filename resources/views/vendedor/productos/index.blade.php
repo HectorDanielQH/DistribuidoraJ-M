@@ -56,8 +56,8 @@
                         <th class="text-center">Imagen</th>
                         <th class="text-center">Nombre Producto</th>
                         <th class="text-center">Descripción</th>
-                        <th class="text-center">Forma Venta</th>
                         <th class="text-center">Cantidad</th>
+                        <th class="text-center">Forma Venta</th>
                         <th class="text-center">Promocion</th>
                     </tr>
                 </thead>
