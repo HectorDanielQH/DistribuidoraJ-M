@@ -70,7 +70,7 @@
                 <tr>
                     <td style="padding: 8px; font-weight: bold;">Cliente:</td>
                     <td style="padding: 8px;">
-                        {{ $lista_pedido->nombres }} {{ $lista_pedido->apellido_paterno }} {{ $lista_pedido->apellido_materno }}
+                        {{ $lista_pedido->nombres }} {{ $lista_pedido->apellidos}}
                     </td>
                 </tr>
                 <tr>

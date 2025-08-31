@@ -97,8 +97,7 @@ class PedidoAdministradorController extends Controller
             'pedidos.numero_pedido',
             DB::raw('DATE(pedidos.fecha_pedido) AS fecha_pedido'),
             'clientes.nombres',
-            'clientes.apellido_paterno',
-            'clientes.apellido_materno',
+            'clientes.apellidos',
             'clientes.celular',
             'clientes.ubicacion'            
             )
@@ -108,8 +107,7 @@ class PedidoAdministradorController extends Controller
                 'pedidos.numero_pedido',
                 'fecha_pedido',
                 'clientes.nombres',
-                'clientes.apellido_paterno',
-                'clientes.apellido_materno',
+                'clientes.apellidos',
                 'clientes.celular',
                 'clientes.ubicacion'
             )
