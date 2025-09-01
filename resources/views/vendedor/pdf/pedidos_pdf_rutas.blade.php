@@ -25,7 +25,7 @@
         <table>
             <tr>
                 <td><small>Preventista:</small></td>
-                <td><small>{{ $usuario->nombres }} {{ $usuario->apellido_materno }} {{ $usuario->apellido_paterno }}</small></td>
+                <td><small>{{ $usuario->nombres }} {{ $usuario->apellidoS}}</small></td>
             </tr>
             <tr>
                 <td><small>Fecha:</small></td>
@@ -38,6 +38,7 @@
                 <tr>
                     <th>Ruta</th>
                     <th>Dirección</th>
+                    <th>Zona/Barrio</th>
                     <th>Cliente</th>
                     <th>Celular</th>
                     <th>Fecha de Asignacion</th>
@@ -47,7 +48,8 @@
                 @foreach ($asignaciones as $asignacion)
                     <tr>
                         <td>{{ $asignacion->ruta->nombre_ruta }}</td>
-                        <td>{{ $asignacion->ubicacion }}</td>
+                        <td>{{ $asignacion->calle_avenida }}</td>
+                        <td>{{ $asignacion->zona_barrio }}</td>
                         <td>{{ $asignacion->nombres }} {{ $asignacion->apellido_paterno }} {{ $asignacion->apellido_materno }}</td>
                         <td>{{ $asignacion->celular}}</td>
                         <td>{{ $asignacion->asignacion_fecha_hora}}</td>

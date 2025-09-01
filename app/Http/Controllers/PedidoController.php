@@ -175,6 +175,7 @@ class PedidoController extends Controller
                 'clientes.nombres',
                 'clientes.apellidos',
                 'clientes.calle_avenida',
+                'clientes.zona_barrio',
                 'clientes.celular',
             )
             ->orderBy('clientes.ruta_id', 'asc')
