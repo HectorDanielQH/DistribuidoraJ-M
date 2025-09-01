@@ -78,8 +78,12 @@
                     <td style="padding: 8px;">{{ $lista_pedido->celular }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px; font-weight: bold;">Ubicación:</td>
+                    <td style="padding: 8px; font-weight: bold;">Dirección:</td>
                     <td style="padding: 8px;">{{ $lista_pedido->calle_avenida }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold;">Zona referencial:</td>
+                    <td style="padding: 8px;">{{ $lista_pedido->zona_barrio }}</td>
                 </tr>
             </tbody>
         </table>

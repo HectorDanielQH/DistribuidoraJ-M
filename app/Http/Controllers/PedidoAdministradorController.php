@@ -109,7 +109,8 @@ class PedidoAdministradorController extends Controller
                 'clientes.nombres',
                 'clientes.apellidos',
                 'clientes.celular',
-                'clientes.calle_avenida'
+                'clientes.calle_avenida',
+                'clientes.zona_barrio'
             )
             ->orderBy('numero_pedido', 'asc')
             ->get();
