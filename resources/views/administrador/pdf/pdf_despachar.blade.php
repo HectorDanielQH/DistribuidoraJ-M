@@ -85,6 +85,15 @@
                     <td style="padding: 8px; font-weight: bold;">Zona referencial:</td>
                     <td style="padding: 8px;">{{ $lista_pedido->zona_barrio }}</td>
                 </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold;">Ruta Asignada:</td>
+                    <td style="padding: 8px;">
+                        @php
+                            $ruta = App\Models\Rutas::where('id', $lista_pedido->numero_pedido)->first();
+                        @endphp
+                        {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}
+                    </td>
+                </tr>
             </tbody>
         </table>
 
