@@ -89,7 +89,7 @@
                     <td style="padding: 8px; font-weight: bold;">Ruta Asignada:</td>
                     <td style="padding: 8px;">
                         @php
-                            $ruta = App\Models\Rutas::where('id', $lista_pedido->numero_pedido)->first();
+                            $ruta = App\Models\Rutas::where('id', $lista_pedido->ruta_id)->first();
                         @endphp
                         {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}
                     </td>
