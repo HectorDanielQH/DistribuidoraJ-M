@@ -99,7 +99,8 @@ class PedidoAdministradorController extends Controller
             'clientes.nombres',
             'clientes.apellidos',
             'clientes.celular',
-            'clientes.calle_avenida'            
+            'clientes.calle_avenida',
+            'clientes.zona_barrio'          
             )
             ->whereNotNull('fecha_entrega')
             ->where('estado_pedido', false)
