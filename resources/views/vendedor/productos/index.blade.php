@@ -17,32 +17,6 @@
 @stop
 
 @section('content')
-
-    <div class="d-flex flex-column justify-content-center align-items-center">
-        <div class="card shadow-sm border-0 mb-4" style="background-color: #f9f9fb; border-radius: 16px;">
-            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #2c3e50; color: #ffffff; border-radius: 16px 16px 0 0; padding: 1rem 1.5rem;">
-                <h5 class="mb-0">
-                    <i class="fas fa-filter me-2"></i> Opciones de búsqueda
-                </h5>
-            </div>
-            <div class="card-body" style="padding: 2rem;">
-                <p class="text-muted" style="margin-top: -15px">
-                    Puedes buscar el producto por nombre completo o por código con cualquier coincidencia.
-                </p>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="nombre" class="form-label text-muted">Nombre</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="nombre" placeholder="Ej: Chocolate" value="{{ request('nombre')}}"  style="border-radius: 8px;">
-                    </div>
-                    <div class="col-md-6">
-                        <label for="ci" class="form-label text-muted">Código</label>
-                        <input type="text" class="form-control shadow-sm border-0" name="codigo" placeholder="Ej: 12345678" value="{{ request('codigo') }}"  style="border-radius: 8px;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="container mb-5">
         <table class="table table-striped table-bordered table-hover" id="productosTable" style="width:100%">
             <thead class="thead-dark">
@@ -56,6 +30,9 @@
                     <th class="text-center">Promocion</th>
                 </tr>
             </thead>
+            <tbody class="text-center">
+                {{-- Los datos se cargarán dinámicamente con DataTables --}}º
+            </tbody>
         </table>
     </div>
 @stop
