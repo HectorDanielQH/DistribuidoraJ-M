@@ -192,9 +192,6 @@
             </tbody>
         </table>
 
-        {{-- Observaciones por pedido --}}
-        <div class="box box-md mb-3"></div>
-
     @endforeach
 
     {{-- Total general --}}
