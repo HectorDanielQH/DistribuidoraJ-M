@@ -155,7 +155,7 @@
                     });
                     html=``;
                     $.ajax({
-                        url: "{{ route('productos.vendedor.verDetalleProductosPromocion') }}",
+                        url: "{{ route('preventistas.productos.vendedor.verDetalleProductosPromocion') }}",
                         type: "GET",
                         success: function(data) {
                             let html = '';
