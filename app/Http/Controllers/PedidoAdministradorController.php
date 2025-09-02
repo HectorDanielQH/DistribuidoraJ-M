@@ -59,6 +59,40 @@ class PedidoAdministradorController extends Controller
 
         return view('administrador.pedidos.despachados',compact('pedidos'));
     }
+
+
+    public function visualizacionParaDespachado(){
+        $pedidos = Pedido::join('productos', 'pedidos.id_producto', '=', 'productos.id')
+            ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+            ->select(
+                'productos.codigo',
+                'productos.foto_producto',
+                'productos.nombre_producto',
+                'productos.cantidad as cantidad_stock',
+                'productos.detalle_cantidad',
+                DB::raw('SUM(pedidos.cantidad*forma_ventas.equivalencia_cantidad) as cantidad_pedido'),
+                DB::raw('SUM(pedidos.cantidad*forma_ventas.precio_venta) as subtotal'),
+                'pedidos.promocion',
+                'pedidos.descripcion_descuento_porcentaje',
+                'pedidos.descripcion_regalo'
+            )
+            ->whereNull('fecha_entrega')
+            ->where('estado_pedido', false)
+            ->groupBy(
+                'productos.codigo',
+                'productos.foto_producto',
+                'productos.nombre_producto',
+                'productos.cantidad',
+                'productos.detalle_cantidad',
+                'pedidos.promocion',
+                'pedidos.descripcion_descuento_porcentaje',
+                'pedidos.descripcion_regalo'
+            )
+            ->get();
+
+
+        return view('administrador.pedidos.paradespachar',compact('pedidos'));
+    }
     public function visualizacionPedido(string $numero_pedido)
     {
         $pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')

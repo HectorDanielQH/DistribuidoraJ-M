@@ -24,7 +24,7 @@ class AsignacionController extends Controller
             $vendedor= User::query()->where('estado', 'ACTIVO')->role('vendedor');
             return $dataTables->eloquent($vendedor)
                 ->addColumn('nombre_completo', function($vendedor) {
-                    return $vendedor->nombres . ' ' . $vendedor->apellido_paterno . ' ' . $vendedor->apellido_materno;
+                    return $vendedor->nombres . ' ' . $vendedor->apellidos;
                 })
                 ->filterColumn('nombre_completo', function($query, $keyword) {
                     $query->whereRaw("CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?", ["%{$keyword}%"]);
@@ -159,7 +159,11 @@ class AsignacionController extends Controller
                 return $cliente->nombres . ' ' . $cliente->apellidos;
             })
             ->filterColumn('nombre_completo', function($query, $keyword) {
-                $query->whereRaw("CONCAT(nombres, ' ', apellidos) LIKE ?", ["%{$keyword}%"]);
+                $keyword=trim(strtoupper($keyword));
+                $query->whereRaw("CONCAT(nombres, ' ', apellidos) ILIKE ?", ["%{$keyword}%"]);
+            })
+            ->addColumn('nombre_ruta', function($cliente) {
+                return $cliente->ruta ? $cliente->ruta->nombre_ruta : 'Sin ruta';
             })
             ->make(true);
     }

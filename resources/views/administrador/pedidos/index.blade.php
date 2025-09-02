@@ -28,6 +28,11 @@
                             <button href="#" class="btn btn-success btn-sm mr-4" id="btnDespacharPedidos">
                                 <i class="fas fa-truck"></i> Despachar Pedidos 
                             </button>
+
+
+                            <button href="#" class="btn btn-success btn-sm mr-4" id="btnCantidadPedidos">
+                                <i class="fas fa-truck"></i> Ver cantidad para despacho
+                            </button>
                         </div>
                     </div>
                 <div class="card-body">
@@ -43,6 +48,9 @@
                                         <th>ID</th>
                                         <th>Nro. de Pedido</th>
                                         <th>Cliente</th>
+                                        <th>Dirección</th>
+                                        <th>Zona</th>
+                                        <th>Preventista</th>
                                         <th>Fecha Pedido</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
@@ -53,7 +61,19 @@
                                         <tr>
                                             <td>{{$loop->iteration}}</td>
                                             <td>Pedido #{{$pedido->numero_pedido}}</td>
-                                            <td>{{$pedido->cliente->nombres}} {{$pedido->cliente->apellido_paterno}} {{$pedido->cliente->apellido_materno}}</td>
+                                            <td>{{$pedido->cliente->nombres}} {{$pedido->cliente->apellidos}}</td>
+                                            <td>{{$pedido->cliente->calle_avenida}}</td>
+                                            <td>
+                                                @php
+                                                    $pedido_ob=\App\Models\Pedido::where('numero_pedido', $pedido->numero_pedido)->first();
+                                                    $cliente=\App\Models\Cliente::where('id', $pedido_ob->id_cliente)->first();
+                                                @endphp
+                                                {{$cliente->ruta->nombre_ruta ?? 'Sin ruta'}}
+                                            </td>
+                                            <td>
+                                                {{$pedido_ob->usuario->nombres}} {{$pedido_ob->usuario->apellido_paterno}} 
+                                                {{$pedido_ob->usuario->apellido_materno}}
+                                            </td>
                                             <td>{{$pedido->fecha_pedido}}</td>
                                             <td>
                                                 <!--spiner-->
@@ -238,6 +258,11 @@
                     });
                 }
             });
+        });
+
+        $('#btnCantidadPedidos').on('click', function () {
+            /*nueva venetana con otra ruta*/
+            window.open("{{ route('pedidos.administrador.visualizacionParaDespachado') }}", '_blank');
         });
 
     </script>

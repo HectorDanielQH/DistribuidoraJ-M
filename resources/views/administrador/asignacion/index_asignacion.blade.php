@@ -393,10 +393,10 @@
                 },
                 columns: [
                     { data: 'id', width: '5%' },
-                    { data: 'cedula_identidad', width: '15%' },
                     { data: 'nombre_completo', width: '35%' },
                     { data: 'celular', width: '15%' },
-                    { data: 'ubicacion', width: '30%' }
+                    { data: 'calle_avenida', width: '30%' },
+                    { data: 'nombre_ruta', width: '15%' }
                 ],
                 "destroy": true,
                 "initComplete": function(settings, json) {
