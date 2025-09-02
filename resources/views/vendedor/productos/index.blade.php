@@ -86,7 +86,7 @@
                     "type": "GET",
                 },
                 columns: [
-                    { data: 'codigo',           name: 'codigo' },
+                    { data: 'codigo',           name: 'codigo'},
                     { data: 'imagen',           name: 'imagen', orderable: false, searchable: false },
                     { data: 'nombre_producto',  name: 'nombre_producto' },
                     { data: 'marca',            name: 'marca', orderable: false, searchable: false },
@@ -95,7 +95,8 @@
                     { data: 'promocion_vista',  name: 'promocion_vista', orderable: false, searchable: false },
                 ],
                 columnDefs: [
-                    { targets: [0,1,2,3,4,5,6], className: 'align-middle text-center' },
+                    { targets: [0], className: 'bg-warning' },
+                    { targets: [1,2,3,4,5,6], className: 'align-middle text-center' },
                     { targets: [2,3], className: 'align-middle' } // si no quieres centrar nombre/descr, ajusta esto
                 ],
                 order: [[0, 'asc']]
