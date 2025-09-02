@@ -5,45 +5,56 @@
     <meta charset="UTF-8">
     <title>Pedidos Despachados</title>
     <style>
-        /* ===== Base minimalista (PDF friendly) ===== */
+        /* ===== Base minimalista (PDF friendly, compacta) ===== */
         *{box-sizing:border-box}
-        html,body{font-family:DejaVu Sans, Arial, sans-serif;font-size:10px;color:#222;line-height:1.35}
-        h1,h2,h3,h4,h5{margin:0 0 .5rem;font-weight:700}
-        h2{font-size:14px}
-        h4{font-size:12px}
-        small{font-size:9px}
+        html,body{font-family:DejaVu Sans, Arial, sans-serif;font-size:9px;color:#222;line-height:1.2}
+        h1,h2,h3,h4,h5{margin:0 0 .35rem;font-weight:700;line-height:1.15}
+        h2{font-size:12px}
+        h4{font-size:10px}
+        small{font-size:8px}
         img{display:inline-block}
 
-        /* Espaciados */
-        .m-0{margin:0}.mb-1{margin-bottom:6px}.mb-2{margin-bottom:10px}.mb-3{margin-bottom:14px}.mt-2{margin-top:10px}
-        .p-0{padding:0}.p-1{padding:4px}.p-2{padding:8px}
+        /* Espaciados (compactos) */
+        .m-0{margin:0}
+        .mb-1{margin-bottom:4px}
+        .mb-2{margin-bottom:8px}
+        .mb-3{margin-bottom:10px}
+        .mt-2{margin-top:8px}
+        .p-0{padding:0}
+        .p-1{padding:2px}
+        .p-2{padding:4px}
 
         /* Texto */
-        .text-center{text-align:center}.text-right{text-align:right}.muted{color:#777}.fw-bold{font-weight:700}
+        .text-center{text-align:center}
+        .text-right{text-align:right}
+        .muted{color:#777}
+        .fw-bold{font-weight:700}
         .nowrap{white-space:nowrap}
 
         /* Anchos */
-        .w-100{width:100%}.w-50{width:50%}.w-30{width:30%}
+        .w-100{width:100%}
+        .w-50{width:50%}
+        .w-30{width:30%}
 
-        /* Tablas */
+        /* Tablas (más apretadas) */
         .tbl{width:100%;border-collapse:collapse}
-        .tbl th,.tbl td{border:1px solid #aaa;padding:4px;font-size:9px;vertical-align:top}
+        .tbl th,.tbl td{border:1px solid #aaa;padding:3px 3px;font-size:8.6px;vertical-align:top}
         .tbl thead th{background:#f4f4f4}
 
         .tbl-plain{width:100%;border-collapse:collapse}
-        .tbl-plain th,.tbl-plain td{border:0;padding:6px 4px;font-size:9.5px}
+        .tbl-plain th,.tbl-plain td{border:0;padding:4px 3px;font-size:9px}
 
         /* Bloques */
-        .section{border-left:3px solid #007bff;background:#f2f2f2;padding:6px 8px;margin:12px 0}
-        .box{border:1px solid #ccc;border-radius:3px;padding:8px}
-        .box-md{height:70px}
-        .signature{height:45px}
+        .section{border-left:3px solid #007bff;background:#f2f2f2;padding:5px 6px;margin:10px 0}
+        .box{border:1px solid #ccc;border-radius:3px;padding:6px}
+        .box-md{height:50px}
+        .signature{height:40px}
 
         /* Imágenes */
-        .logo{width:100px;height:auto}
+        .logo{width:95px;height:auto}
 
-        /* Paginación/roturas */
-        @page{margin:14mm 12mm}
+        /* Paginación/roturas (márgenes más pequeños) */
+        @page{margin:12mm 10mm}
         table{page-break-inside:auto}
         tr{page-break-inside:avoid;page-break-after:auto}
         .section,.box{page-break-inside:avoid}
@@ -119,22 +130,22 @@
             </thead>
             <tbody>
                 <tr>
-                    <td class="w-30 p-2 fw-bold">Fecha de Pedido:</td>
-                    <td class="p-2">{{ $lista->fecha_pedido }}</td>
-                    <td class="p-2 fw-bold">Cliente:</td>
-                    <td class="p-2">{{ $lista->nombres }} {{ $lista->apellidos }}</td>
+                    <td class="w-30 p-0 fw-bold">Fecha de Pedido:</td>
+                    <td class="p-0">{{ $lista->fecha_pedido }}</td>
+                    <td class="p-0 fw-bold">Cliente:</td>
+                    <td class="p-0">{{ $lista->nombres }} {{ $lista->apellidos }}</td>
                 </tr>
                 <tr>
-                    <td class="p-2 fw-bold">Celular:</td>
-                    <td class="p-2">{{ $lista->celular }}</td>
-                    <td class="p-2 fw-bold">Dirección:</td>
-                    <td class="p-2">{{ $lista->calle_avenida }}</td>
+                    <td class="p-0 fw-bold">Celular:</td>
+                    <td class="p-0">{{ $lista->celular }}</td>
+                    <td class="p-0 fw-bold">Dirección:</td>
+                    <td class="p-0">{{ $lista->calle_avenida }}</td>
                 </tr>
                 <tr>
-                    <td class="p-2 fw-bold">Zona referencial:</td>
-                    <td class="p-2">{{ $lista->zona_barrio }}</td>
-                    <td class="p-2 fw-bold">Ruta Asignada:</td>
-                    <td class="p-2">{{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}</td>
+                    <td class="p-0 fw-bold">Zona referencial:</td>
+                    <td class="p-0">{{ $lista->zona_barrio }}</td>
+                    <td class="p-0 fw-bold">Ruta Asignada:</td>
+                    <td class="p-0">{{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}</td>
                 </tr>
             </tbody>
         </table>
