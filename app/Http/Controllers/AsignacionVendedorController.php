@@ -7,7 +7,7 @@ use App\Models\Pedido;
 use App\Models\RendimientoPersonal;
 use Illuminate\Http\Request;
 
-class AsinacionVendedorController extends Controller
+class AsignacionVendedorController extends Controller
 {
     public function index(Request $request)
     {

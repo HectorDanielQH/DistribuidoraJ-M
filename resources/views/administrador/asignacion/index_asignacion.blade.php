@@ -129,10 +129,10 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th scope="col">#</th>
-                                    <th scope="col">C.I.</th>
                                     <th scope="col">Nombre Completo</th>
                                     <th scope="col">Celular</th>
                                     <th scope="col">Dirección</th>
+                                    <th scope="col">Ruta</th>
                                 </tr>
                             </thead>
                             <tbody id="clientesAsignadosBody">

@@ -24,10 +24,6 @@
                 <h5 class="mb-0">
                     <i class="fas fa-filter me-2"></i> Opciones de búsqueda
                 </h5>
-                
-                <a class="btn" id="boton-agregar" href="{{route('productos.vendedor.descargarCatalogo')}}" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
-                    <i class="fas fa-file-pdf"></i> Descargar Catálogo
-                </a>
             </div>
             <div class="card-body" style="padding: 2rem;">
                 <p class="text-muted" style="margin-top: -15px">
@@ -47,32 +43,27 @@
         </div>
     </div>
 
-    <div class="container">
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered table-hover" id="productosTable">
-                <thead class="thead-dark" style="background-color: #2c3e50; color: #ffffff;">
-                    <tr>
-                        <th class="text-center">Cod.</th>
-                        <th class="text-center">Imagen</th>
-                        <th class="text-center">Nombre Producto</th>
-                        <th class="text-center">Descripción</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-center">Forma Venta</th>
-                        <th class="text-center">Promocion</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    
-                </tbody>
-            </table>
-        </div>
+    <div class="container mb-5">
+        <table class="table table-striped table-bordered table-hover" id="productosTable" style="width:100%">
+            <thead class="thead-dark">
+                <tr>
+                    <th class="text-center">Cod.</th>
+                    <th class="text-center">Imagen</th>
+                    <th class="text-center">Nombre Producto</th>
+                    <th class="text-center">Descripción</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-center">Forma Venta</th>
+                    <th class="text-center">Promocion</th>
+                </tr>
+            </thead>
+        </table>
     </div>
 @stop
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/v/bs4/dt-1.13.8/r-2.5.0/datatables.min.css">
 
     <style>
         input.form-control:focus, select.form-control:focus {
@@ -97,34 +88,40 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/bs4/dt-1.13.8/r-2.5.0/datatables.min.js"></script>
 
 
     <script>
         $(document).ready(function() {
             // Inicializar DataTables
             $('#productosTable').DataTable({
+                processing:true,
+                serverSide:true,
+                responsive: true,
+                autoWidth: false,
                 language: {
                     url: '/i18n/es-ES.json'
                 },
-                "processing":true,
-                "serverSide":true,
                 pageLength: 5,
                 lengthMenu: [ [5, 10, 25, 50], [5, 10, 25, 50] ],
                 "ajax": {
                     "url": "{{ route('preventistas.productos.vendedor.obtenerProductos') }}",
                     "type": "GET",
                 },
-                columns:[
-                    { data: 'codigo'},
-                    { data: 'imagen', orderable: false, searchable:false},
-                    { data: 'nombre_producto'},
-                    { data: 'marca', orderable: false, searchable:false},
-                    { data: 'stock', orderable: false, searchable:false},
-                    { data: 'formas_venta', orderable: false, searchable:false},
-                    { data: 'promocion_vista', orderable: false, searchable:false},
-                    { data: 'acciones', orderable: false, searchable:false}
+                columns: [
+                    { data: 'codigo',           name: 'codigo' },
+                    { data: 'imagen',           name: 'imagen', orderable: false, searchable: false },
+                    { data: 'nombre_producto',  name: 'nombre_producto' },
+                    { data: 'marca',            name: 'marca', orderable: false, searchable: false },
+                    { data: 'stock',            name: 'stock', orderable: false, searchable: false },
+                    { data: 'formas_venta',     name: 'formas_venta', orderable: false, searchable: false },
+                    { data: 'promocion_vista',  name: 'promocion_vista', orderable: false, searchable: false },
                 ],
+                columnDefs: [
+                    { targets: [0,1,2,3,4,5,6], className: 'align-middle text-center' },
+                    { targets: [2,3], className: 'align-middle' } // si no quieres centrar nombre/descr, ajusta esto
+                ],
+                order: [[0, 'asc']]
             });
         });
     </script>

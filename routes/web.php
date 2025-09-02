@@ -16,7 +16,7 @@ use App\Http\Controllers\Administrador\NoAtendidosController;
 //---------------------------------------------------------------
 use App\Http\Controllers\PreVentista\ProductoVendedorController;
 
-use App\Http\Controllers\AsinacionVendedorController;
+use App\Http\Controllers\AsignacionVendedorController;
 use App\Http\Controllers\PedidoAdministradorController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\RendimientoPersonalController;
@@ -137,9 +137,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::put('asignacionclientes/resetear-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'resetearVendedoresRuta'])->name('vendedores.resetearRuta');
 
     //asignacion de vendedores
-    Route::get('asignacionVendedores/actualizar', [AsinacionVendedorController::class, 'index'])->name('asignacionvendedor.index');
+    Route::get('asignacionVendedores/actualizar', [AsignacionVendedorController::class, 'index'])->name('asignacionvendedor.index');
 
-    Route::put('asignacionVendedores/registrar-atencion/{id}', [AsinacionVendedorController::class, 'registrarAtencion'])->name('registrarAtencion.sinpedido');
+    Route::put('asignacionVendedores/registrar-atencion/{id}', [AsignacionVendedorController::class, 'registrarAtencion'])->name('registrarAtencion.sinpedido');
 
     //Crear pedidos desdee vendedor
     Route::get('pedidos/vendedor/crear/{id}', [PedidoController::class, 'crearPedido'])->name('pedidos.vendedor.crear');
@@ -148,8 +148,8 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::post('pedidos/vendedor/registrarpedido', [PedidoController::class, 'registrarPedido'])->name('pedidos.vendedor.registrarPedido');
 
     //ver pedidos desde vendedor
-    Route::get('pedidos/vendedor/obtener-pedidos-realizados/{id_cliente}', [AsinacionVendedorController::class, 'obtenerPedidosProceso'])->name('pedidos.vendedor.obtenerPedidosProceso');
-    Route::get('pedidos/vendedor/obtener-pedidos-realizados-pendientes/{id_cliente}', [AsinacionVendedorController::class, 'obtenerPedidosPendientes'])->name('pedidos.vendedor.obtenerPedidosPendientes');
+    Route::get('pedidos/vendedor/obtener-pedidos-realizados/{id_cliente}', [AsignacionVendedorController::class, 'obtenerPedidosProceso'])->name('pedidos.vendedor.obtenerPedidosProceso');
+    Route::get('pedidos/vendedor/obtener-pedidos-realizados-pendientes/{id_cliente}', [AsignacionVendedorController::class, 'obtenerPedidosPendientes'])->name('pedidos.vendedor.obtenerPedidosPendientes');
 
     //pdf vendedor
     Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
