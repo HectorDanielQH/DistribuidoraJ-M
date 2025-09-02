@@ -84,12 +84,9 @@
         <tr>
             <td class="w-50">
                 <img src="{{ public_path('images/logo_distribuidora.jpg') }}" alt="Logo" class="logo"><br>
-                <small class="muted">Distribuidora H&amp;J</small>
             </td>
             <td class="w-50 text-right">
                 <h2>Productos Despachados</h2>
-                <small class="muted">Fecha de impresión: {{ date('d/m/Y H:i:s') }}</small><br>
-                <small class="muted">Versión 1.0</small>
             </td>
         </tr>
     </table>
