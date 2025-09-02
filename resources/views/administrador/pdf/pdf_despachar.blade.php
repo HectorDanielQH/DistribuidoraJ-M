@@ -5,24 +5,24 @@
     <meta charset="UTF-8">
     <title>Pedidos Despachados</title>
     <style>
-        /* ===== Base minimalista (PDF friendly, compacta) ===== */
+        /* ===== Base minimalista ULTRA COMPACT ===== */
         *{box-sizing:border-box}
-        html,body{font-family:DejaVu Sans, Arial, sans-serif;font-size:9px;color:#222;line-height:1.2}
-        h1,h2,h3,h4,h5{margin:0 0 .35rem;font-weight:700;line-height:1.15}
-        h2{font-size:12px}
-        h4{font-size:10px}
-        small{font-size:8px}
+        html,body{font-family:DejaVu Sans, Arial, sans-serif;font-size:8.2px;color:#222;line-height:1.12}
+        h1,h2,h3,h4,h5{margin:0 0 .28rem;font-weight:700;line-height:1.08}
+        h2{font-size:10.6px}
+        h4{font-size:9px}
+        small{font-size:7.4px}
         img{display:inline-block}
 
-        /* Espaciados (compactos) */
+        /* Espaciados (muy compactos) */
         .m-0{margin:0}
-        .mb-1{margin-bottom:4px}
-        .mb-2{margin-bottom:8px}
-        .mb-3{margin-bottom:10px}
-        .mt-2{margin-top:8px}
+        .mb-1{margin-bottom:3px}
+        .mb-2{margin-bottom:6px}
+        .mb-3{margin-bottom:8px}
+        .mt-2{margin-top:6px}
         .p-0{padding:0}
-        .p-1{padding:2px}
-        .p-2{padding:4px}
+        .p-1{padding:1px}
+        .p-2{padding:2px}
 
         /* Texto */
         .text-center{text-align:center}
@@ -36,25 +36,25 @@
         .w-50{width:50%}
         .w-30{width:30%}
 
-        /* Tablas (más apretadas) */
+        /* Tablas (apretadas) */
         .tbl{width:100%;border-collapse:collapse}
-        .tbl th,.tbl td{border:1px solid #aaa;padding:3px 3px;font-size:8.6px;vertical-align:top}
-        .tbl thead th{background:#f4f4f4}
+        .tbl th,.tbl td{border:1px solid #aaa;padding:2px 2px;font-size:7.9px;vertical-align:top}
+        .tbl thead th{background:#f3f3f3}
 
         .tbl-plain{width:100%;border-collapse:collapse}
-        .tbl-plain th,.tbl-plain td{border:0;padding:4px 3px;font-size:9px}
+        .tbl-plain th,.tbl-plain td{border:0;padding:3px 2px;font-size:8.4px}
 
         /* Bloques */
-        .section{border-left:3px solid #007bff;background:#f2f2f2;padding:5px 6px;margin:10px 0}
-        .box{border:1px solid #ccc;border-radius:3px;padding:6px}
-        .box-md{height:50px}
-        .signature{height:40px}
+        .section{border-left:2px solid #007bff;background:#f2f2f2;padding:4px 5px;margin:8px 0}
+        .box{border:1px solid #bbb;border-radius:2px;padding:4px}
+        .box-md{height:36px}
+        .signature{height:32px}
 
         /* Imágenes */
-        .logo{width:95px;height:auto}
+        .logo{width:80px;height:auto}
 
-        /* Paginación/roturas (márgenes más pequeños) */
-        @page{margin:12mm 10mm}
+        /* Márgenes de página (más pequeños) */
+        @page{margin:10mm 8mm}
         table{page-break-inside:auto}
         tr{page-break-inside:avoid;page-break-after:auto}
         .section,.box{page-break-inside:avoid}
@@ -66,13 +66,13 @@
     use App\Models\User;
     use App\Models\Rutas;
 
-    // Agrupar items por número de pedido para evitar O(n^2) en el render
+    // Agrupar items por número de pedido (evita bucles costosos al render)
     $itemsPorPedido = [];
     foreach ($pedidos as $p) {
         $itemsPorPedido[$p->numero_pedido][] = $p;
     }
 
-    // Cargar vendedores y rutas en bloque (minimiza queries)
+    // Cargar vendedores y rutas en bloque
     $vendedorIds = $lista_de_pedidos->pluck('id_vendedor')->filter()->unique()->all();
     $rutaIds     = $lista_de_pedidos->pluck('ruta_id')->filter()->unique()->all();
 
@@ -200,12 +200,15 @@
             </tbody>
         </table>
 
+        {{-- Observaciones por pedido (compacta) --}}
+        <div class="box box-md mb-2"></div>
+
     @endforeach
 
-    {{-- Total general --}}
+    {{-- Total general (compacto) --}}
     <div class="section">
         <h4 class="mb-1">Monto Total Estimado a Recaudar: {{ number_format($total_general, 2, ',', '.') }} Bs</h4>
-        <small class="muted">Este total corresponde a todos los pedidos listados en el documento.</small>
+        <small class="muted">Corresponde a todos los pedidos listados.</small>
     </div>
 
     {{-- Firmas --}}
