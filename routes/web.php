@@ -108,6 +108,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //Lotes de productos
         Route::get('lotes/obtenerProducto', [LotesController::class, 'obtenerProducto'])->name('lote.productos.buscarProducto');
+        Route::get('lotes/obtenerDetalleProducto/{id}', [LotesController::class, 'obtenerDetalleProducto'])->name('lote.productos.detalleProducto');
 
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);

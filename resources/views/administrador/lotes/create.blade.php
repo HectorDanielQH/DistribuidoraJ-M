@@ -11,6 +11,9 @@
             <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
                 Panel de administración de Lotes
             </span>
+            <span class="text-white-50" style="font-size: 1rem; font-weight: 400; color: #bdc3c7;">
+                Lote numero: <strong>{{ $lote_max }}</strong>
+            </span>
             <button
                 class="btn btn-success mt-3 mb-2 px-4 py-2"
                 data-toggle="modal"
@@ -32,7 +35,7 @@
                 <form id="registro-lote" enctype="multipart/form-data">
                     @csrf
 
-                    <div class="row g-3 mt-3">
+                    <div class="row g-3">
                         <div class="col-md-12">
                             <label for="producto_id" class="form-label text-muted">Busca el producto</label>
                         </div>
@@ -44,14 +47,14 @@
 
                     <div class="row g-3 mt-3">
                         <div class="col-md-6">
-                            <label for="cantidadProducto" class="form-label text-muted">Cantidad del producto</label>
-                            <x-adminlte-input name="cantidadProducto" id="cantidadProducto" type="number" placeholder="Ej: 1" min="1" value="1"
+                            <label for="cantidadProducto" class="form-label text-muted">Cantidad del producto por agregar</label>
+                            <x-adminlte-input name="cantidadProducto" id="cantidadProducto" type="number" placeholder="Ej: 1" min="0" value="0"
                                 class="form-control shadow-sm border-2" style="border-radius: 8px;"/>
                         </div>
                         <div class="col-md-6">
                             <label for="descripcionCantidad" class="form-label text-muted">Descripcion de la cantidad</label>
                             <x-adminlte-input name="descripcionCantidad" id="descripcionCantidad" type="text" placeholder="Ej: Cajas" required
-                                class="form-control shadow-sm border-2" style="border-radius: 8px;"/>
+                                class="form-control shadow-sm border-2" style="border-radius: 8px;" readonly/>
                         </div>
                     </div>
 
@@ -78,19 +81,6 @@
                             <div class="d-flex">
                                 <input type="checkbox" id="habilitarVencimiento" class="form-check mr-2">
                                 <label for="habilitarVencimiento" class="form-check-label text-muted">Habilitar vencimiento</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="espacioVencimiento" class="form-label text-muted">LOTE</label>
-                            <div class="col-md-12">
-                                <select id="lote" name="lote" style="width: 100%">
-                                    <option value="" disabled selected>Selecciona un lote existente</option>
-                                    @forelse($lotes as $lote)
-                                        <option value="{{ $lote->id }}">{{ $lote->codigo_lote }}</option>
-                                    @empty
-                                        <option value="" disabled>No hay lotes disponibles</option>
-                                    @endforelse
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -208,7 +198,7 @@
                 pageLength: 5,
                 lengthMenu: [ [5, 10, 25, 50], [5, 10, 25, 50] ],
                 "ajax": {
-                    "url": "{{ route('administrador.lotes.index') }}",
+                    "url": "{{ route('administrador.lotes.create') }}?lote={{ $lote_max }}",
                     "type": "GET",
                 },
                 columns:[
@@ -241,10 +231,26 @@
                                 };
                             })
                         };
-                    },
-                    cache: true
+                    }
                 },
                 minimumInputLength: 1,
+            });
+        });
+
+        
+        $('#producto_id').on('select2:select', function (e) {
+            let productoId = e.params.data.id;
+            $.ajax({
+                url: '{{ route("administrador.lote.productos.detalleProducto", ":id") }}'.replace(':id', productoId),
+                type: 'GET',
+                success: function(data) {
+                    $('#descripcionCantidad').val(data.detalle_cantidad);
+                    $('#precioCompra').val(data.precio_compra);
+                    $('#descripcionCompra').val(data.detalle_precio_compra);
+                },
+                error: function() {
+                    $('#descripcionCantidad').val('');
+                }
             });
         });
 
@@ -256,96 +262,97 @@
                 $('#vencimientoProducto').val('');
             }
         });
-        $('#botonenviarlote').click(function(){
-            var producto_id = $('#producto_id').val();
-            var cantidadProducto = $('#cantidadProducto').val();
-            var descripcionCantidad = $('#descripcionCantidad').val();
-            var precioCompra = $('#precioCompra').val();
-            var descripcionCompra = $('#descripcionCompra').val();
-            var vencimientoProducto = $('#vencimientoProducto').val();
 
-            if(!producto_id){
+        $('#botonenviarlote').click(function(){
+            let codigoLote = '{{ $lote_max }}';
+            let productoId = $('#producto_id').val();
+            let cantidadProducto = $('#cantidadProducto').val();
+            let descripcionCantidad = $('#descripcionCantidad').val();
+            let precioCompra = $('#precioCompra').val();
+            let descripcionCompra = $('#descripcionCompra').val();
+            let vencimientoProducto = $('#vencimientoProducto').val();
+            if(!productoId) {
                 Swal.fire({
                     icon: 'warning',
-                    title: '¡Atención!',
+                    title: 'Atención',
                     text: 'Por favor, selecciona un producto.',
                 });
                 return;
             }
-            if(!cantidadProducto || cantidadProducto <= 0){
+            if(cantidadProducto <= 0) {
                 Swal.fire({
                     icon: 'warning',
-                    title: '¡Atención!',
-                    text: 'Por favor, ingresa una cantidad válida.',
+                    title: 'Atención',
+                    text: 'La cantidad del producto debe ser mayor a cero.',
                 });
                 return;
             }
-            if(!descripcionCantidad){
+            if(precioCompra <= 0) {
                 Swal.fire({
                     icon: 'warning',
-                    title: '¡Atención!',
-                    text: 'Por favor, ingresa una descripción para la cantidad.',
+                    title: 'Atención',
+                    text: 'El precio de compra debe ser mayor a cero.',
                 });
                 return;
             }
-            if(!precioCompra || precioCompra <= 0){
+            if(!descripcionCompra) {
                 Swal.fire({
                     icon: 'warning',
-                    title: '¡Atención!',
-                    text: 'Por favor, ingresa un precio de compra válido.',
+                    title: 'Atención',
+                    text: 'Por favor, ingresa una descripción del precio de compra.',
                 });
                 return;
             }
-            if(!descripcionCompra){
+            if($('#habilitarVencimiento').is(':checked') && !vencimientoProducto) {
                 Swal.fire({
                     icon: 'warning',
-                    title: '¡Atención!',
-                    text: 'Por favor, ingresa una descripción para el precio de compra.',
-                });
-                return;
-            }
-            if($('#habilitarVencimiento').is(':checked') && !vencimientoProducto){
-                Swal.fire({
-                    icon: 'warning',
-                    title: '¡Atención!',
+                    title: 'Atención',
                     text: 'Por favor, ingresa una fecha de vencimiento o desactiva la opción.',
                 });
                 return;
             }
-
+            Swal.fire({
+                title: 'Registrando lote...',
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                allowOutsideClick: false
+            })
             $.ajax({
                 url: '{{ route("administrador.lotes.store") }}',
                 type: 'POST',
                 data: {
-                    _token: '{{ csrf_token() }}',
-                    lote: $('#lote').val(),
-                    producto_id: producto_id,
-                    cantidadProducto: cantidadProducto,
-                    descripcionCantidad: descripcionCantidad,
-                    precioCompra: precioCompra,
-                    descripcionCompra: descripcionCompra,
-                    vencimientoProducto: vencimientoProducto
+                    _token: `{{ csrf_token() }}`,
+                    codigo_lote: codigoLote,
+                    producto_id: productoId,
+                    cantidad_producto: cantidadProducto,
+                    descripcion_cantidad: descripcionCantidad,
+                    precio_compra: precioCompra,
+                    descripcion_precio_compra: descripcionCompra,
+                    vencimiento_producto: vencimientoProducto
                 },
                 success: function(response) {
+                    $('#registro-lote')[0].reset();
                     $('#producto_id').val(null).trigger('change');
                     $('#tabla-lotes').DataTable().ajax.reload(null, false);
+                    
                     Swal.fire({
                         icon: 'success',
                         title: '¡Éxito!',
-                        text: 'Lote agregado correctamente.',
+                        text: 'El lote se ha registrado correctamente.',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 },
                 error: function(xhr) {
-                    var errorMessage = 'Ocurrió un error. Por favor, intenta nuevamente.';
-                    if(xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
+                    let errors = xhr.responseJSON.errors;
+                    let errorMessages = Object.values(errors).map(function(errorArray) {
+                        return errorArray.join(' ');
+                    }).join(' ');
                     Swal.fire({
                         icon: 'error',
-                        title: '¡Error!',
-                        text: errorMessage,
+                        title: 'Error',
+                        text: errorMessages,
                     });
                 }
             });

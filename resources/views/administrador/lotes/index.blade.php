@@ -121,7 +121,6 @@
             <thead>
                 <tr>
                     <th>Lote</th>
-                    <th>Fecha de creación</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -197,8 +196,7 @@
                     "type": "GET",
                 },
                 columns:[
-                    {data: 'codigo_lote', name: 'codigo_lote'},
-                    {data: 'created_at', name: 'created_at'},
+                    {data: 'codigo_lote', name: 'codigo_lote', width: '70%'},
                     {data: 'acciones', name: 'acciones', orderable: false, searchable: false},
                 ],
                 

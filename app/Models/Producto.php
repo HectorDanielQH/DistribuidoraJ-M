@@ -23,6 +23,7 @@ class Producto extends Model
         'descripcion_regalo',
         'foto_producto',
         'estado_de_baja',
+        'fecha_vencimiento',
     ];
 
     public function proveedor()
