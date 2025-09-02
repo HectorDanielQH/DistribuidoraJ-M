@@ -95,6 +95,7 @@ class PedidoAdministradorController extends Controller
         $lista_de_pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
             ->select(
             'pedidos.numero_pedido',
+            'pedidos.id_usuario as id_vendedor',
             DB::raw('DATE(pedidos.fecha_pedido) AS fecha_pedido'),
             'clientes.nombres',
             'clientes.apellidos',
@@ -107,6 +108,7 @@ class PedidoAdministradorController extends Controller
             ->where('estado_pedido', false)
             ->groupBy(
                 'pedidos.numero_pedido',
+                'pedidos.id_usuario',
                 'fecha_pedido',
                 'clientes.nombres',
                 'clientes.apellidos',
@@ -130,6 +132,7 @@ class PedidoAdministradorController extends Controller
                 'forma_ventas.tipo_venta',
                 'forma_ventas.precio_venta',
                 'pedidos.id as id_pedido',
+                'pedidos.id_usuario as id_vendedor',
                 'pedidos.numero_pedido',
                 'pedidos.cantidad as cantidad_pedido',
                 'pedidos.promocion',

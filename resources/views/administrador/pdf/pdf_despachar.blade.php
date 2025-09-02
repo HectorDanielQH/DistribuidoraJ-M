@@ -1,219 +1,246 @@
+{{-- resources/views/administrador/pdf/pdf_despachar.blade.php --}}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Pedidos Despachados</title>
-    <link rel="stylesheet" href="{{ public_path('css/bootstrap.min.css') }}">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-        }
-        .logo {
-            width: 140px;
-            height: auto;
-        }
-        .section-title {
-            background-color: #f2f2f2;
-            padding: 8px;
-            margin-top: 20px;
-            border-left: 5px solid #007bff;
-        }
-        .producto {
-            border: 1px solid #ccc;
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .producto h5 {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .producto img {
-            width: 100px;
-            height: auto;
-            border-radius: 5px;
-        }
-        table.formas-venta th, table.formas-venta td {
-            font-size: 11px;
-            padding: 4px;
-        }
-        table.formas-venta {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table.formas-venta, .formas-venta th, .formas-venta td {
-            border: 1px solid #aaa;
-        }
+        /* ===== Base minimalista (PDF friendly) ===== */
+        *{box-sizing:border-box}
+        html,body{font-family:DejaVu Sans, Arial, sans-serif;font-size:10px;color:#222;line-height:1.35}
+        h1,h2,h3,h4,h5{margin:0 0 .5rem;font-weight:700}
+        h2{font-size:14px}
+        h4{font-size:12px}
+        small{font-size:9px}
+        img{display:inline-block}
+
+        /* Espaciados */
+        .m-0{margin:0}.mb-1{margin-bottom:6px}.mb-2{margin-bottom:10px}.mb-3{margin-bottom:14px}.mt-2{margin-top:10px}
+        .p-0{padding:0}.p-1{padding:4px}.p-2{padding:8px}
+
+        /* Texto */
+        .text-center{text-align:center}.text-right{text-align:right}.muted{color:#777}.fw-bold{font-weight:700}
+        .nowrap{white-space:nowrap}
+
+        /* Anchos */
+        .w-100{width:100%}.w-50{width:50%}.w-30{width:30%}
+
+        /* Tablas */
+        .tbl{width:100%;border-collapse:collapse}
+        .tbl th,.tbl td{border:1px solid #aaa;padding:4px;font-size:9px;vertical-align:top}
+        .tbl thead th{background:#f4f4f4}
+
+        .tbl-plain{width:100%;border-collapse:collapse}
+        .tbl-plain th,.tbl-plain td{border:0;padding:6px 4px;font-size:9.5px}
+
+        /* Bloques */
+        .section{border-left:3px solid #007bff;background:#f2f2f2;padding:6px 8px;margin:12px 0}
+        .box{border:1px solid #ccc;border-radius:3px;padding:8px}
+        .box-md{height:70px}
+        .signature{height:45px}
+
+        /* Imágenes */
+        .logo{width:100px;height:auto}
+
+        /* Paginación/roturas */
+        @page{margin:14mm 12mm}
+        table{page-break-inside:auto}
+        tr{page-break-inside:avoid;page-break-after:auto}
+        .section,.box{page-break-inside:avoid}
     </style>
 </head>
 <body>
-    <div class="container mb-4">
-        <img src="{{ public_path('images/logo_distribuidora.jpg') }}" alt="Logo" class="logo">
-        <h2>Productos Despachados</h2>
-    </div>
-    
-    @foreach($lista_de_pedidos as $lista_pedido)
-        <table style="width: 100%; border-collapse: collapse;">
+
+@php
+    use App\Models\User;
+    use App\Models\Rutas;
+
+    // Agrupar items por número de pedido para evitar O(n^2) en el render
+    $itemsPorPedido = [];
+    foreach ($pedidos as $p) {
+        $itemsPorPedido[$p->numero_pedido][] = $p;
+    }
+
+    // Cargar vendedores y rutas en bloque (minimiza queries)
+    $vendedorIds = $lista_de_pedidos->pluck('id_vendedor')->filter()->unique()->all();
+    $rutaIds     = $lista_de_pedidos->pluck('ruta_id')->filter()->unique()->all();
+
+    $vendedores = User::whereIn('id', $vendedorIds)->get()->keyBy('id');
+    $rutas      = Rutas::whereIn('id', $rutaIds)->get()->keyBy('id');
+
+    // Total general
+    $total_general = 0;
+    foreach ($pedidos as $pp) {
+        $linea = $pp->cantidad_pedido * $pp->precio_venta;
+        if ($pp->promocion && $pp->descripcion_descuento_porcentaje > 0) {
+            $linea -= $linea * ($pp->descripcion_descuento_porcentaje / 100);
+        }
+        $total_general += $linea;
+    }
+@endphp
+
+    {{-- Encabezado --}}
+    <table class="tbl-plain w-100 mb-2">
+        <tr>
+            <td class="w-50">
+                <img src="{{ public_path('images/logo_distribuidora.jpg') }}" alt="Logo" class="logo"><br>
+                <small class="muted">Distribuidora H&amp;J</small>
+            </td>
+            <td class="w-50 text-right">
+                <h2>Productos Despachados</h2>
+                <small class="muted">Fecha de impresión: {{ date('d/m/Y H:i:s') }}</small><br>
+                <small class="muted">Versión 1.0</small>
+            </td>
+        </tr>
+    </table>
+
+    {{-- Listado por pedido --}}
+    @foreach($lista_de_pedidos as $lista)
+        @php
+            $items  = $itemsPorPedido[$lista->numero_pedido] ?? [];
+            $vend   = $vendedores[$lista->id_vendedor] ?? null;
+            $ruta   = $rutas[$lista->ruta_id] ?? null;
+
+            $totalPedido = 0;
+            foreach ($items as $it) {
+                $linea = $it->cantidad_pedido * $it->precio_venta;
+                if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                    $linea -= $linea * ($it->descripcion_descuento_porcentaje / 100);
+                }
+                $totalPedido += $linea;
+            }
+        @endphp
+
+        <table class="tbl-plain w-100">
             <thead>
                 <tr>
-                    <th colspan="2" style="text-align: left; font-size: 18px; padding: 10px 5px; border-bottom: 2px solid #000;">
-                        Pedido #{{ $lista_pedido->numero_pedido }}
+                    <th colspan="4" class="p-2" style="border-bottom:1px solid #000;">
+                        Pedido #{{ $lista->numero_pedido }} —
+                        Vendido por: {{ $vend ? ($vend->nombres.' '.$vend->apellido_paterno.' '.$vend->apellido_materno) : 'No asignado' }}
                     </th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="width: 30%; padding: 8px; font-weight: bold;">Fecha de Pedido:</td>
-                    <td style="padding: 8px;">{{ $lista_pedido->fecha_pedido }}</td>
+                    <td class="w-30 p-2 fw-bold">Fecha de Pedido:</td>
+                    <td class="p-2">{{ $lista->fecha_pedido }}</td>
+                    <td class="p-2 fw-bold">Cliente:</td>
+                    <td class="p-2">{{ $lista->nombres }} {{ $lista->apellidos }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px; font-weight: bold;">Cliente:</td>
-                    <td style="padding: 8px;">
-                        {{ $lista_pedido->nombres }} {{ $lista_pedido->apellidos}}
-                    </td>
+                    <td class="p-2 fw-bold">Celular:</td>
+                    <td class="p-2">{{ $lista->celular }}</td>
+                    <td class="p-2 fw-bold">Dirección:</td>
+                    <td class="p-2">{{ $lista->calle_avenida }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px; font-weight: bold;">Celular:</td>
-                    <td style="padding: 8px;">{{ $lista_pedido->celular }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; font-weight: bold;">Dirección:</td>
-                    <td style="padding: 8px;">{{ $lista_pedido->calle_avenida }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; font-weight: bold;">Zona referencial:</td>
-                    <td style="padding: 8px;">{{ $lista_pedido->zona_barrio }}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px; font-weight: bold;">Ruta Asignada:</td>
-                    <td style="padding: 8px;">
-                        @php
-                            $ruta = App\Models\Rutas::where('id', $lista_pedido->ruta_id)->first();
-                        @endphp
-                        {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}
-                    </td>
+                    <td class="p-2 fw-bold">Zona referencial:</td>
+                    <td class="p-2">{{ $lista->zona_barrio }}</td>
+                    <td class="p-2 fw-bold">Ruta Asignada:</td>
+                    <td class="p-2">{{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}</td>
                 </tr>
             </tbody>
         </table>
 
-        <table>
+        <table class="tbl mt-2 mb-2">
             <thead>
                 <tr>
-                    <th>Cod. Producto</th>
+                    <th>Cod.</th>
                     <th>Nombre del Producto</th>
-                    <th>Cant. Solicitada</th>
-                    <th>Precio U.</th>
-                    <th>Promocion</th>
-                    <th>Subtotal</th>
+                    <th class="text-right">Cant.</th>
+                    <th class="text-right">Precio U.</th>
+                    <th>Promoción</th>
+                    <th class="text-right">Subtotal (Bs)</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($pedidos as $pedido)
-                    @if($pedido->numero_pedido == $lista_pedido->numero_pedido)
-                        <tr>
-                            <td>{{ $pedido->codigo }}</td>
-                            <td>{{ $pedido->nombre_producto }}</td>
-                            <td>{{ $pedido->cantidad_pedido }} ({{$pedido->tipo_venta}})</td>
-                            <td>{{$pedido->precio_venta}}</td>
-                            @if($pedido->promocion)
-                                <td>
-                                @if($pedido->descripcion_descuento_porcentaje> 0)
-                                    Descuento: {{ $pedido->descripcion_descuento_porcentaje }}%
+                @foreach($items as $it)
+                    @php
+                        $sub = $it->cantidad_pedido * $it->precio_venta;
+                        if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                            $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
+                        }
+                    @endphp
+                    <tr>
+                        <td>{{ $it->codigo }}</td>
+                        <td>{{ $it->nombre_producto }}</td>
+                        <td class="text-right">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
+                        <td class="text-right">{{ number_format($it->precio_venta, 2, ',', '.') }}</td>
+                        <td>
+                            @if($it->promocion)
+                                @if($it->descripcion_descuento_porcentaje > 0)
+                                    Descuento: {{ $it->descripcion_descuento_porcentaje }}%
                                 @endif
-                                <br>
-                                @if($pedido->descripcion_regalo != null && $pedido->descripcion_regalo != '')
-                                    Regalo: {{ $pedido->descripcion_regalo }}
+                                @if(!empty($it->descripcion_regalo))
+                                    {!! $it->descripcion_descuento_porcentaje > 0 ? '<br>' : '' !!}
+                                    Regalo: {{ $it->descripcion_regalo }}
                                 @endif
-                                </td>
+                                @if($it->descripcion_descuento_porcentaje == 0 && empty($it->descripcion_regalo))
+                                    No aplica
+                                @endif
                             @else
-                                <td>No aplica</td>
+                                No aplica
                             @endif
-                            <td>
-                                {{ ($pedido->cantidad_pedido * $pedido->precio_venta) - ($pedido->cantidad_pedido * $pedido->precio_venta * $pedido->descripcion_descuento_porcentaje / 100) }} Bs.-
-                            </td>
-                        </tr>
-                    @endif
+                        </td>
+                        <td class="text-right">{{ number_format($sub, 2, ',', '.') }}</td>
+                    </tr>
                 @endforeach
                 <tr>
-                    <td colspan="5" style="text-align: right; font-weight: bold;">Total:</td>
-                    <td>
-                        @php
-                            $total = 0;
-                            foreach($pedidos as $pedido) {
-                                if($pedido->numero_pedido == $lista_pedido->numero_pedido) {
-                                    $total += ($pedido->cantidad_pedido * $pedido->precio_venta) - ($pedido->cantidad_pedido * $pedido->precio_venta * $pedido->descripcion_descuento_porcentaje / 100);
-                                }
-                            }
-                        @endphp
-                        {{ $total }} Bs.-
-                    </td>
+                    <td colspan="5" class="text-right fw-bold">Total del Pedido (Bs):</td>
+                    <td class="text-right fw-bold">{{ number_format($totalPedido, 2, ',', '.') }}</td>
+                </tr>
             </tbody>
         </table>
-        <!--CAJA OBSERVACIONES PARA LLENAR A MANO-->
-        <div class="">
-            <h5>Observaciones:</h5>
-            <p style="border: 1px solid #ccc; padding: 10px; height: 80px; margin-top: 10px;"></p>
-        </div>
+
+        {{-- Observaciones por pedido --}}
+        <div class="box box-md mb-3"></div>
+
     @endforeach
 
-    <!--SUMA TOTAL DE TODOS LOS PEDIDOS-->
-    <div class="container">
-        <h4>Monto Total Estimado a Recaudar:
-            @php
-                $total_general = 0;
-                foreach($pedidos as $pedido) {
-                    $total_general += ($pedido->cantidad_pedido * $pedido->precio_venta) - ($pedido->cantidad_pedido * $pedido->precio_venta * $pedido->descripcion_descuento_porcentaje / 100);
-                }
-            @endphp
-            {{ $total_general }}
-            Bs.-
-        </h4>
-    </div>
-    <!--FIRMA DEL REPARTIDOR Y DEL QUE ENTREGA EL PEDIDO-->
-    <table>
-        <tr>
-            <td style="width: 50%; text-align: center;">
-                <h4>Firma del Repartidor:</h4>
-                <p style="border: 1px solid #ccc; padding: 10px; height: 50px; margin-top: 10px;"></p>
-            </td>
-            <td style="width: 50%; text-align: center;">
-                <h4>Firma del Despachador:</h4>
-                <p style="border: 1px solid #ccc; padding: 10px; height: 50px; margin-top: 10px;"></p>
-            </td>
-        </tr>
-    </table>
-    <p style="text-align: center; font-size: 10px; color: #888;">
-        Este documento es una representación impresa de los pedidos despachados y debe ser guardado para futuras referencias.
-    </p>
-    <!--FIRMA DEL REPARTIDOR QUE INDIQUE QUE ENTREGO LA PLATA-->
-    <table>
-        <tr>
-            <td style="width: 50%; text-align: center;">
-                <h4>Firma del Repartidor (Entrega de ingresos generados):</h4>
-                <p style="border: 1px solid #ccc; padding: 10px; height: 50px; margin-top: 10px;"></p>
-            </td><td style="width: 50%; text-align: center;">
-                <h4>Firma del Recepcionista (Recepción de ingresos generados):</h4>
-                <p style="border: 1px solid #ccc; padding: 10px; height: 50px; margin-top: 10px;"></p>
-            </td>
-        </tr>
-    </table>
-    <div class="">
-        <h5>Observaciones:</h5>
-        <p style="border: 1px solid #ccc; padding: 10px; height: 80px; margin-top: 10px;"></p>
+    {{-- Total general --}}
+    <div class="section">
+        <h4 class="mb-1">Monto Total Estimado a Recaudar: {{ number_format($total_general, 2, ',', '.') }} Bs</h4>
+        <small class="muted">Este total corresponde a todos los pedidos listados en el documento.</small>
     </div>
 
-    <p style="text-align: center; font-size: 10px; color: #888;">
-        Distribuidora H&j - Todos los derechos reservados.
+    {{-- Firmas --}}
+    <table class="tbl-plain w-100 mt-2">
+        <tr>
+            <td class="w-50 text-center">
+                <h4>Firma del Repartidor</h4>
+                <div class="box signature mt-2"></div>
+            </td>
+            <td class="w-50 text-center">
+                <h4>Firma del Despachador</h4>
+                <div class="box signature mt-2"></div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="tbl-plain w-100 mt-2">
+        <tr>
+            <td class="w-50 text-center">
+                <h4>Entrega de Ingresos (Repartidor)</h4>
+                <div class="box signature mt-2"></div>
+            </td>
+            <td class="w-50 text-center">
+                <h4>Recepción de Ingresos (Recepcionista)</h4>
+                <div class="box signature mt-2"></div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- Observaciones finales --}}
+    <div class="mt-2">
+        <h4>Observaciones:</h4>
+        <div class="box box-md mt-2"></div>
+    </div>
+
+    <p class="text-center muted mt-2">
+        Este documento es una representación impresa de los pedidos despachados y debe ser guardado para futuras referencias.
     </p>
-    <p style="text-align: center; font-size: 10px; color: #888;">
-        Fecha de impresión: {{ date('d/m/Y H:i:s') }}
-    </p>
-    <p style="text-align: center; font-size: 10px; color: #888;">
-        Generado por el sistema de gestión de pedidos H&J.
-    </p>
-    <p style="text-align: center; font-size: 10px; color: #888;">
-        Versión 1.0
-    </p>
+    <p class="text-center muted">Distribuidora H&amp;J — Todos los derechos reservados.</p>
+    <p class="text-center muted">Generado por el sistema de gestión de pedidos H&amp;J.</p>
+
 </body>
 </html>
