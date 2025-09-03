@@ -1,4 +1,3 @@
-{{-- resources/views/ventas/reporte.blade.php --}}
 @extends('adminlte::page')
 
 @section('title', 'Dashboard')
@@ -44,6 +43,37 @@
         </div>
     </div>
 
+    {{-- RESUMEN POR VENDEDOR --}}
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-user-tie me-2"></i> Resumen por vendedor
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 70%;">Vendedor</th>
+                                <th style="width: 30%;">Subtotal (Bs)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-resumen-vendedores">
+                            <tr><td colspan="2" class="text-center text-muted">Sin datos</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th class="text-end">TOTAL GENERAL</th>
+                                <th id="resumen-total-general" class="text-nowrap"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- DETALLE AGRUPADO POR USUARIO → PEDIDOS --}}
     <div class="container mt-4">
         <div class="table-responsive">
             <table id="tabla-ventas" class="table table-striped">
@@ -75,29 +105,22 @@
             box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
         }
         .btn:hover { opacity: 0.9; }
-        /* Mejor visual para cabeceras de usuario */
         .tr-usuario > td {
-            background:#f2f4f6; 
+            background:#f2f4f6;
             font-weight:700;
         }
-        /* Separador visual */
         .tr-sep > td {
-            padding:0; 
+            padding:0;
             border-top:2px solid #e5e7eb;
         }
     </style>
 @stop
 
 @section('js')
-    {{-- Dependencias (jQuery, SweetAlert2, etc.) --}}
     <script src="https://code.jquery.com/jquery-3.7.1.js"
             integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
             crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    {{-- Si no usas SlimSelect/ECharts aquí, puedes quitar estas dos líneas --}}
-    <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
 
     <script>
         // Formato moneda BOB
@@ -105,7 +128,7 @@
             return new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(n ?? 0);
         }
 
-        // Validación y fetch del reporte
+        // Generar reporte (AJAX)
         function generarReporte(){
             const fechaInicio = document.getElementById('fecha_inicio').value;
             const fechaFin = document.getElementById('fecha_fin').value;
@@ -129,13 +152,11 @@
             $.ajax({
                 url: "{{ route('ventas.obtenerVentas.porfechas') }}",
                 type: 'GET',
-                data: {
-                    fecha_inicio: fechaInicio,
-                    fecha_fin: fechaFin
-                },
+                data: { fecha_inicio: fechaInicio, fecha_fin: fechaFin },
                 success: function(response) {
                     Swal.close();
-                    pintarVentasAgrupadas(response);
+                    pintarResumenVendedores(response);   // <--- nuevo
+                    pintarVentasAgrupadas(response);     // detalle
                 },
                 error: function(xhr) {
                     Swal.fire({
@@ -148,7 +169,36 @@
             });
         }
 
-        // Pintado agrupado por usuario con totales
+        // ---- NUEVO: pinta el resumen por vendedor ----
+        function pintarResumenVendedores(data) {
+            const tbody = document.getElementById('tbody-resumen-vendedores');
+            tbody.innerHTML = '';
+
+            const resumen = data.resumen_usuarios || [];
+            if (resumen.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Sin datos</td></tr>';
+            } else {
+                // Ordenar por subtotal desc (opcional)
+                resumen.sort((a, b) => (b.subtotal ?? 0) - (a.subtotal ?? 0));
+                resumen.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <i class="fas fa-user me-2"></i>
+                            ${r.usuario} <small class="text-muted">(ID: ${r.id_usuario})</small>
+                        </td>
+                        <td class="text-nowrap">${formatoMoneda(r.subtotal)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Muestra el total general también aquí
+            document.getElementById('resumen-total-general').textContent =
+                formatoMoneda(data.total_general || 0);
+        }
+
+        // ---- Detalle agrupado por usuario → pedidos (como ya lo tenías) ----
         function pintarVentasAgrupadas(data) {
             const tbody = document.getElementById('tbody-ventas');
             tbody.innerHTML = '';
@@ -199,8 +249,9 @@
                 tbody.appendChild(trSep);
             });
 
-            // Total general en el tfoot
-            document.getElementById('total-general').textContent = formatoMoneda(data.total_general || 0);
+            // Total general (pie de la tabla detalle)
+            document.getElementById('total-general').textContent =
+                formatoMoneda(data.total_general || 0);
         }
 
         // Ver detalles de un pedido
@@ -208,13 +259,9 @@
             const numeroPedido = btn.getAttribute('data-numero-pedido');
             const widthValue = window.innerWidth <= 600 ? '100%' : '60%';
 
-            // Arma la URL de detalle de forma segura:
-            // Opción 1: base con url() y concatenación (recomendada si tu ruta es /ventas/administrador/visualizacion-pedido/{id})
+            // Ajusta si tu ruta es diferente
             const baseUrl = "{{ url('/ventas/administrador/visualizacion-pedido') }}";
             const urlShow = `${baseUrl}/${encodeURIComponent(numeroPedido)}`;
-
-            // Opción 2 (si tienes una ruta con nombre y parámetro): descomenta y ajusta el nombre de la ruta
-            // const urlShow = "{{ route('ventas.administrador.visualizacionPedido', ['id' => '__ID__']) }}".replace('__ID__', numeroPedido);
 
             $.ajax({
                 url: urlShow,
@@ -249,8 +296,8 @@
 
                     (response.pedidos || []).forEach(item => {
                         const descuento = item.descripcion_descuento_porcentaje ?? 0;
-                        const total = (item.cantidad_pedido * item.precio_venta) -
-                                      ((item.cantidad_pedido * item.precio_venta * descuento) / 100);
+                        const total = (item.cantidad_pedido * item.precio_venta)
+                                      - ((item.cantidad_pedido * item.precio_venta * descuento) / 100);
 
                         html_tabla += `
                             <tr class="text-center">
@@ -270,9 +317,9 @@
                     });
 
                     const totalPedido = (response.pedidos || []).reduce((sum, item) => {
-                        const descuento = item.descripcion_descuento_porcentaje ?? 0;
-                        return sum + ((item.cantidad_pedido * item.precio_venta) -
-                                      ((item.cantidad_pedido * item.precio_venta * descuento) / 100));
+                        const d = item.descripcion_descuento_porcentaje ?? 0;
+                        return sum + ((item.cantidad_pedido * item.precio_venta)
+                                     - ((item.cantidad_pedido * item.precio_venta * d) / 100));
                     }, 0);
 
                     html_tabla += `

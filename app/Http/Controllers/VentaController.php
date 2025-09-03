@@ -71,7 +71,7 @@ class VentaController extends Controller
         $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
     $fechaFin    = Carbon::parse($request->input('fecha_fin'))->endOfDay();
 
-    // 1) Agregamos en SQL: total por pedido = SUM(cantidad * precio_venta)
+    // Total por pedido (usuario + pedido)
     $pedidos = DB::table('ventas')
         ->join('clientes', 'ventas.id_cliente', '=', 'clientes.id')
         ->join('users', 'ventas.id_usuario', '=', 'users.id')
@@ -82,40 +82,49 @@ class VentaController extends Controller
             CONCAT(users.nombres, ' ', COALESCE(users.apellido_paterno,''), ' ', COALESCE(users.apellido_materno,'')) as usuario,
             ventas.numero_pedido,
             CONCAT(clientes.nombres, ' ', COALESCE(clientes.apellidos,'')) as cliente,
-            SUM(ventas.cantidad * forma_ventas.precio_venta)::numeric(12,2) as total_pedido
+            SUM(ventas.cantidad * forma_ventas.precio_venta) as total_pedido
         ")
         ->groupBy('ventas.id_usuario', 'usuario', 'ventas.numero_pedido', 'cliente')
         ->orderBy('ventas.numero_pedido', 'asc')
         ->get();
 
-    // 2) Reagrupamos en PHP por usuario para armar subtotales y total general
+    // Reagrupo por usuario para armar estructura (detalle + subtotal usuario)
     $porUsuario = $pedidos->groupBy('id_usuario');
 
     $usuarios = [];
     $totalGeneral = 0.0;
+    $resumenUsuarios = []; // <-- resumen por vendedor
 
     foreach ($porUsuario as $idUsuario => $rows) {
         $usuarioNombre = $rows->first()->usuario;
-        $subtotal = $rows->sum(function($r){ return (float)$r->total_pedido; });
+        $subtotal = $rows->sum('total_pedido');
         $totalGeneral += $subtotal;
 
         $usuarios[] = [
             'id_usuario'       => $idUsuario,
             'usuario'          => $usuarioNombre,
-            'pedidos'          => $rows->map(function($r){
+            'pedidos'          => $rows->map(function($r) {
                 return [
                     'numero_pedido' => $r->numero_pedido,
                     'cliente'       => $r->cliente,
-                    'total_pedido'  => (float)$r->total_pedido,
+                    'total_pedido'  => (float) $r->total_pedido,
                 ];
             })->values(),
-            'subtotal_usuario' => (float)round($subtotal, 2),
+            'subtotal_usuario' => (float) round($subtotal, 2),
+        ];
+
+        // Lleno el resumen por vendedor
+        $resumenUsuarios[] = [
+            'id_usuario' => $idUsuario,
+            'usuario'    => $usuarioNombre,
+            'subtotal'   => (float) round($subtotal, 2),
         ];
     }
 
     return response()->json([
-        'usuarios'      => $usuarios,
-        'total_general' => (float)round($totalGeneral, 2),
+        'usuarios'         => $usuarios,          // detalle usuario → pedidos
+        'resumen_usuarios' => $resumenUsuarios,   // resumen por vendedor
+        'total_general'    => (float) round($totalGeneral, 2),
     ]);
     }
 
