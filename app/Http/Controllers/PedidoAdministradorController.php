@@ -356,14 +356,11 @@ class PedidoAdministradorController extends Controller
         $maximo=Venta::max('numero_pedido');
         for($i=1; $i<=$maximo; $i++){
             $pedido=Pedido::where('numero_pedido',$i)->first();
-            Venta::update(
-                [
-                    'id_usuario' => $pedido->id_usuario,
-                ],
-                [
-                    'numero_pedido' => $i
-                ]
-            );
+            $venta=Venta::where('numero_pedido',$i)->get();
+            foreach ($venta as $v){
+                $v->id_usuario=$pedido->id_usuario;
+                $v->save();
+            }
         }
         return response()->json([
             'pedidosPendientes' => ''//$pedidosPendientes
