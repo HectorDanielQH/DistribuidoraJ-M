@@ -519,7 +519,7 @@
                     return {
                         results: data.map(cliente => ({
                             id: cliente.id,
-                            text: cliente.nombres + ' ' + cliente.apellidos,
+                            text: cliente.nombres + ' ' + cliente.apellidos + ' - RUTA:'+cliente.ruta.nombre_ruta,
                         }))
                     };
                 },

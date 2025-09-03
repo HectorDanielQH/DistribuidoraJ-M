@@ -221,11 +221,10 @@ class ClienteController extends Controller
     {
         $term = trim(strtoupper($request->get('term')));
 
-        $clientes = Cliente::where('nombres', 'LIKE', "%{$term}%")
-            ->orWhere('apellidos', 'LIKE', "%{$term}%")
-            ->orWhere('cedula_identidad', 'LIKE', "%{$term}%")
+        $clientes_y_rutas=Cliente::with('ruta')->where('nombres', 'ILIKE', "%{$term}%")
+            ->orWhere('apellidos', 'ILIKE', "%{$term}%")
             ->get();
 
-        return response()->json($clientes);
+        return response()->json($clientes_y_rutas);
     }
 }

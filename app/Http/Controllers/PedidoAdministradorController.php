@@ -331,7 +331,7 @@ class PedidoAdministradorController extends Controller
 
     public function contabilizarPedidosPendientes(){
         
-        $pedidosPendientes = Pedido::whereNotNull('fecha_entrega')
+        /*$pedidosPendientes = Pedido::whereNotNull('fecha_entrega')
             ->where('estado_pedido', false)
             ->get();
         foreach ($pedidosPendientes as $pedido) {
@@ -339,7 +339,7 @@ class PedidoAdministradorController extends Controller
             $pedido->save();
             
             Venta::create([
-                'id_usuario' => auth()->id(),
+                'id_usuario' => $pedido->id_usuario,
                 'id_cliente' => $pedido->id_cliente,
                 'id_producto' => $pedido->id_producto,
                 'id_forma_venta' => $pedido->id_forma_venta,
@@ -351,9 +351,22 @@ class PedidoAdministradorController extends Controller
                 'descripcion_regalo' => $pedido->descripcion_regalo
             ]);
         }
-        
+        */
+
+        $maximo=Venta::max('numero_pedido');
+        for($i=1; $i<=$maximo; $i++){
+            $pedido=Pedido::where('numero_pedido',$i)->first();
+            Venta::update(
+                [
+                    'id_usuario' => $pedido->id_usuario,
+                ],
+                [
+                    'numero_pedido' => $i
+                ]
+            );
+        }
         return response()->json([
-            'pedidosPendientes' => $pedidosPendientes
+            'pedidosPendientes' => ''//$pedidosPendientes
         ], 200);
     }
 }

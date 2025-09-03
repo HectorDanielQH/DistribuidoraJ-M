@@ -24,10 +24,10 @@ class AsignacionController extends Controller
             $vendedor= User::query()->where('estado', 'ACTIVO')->role('vendedor');
             return $dataTables->eloquent($vendedor)
                 ->addColumn('nombre_completo', function($vendedor) {
-                    return $vendedor->nombres . ' ' . $vendedor->apellidos;
+                    return $vendedor->nombres . ' ' . $vendedor->apellido_paterno . ' ' . $vendedor->apellido_materno;
                 })
                 ->filterColumn('nombre_completo', function($query, $keyword) {
-                    $query->whereRaw("CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) LIKE ?", ["%{$keyword}%"]);
+                    $query->whereRaw("CONCAT(nombres, ' ', apellido_paterno, ' ', apellido_materno) ILIKE ?", ["%{$keyword}%"]);
                 })
                 ->addColumn('asignacion', function($vendedor) {
                     $asignaciones = Asignacion::where('id_usuario', $vendedor->id)->count();
@@ -47,7 +47,7 @@ class AsignacionController extends Controller
                         <button class='btn btn-warning btn-sm' data-bs-target='#asignarClienteUnitario' data-bs-toggle='modal' data-id='{$vendedor->id}' onclick='agregarClienteUnitario(this)'>
                             <i class='fas fa-user-plus'></i>
                         </button>
-                    ";
+                    "; 
                 })
                 ->rawColumns(['action'])
                 ->make(true);

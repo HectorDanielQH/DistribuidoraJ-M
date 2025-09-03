@@ -253,7 +253,7 @@
             document.getElementById('total-general').textContent =
                 formatoMoneda(data.total_general || 0);
         }
-
+        
         // Ver detalles de un pedido
         function verPedidoCliente(btn) {
             const numeroPedido = btn.getAttribute('data-numero-pedido');

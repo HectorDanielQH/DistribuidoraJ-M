@@ -69,63 +69,62 @@ class VentaController extends Controller
     public function obtenerVentas(Request $request)
     {
         $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
-    $fechaFin    = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+        $fechaFin    = Carbon::parse($request->input('fecha_fin'))->endOfDay();
 
-    // Total por pedido (usuario + pedido)
-    $pedidos = DB::table('ventas')
-        ->join('clientes', 'ventas.id_cliente', '=', 'clientes.id')
-        ->join('users', 'ventas.id_usuario', '=', 'users.id')
-        ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-        ->whereBetween('ventas.fecha_contabilizacion', [$fechaInicio, $fechaFin])
-        ->selectRaw("
-            ventas.id_usuario,
-            CONCAT(users.nombres, ' ', COALESCE(users.apellido_paterno,''), ' ', COALESCE(users.apellido_materno,'')) as usuario,
-            ventas.numero_pedido,
-            CONCAT(clientes.nombres, ' ', COALESCE(clientes.apellidos,'')) as cliente,
-            SUM(ventas.cantidad * forma_ventas.precio_venta) as total_pedido
-        ")
-        ->groupBy('ventas.id_usuario', 'usuario', 'ventas.numero_pedido', 'cliente')
-        ->orderBy('ventas.numero_pedido', 'asc')
-        ->get();
+        // Total por pedido (usuario + pedido)
+        $pedidos = DB::table('ventas')
+            ->join('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->join('users', 'ventas.id_usuario', '=', 'users.id')
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->whereBetween('ventas.fecha_contabilizacion', [$fechaInicio, $fechaFin])
+            ->selectRaw("ventas.id_usuario,
+                CONCAT(users.nombres, ' ', COALESCE(users.apellido_paterno,''), ' ', COALESCE(users.apellido_materno,'')) as usuario,
+                ventas.numero_pedido,
+                CONCAT(clientes.nombres, ' ', COALESCE(clientes.apellidos,'')) as cliente,
+                SUM(ventas.cantidad * forma_ventas.precio_venta) as total_pedido
+            ")
+            ->groupBy('ventas.id_usuario', 'usuario', 'ventas.numero_pedido', 'cliente')
+            ->orderBy('ventas.numero_pedido', 'asc')
+            ->get();
 
-    // Reagrupo por usuario para armar estructura (detalle + subtotal usuario)
-    $porUsuario = $pedidos->groupBy('id_usuario');
+        // Reagrupo por usuario para armar estructura (detalle + subtotal usuario)
+        $porUsuario = $pedidos->groupBy('id_usuario');
 
-    $usuarios = [];
-    $totalGeneral = 0.0;
-    $resumenUsuarios = []; // <-- resumen por vendedor
+        $usuarios = [];
+        $totalGeneral = 0.0;
+        $resumenUsuarios = []; // <-- resumen por vendedor
 
-    foreach ($porUsuario as $idUsuario => $rows) {
-        $usuarioNombre = $rows->first()->usuario;
-        $subtotal = $rows->sum('total_pedido');
-        $totalGeneral += $subtotal;
+        foreach ($porUsuario as $idUsuario => $rows) {
+            $usuarioNombre = $rows->first()->usuario;
+            $subtotal = $rows->sum('total_pedido');
+            $totalGeneral += $subtotal;
 
-        $usuarios[] = [
-            'id_usuario'       => $idUsuario,
-            'usuario'          => $usuarioNombre,
-            'pedidos'          => $rows->map(function($r) {
-                return [
-                    'numero_pedido' => $r->numero_pedido,
-                    'cliente'       => $r->cliente,
-                    'total_pedido'  => (float) $r->total_pedido,
-                ];
-            })->values(),
-            'subtotal_usuario' => (float) round($subtotal, 2),
-        ];
+            $usuarios[] = [
+                'id_usuario'       => $idUsuario,
+                'usuario'          => $usuarioNombre,
+                'pedidos'          => $rows->map(function($r) {
+                    return [
+                        'numero_pedido' => $r->numero_pedido,
+                        'cliente'       => $r->cliente,
+                        'total_pedido'  => (float) $r->total_pedido,
+                    ];
+                })->values(),
+                'subtotal_usuario' => (float) round($subtotal, 2),
+            ];
 
-        // Lleno el resumen por vendedor
-        $resumenUsuarios[] = [
-            'id_usuario' => $idUsuario,
-            'usuario'    => $usuarioNombre,
-            'subtotal'   => (float) round($subtotal, 2),
-        ];
-    }
+            // Lleno el resumen por vendedor
+            $resumenUsuarios[] = [
+                'id_usuario' => $idUsuario,
+                'usuario'    => $usuarioNombre,
+                'subtotal'   => (float) round($subtotal, 2),
+            ];
+        }
 
-    return response()->json([
-        'usuarios'         => $usuarios,          // detalle usuario → pedidos
-        'resumen_usuarios' => $resumenUsuarios,   // resumen por vendedor
-        'total_general'    => (float) round($totalGeneral, 2),
-    ]);
+        return response()->json([
+            'usuarios'         => $usuarios,          // detalle usuario → pedidos
+            'resumen_usuarios' => $resumenUsuarios,   // resumen por vendedor
+            'total_general'    => (float) round($totalGeneral, 2),
+        ]);
     }
 
 

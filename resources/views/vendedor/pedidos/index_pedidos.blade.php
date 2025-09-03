@@ -22,7 +22,7 @@
             <i class="bi bi-info-circle-fill me-2"></i>
             <div>
                 Se está creando un pedido para el cliente:
-                <strong>{{ $asignacion->cliente->nombres }} {{ $asignacion->cliente->apellido_paterno }} {{ $asignacion->cliente->apellido_materno }}</strong>
+                <strong>{{ $asignacion->cliente->nombres }} {{ $asignacion->cliente->apellidos }}</strong>
             </div>
         </div>
     </div>
