@@ -35,16 +35,16 @@ class AsignacionController extends Controller
                 })
                 ->addColumn('action', function ($vendedor) {
                     return "
-                        <button class='btn btn-info btn-sm' data-bs-target='#visualizarClientes' data-bs-toggle='modal' data-id='$vendedor->id' onclick='clientesAsignados(this)'>
+                        <button class='btn btn-info btn-sm' data-bs-target='#visualizarClientes' data-bs-toggle='modal' data-id='{$vendedor->id}' onclick='clientesAsignados(this)'>
                             <i class='fas fa-users'></i>
                         </button>
-                        <button class='btn btn-secondary btn-sm' data-bs-target='#visualizarRutas' data-bs-toggle='modal' data-id='$vendedor->id' onclick='rutasAsignadas(this)'>
+                        <button class='btn btn-secondary btn-sm' data-bs-target='#visualizarRutas' data-bs-toggle='modal' data-id='{$vendedor->id}' onclick='rutasAsignadas(this)'>
                             <i class='fas fa-route'></i>
                         </button>
-                        <button class='btn btn-success btn-sm' data-bs-target='#asignarCliente' data-bs-toggle='modal' data-id='$vendedor->id' onclick='valordeusuariovendedor(this)'>
+                        <button class='btn btn-success btn-sm' data-bs-target='#asignarCliente' data-bs-toggle='modal' data-id='{$vendedor->id}' onclick='valordeusuariovendedor(this)'>
                             <i class='fas fa-random'></i>
                         </button>
-                        <button class='btn btn-warning btn-sm' data-bs-target='#asignarClienteUnitario' data-bs-toggle='modal' data-id='$vendedor->id' onclick='agregarClienteUnitario(this)'>
+                        <button class='btn btn-warning btn-sm' data-bs-target='#asignarClienteUnitario' data-bs-toggle='modal' data-id='{$vendedor->id}' onclick='agregarClienteUnitario(this)'>
                             <i class='fas fa-user-plus'></i>
                         </button>
                     ";
