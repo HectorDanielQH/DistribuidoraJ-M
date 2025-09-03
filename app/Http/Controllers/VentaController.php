@@ -67,27 +67,26 @@ class VentaController extends Controller
 
     public function obtenerVentas(Request $request)
     {
-        $fecha_inicio = $request->input('fecha_inicio');
-        $fecha_fin = $request->input('fecha_fin');
+        $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+        $fechaFin    = Carbon::parse($request->input('fecha_fin'))->endOfDay();
         $ventas = Venta::join('clientes', 'ventas.id_cliente', '=', 'clientes.id')
-                        ->select(
-                            'ventas.id_usuario',
-                            'ventas.id_cliente',
-                            'clientes.nombres',
-                            'clientes.apellido_paterno',
-                            'clientes.apellido_materno',
-                            'ventas.numero_pedido',
-                        )
-                        ->whereBetween('ventas.fecha_contabilizacion', [$fecha_inicio, $fecha_fin])
-                        ->groupBy(
-                                 'ventas.id_usuario',
-                                 'ventas.id_cliente',
-                                 'clientes.nombres',
-                                 'clientes.apellido_paterno',
-                                 'clientes.apellido_materno',
-                                 'ventas.numero_pedido')
-                        ->orderBy('numero_pedido','asc')
-                        ->get();
+                ->select(
+                    'ventas.id_usuario',
+                    'ventas.id_cliente',
+                    'clientes.nombres',
+                    'clientes.apellidos',
+                    'ventas.numero_pedido'
+                )
+                ->whereBetween('ventas.fecha_contabilizacion', [$fechaInicio, $fechaFin])
+                ->groupBy(
+                    'ventas.id_usuario',
+                    'ventas.id_cliente',
+                    'clientes.nombres',
+                    'clientes.apellidos',
+                    'ventas.numero_pedido'
+                )
+                ->orderBy('ventas.numero_pedido','asc')
+                ->get();
         return response()->json($ventas);
     }
 

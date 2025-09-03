@@ -123,7 +123,7 @@
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
                                 <td>Pedido #${venta.numero_pedido}</td>
-                                <td>${venta.nombres} ${venta.apellido_paterno} ${venta.apellido_materno}</td>
+                                <td>${venta.nombres} ${venta.apellidos}</td>
                                 <td>
                                     <button class="btn btn-primary" onclick="verPedidoCliente(this)" id-numero-pedido="${venta.numero_pedido}">
                                         <i class="fas fa-eye"></i> Ver Detalles
