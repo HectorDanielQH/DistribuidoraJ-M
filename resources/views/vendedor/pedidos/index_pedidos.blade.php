@@ -1,520 +1,601 @@
 @extends('adminlte::page')
 
-@section('title', 'Pedidos | Vendedor')
+@section('title', 'Dashboard')
 
 @section('content_header')
-  <div class="container py-3" style="background:linear-gradient(135deg,#2c3e50,#34495e); border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,.12);">
-    <div class="d-flex flex-column justify-content-center align-items-center text-center">
-      <h1 class="text-white mb-1" style="font-size:1.6rem;font-weight:800;letter-spacing:.3px">
-        <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J
-      </h1>
-      <span class="text-white-50" style="font-size:.95rem">Panel de Pedidos – Vendedor</span>
+    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
+        <div class="d-flex flex-column justify-content-center align-items-center text-center">
+            <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
+                <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
+            </h1>
+            <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
+                Panel de Pedidos - Vendedor
+            </span>
+        </div>
     </div>
-  </div>
 @stop
 
 @section('content')
-  <!-- Aviso cliente -->
-  <div class="container mt-3">
-    <div class="alert alert-info d-flex align-items-center" role="alert">
-      <i class="fas fa-info-circle me-2"></i>
-      <div>
-        Se está creando un pedido para:
-        <strong>{{ $asignacion->cliente->nombres }} {{ $asignacion->cliente->apellidos }}</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Agregar (fullscreen en móvil) -->
-  <x-adminlte-modal id="modalAgregarProducto" title="Agregar producto" size="lg" theme="teal" icon="fas fa-shopping-cart" v-centered static-backdrop scrollable>
-    <div>
-      <div class="row g-2 align-items-end">
-        <div class="col-12 col-md-8">
-          <label for="caja-busqueda-producto" class="form-label mb-1"><strong>Código o coincidencia</strong></label>
-          <select class="form-control" id="caja-busqueda-producto" name="caja-busqueda-producto" placeholder="Buscar producto por código o nombre">
-            <option value="">Selecciona un producto</option>
-            @foreach($productos as $producto)
-              <option value="{{ $producto->id }}">{{ $producto->codigo }} — {{ $producto->nombre_producto }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="col-12 col-md-4 d-grid">
-          <button class="btn btn-primary" id="btn-buscar-producto">
-            <i class="fas fa-search"></i> Buscar
-          </button>
-        </div>
-      </div>
-
-      <hr class="my-3">
-
-      <!-- Detalle producto -->
-      <div id="panel-detalle" class="d-none">
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <img id="foto-producto" alt="Producto" class="rounded shadow-sm" style="width:90px;height:90px;object-fit:contain">
-          <div class="flex-grow-1">
-            <h5 id="nombre-producto" class="mb-1 fw-bold">—</h5>
-            <div class="small text-muted">
-              <span id="codigo-producto" class="me-3"></span>
-              <span><strong>Stock:</strong> <span id="stock-producto">—</span></span>
+    <!--aviso para quien se esta creando el pedido-->
+    <div class="container mt-4">
+        <div class="alert alert-info d-flex align-items-center" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <div>
+                Se está creando un pedido para el cliente:
+                <strong>{{ $asignacion->cliente->nombres }} {{ $asignacion->cliente->apellidos }}</strong>
             </div>
-          </div>
         </div>
+    </div>
 
-        <div class="row g-2">
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="forma-venta">Forma de venta</label>
-            <select id="forma-venta" class="form-control"></select>
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label" for="precio-unitario">Precio</label>
-            <input id="precio-unitario" type="text" class="form-control text-end" value="0.00" readonly>
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label" for="cantidad">Cantidad</label>
-            <div class="input-group">
-              <button class="btn btn-outline-secondary" type="button" id="qty-menos">−</button>
-              <input id="cantidad" type="number" class="form-control text-center" value="1" min="1">
-              <button class="btn btn-outline-secondary" type="button" id="qty-mas">+</button>
+
+    <x-adminlte-modal id="modalAgregarProducto" title="Agregar Pedido" size="lg" theme="teal" icon="fas fa-shopping-cart" v-centered static-backdrop scrollable>
+        <div>
+            <div class="row d-flex justify-content-between align-items-end">
+                <div class="col-md-6 col-sm-12 mb-3">
+                    <label for="caja-busqueda-producto">
+                        <strong>Ingresa el código o alguna coincidencia</strong>
+                    </label>
+                    <select class="form-control" id="caja-busqueda-producto" name="caja-busqueda-producto" placeholder="Buscar producto por código o nombre">
+                        <option value="">Selecciona un producto</option>
+                        @foreach($productos as $producto)
+                            <option value="{{ $producto->id }}">{{ $producto->codigo }} - {{ $producto->nombre_producto }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6 col-sm-12 mb-3 d-flex justify-content-end">
+                    <button class="btn btn-primary" id="btn-buscar-producto">
+                        <i class="fas fa-search"></i> Buscar Producto
+                    </button>
+                </div>
             </div>
-          </div>
+            <div class="row" id="resultado-busqueda">
+
+            </div>
         </div>
+        <x-slot name="footerSlot">
+            <x-adminlte-button class="mr-auto" theme="success" label="Agregar" onclick="registrarTabla(this)"/>
+            <x-adminlte-button theme="danger" label="Cerrar" data-dismiss="modal"/>
+        </x-slot>
+    </x-adminlte-modal>
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title">
+                    <i class="fas fa-shopping-cart"></i> Agregar Productos al Pedido
+                </h3>
+                <button class="btn btn-success float-right" data-toggle="modal" data-target="#modalAgregarProducto">
+                    <i class="fas fa-plus"></i> Agregar Producto
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Cod. Prod</th>
+                                <th>Imagen</th>
+                                <th>Producto</th>
+                                <th>Tipo de Compra</th>
+                                <th>Precio Unitario</th>
+                                <th>Cantidad</th>
+                                <th>Descuento</th>
+                                <th>Sub Total</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-agregar-producto">
+                            <tr>
+                                <td colspan="9" class="text-center">No hay productos agregados al pedido.</td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-        <div id="promo-box" class="mt-3 d-none">
-          <div class="alert alert-success py-2 mb-0">
-            <i class="fas fa-gift me-1"></i>
-            <span id="promo-descuento" class="me-3"></span>
-            <span id="promo-regalo"></span>
-          </div>
+                    <!-- Total del pedido -->
+                    <div class="mt-3">
+                        <h4>Total del Pedido:  
+                            <span class="text-success" id="total-pedido">0.00</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-end">
+                <button class="btn btn-primary" onclick="registrarPedido()">
+                    <i class="fas fa-save"></i> Registrar Pedido
+                </button>
+            </div>
         </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div class="h5 mb-0">Subtotal: <span id="sub-total" class="text-success fw-bold">0.00</span> Bs</div>
-          <button id="btn-agregar" class="btn btn-success">
-            <i class="fas fa-cart-plus"></i> Agregar al pedido
-          </button>
-        </div>
-
-        <!-- Hidden snapshot -->
-        <input type="hidden" id="id-producto">
-        <input type="hidden" id="promocion">
-        <input type="hidden" id="promocion-descuento">
-        <input type="hidden" id="promocion-regalo">
-        <input type="hidden" id="equivalencia">
-        <input type="hidden" id="stock-base">
-      </div>
-
-      <div id="placeholder-detalle" class="text-muted d-flex align-items-center justify-content-center py-4">
-        <i class="far fa-hand-point-up me-2"></i> Selecciona un producto y pulsa “Buscar”
-      </div>
     </div>
-    <x-slot name="footerSlot">
-      <x-adminlte-button theme="danger" label="Cerrar" data-dismiss="modal"/>
-    </x-slot>
-  </x-adminlte-modal>
 
-  <!-- Contenedor del pedido -->
-  <div class="container mt-3 mb-5 pb-5">
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i> Productos del pedido</h5>
-        <button class="btn btn-light btn-sm" data-toggle="modal" data-target="#modalAgregarProducto">
-          <i class="fas fa-plus"></i> Agregar
-        </button>
-      </div>
-
-      <div class="card-body p-2">
-        <!-- Lista tipo tarjetas (mobile-first) -->
-        <div id="cart-list"></div>
-
-        <!-- Placeholder sin productos -->
-        <div id="cart-empty" class="text-center text-muted py-4">
-          <i class="far fa-box-open mb-2" style="font-size:1.6rem;"></i>
-          <div>Aún no agregaste productos.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Barra inferior sticky (total + registrar) -->
-  <div class="checkout-bar shadow-lg">
-    <div class="container d-flex justify-content-between align-items-center">
-      <div class="h5 mb-0">Total: <span id="total-pedido" class="text-success fw-bold">0.00</span> Bs</div>
-      <button class="btn btn-primary btn-lg" onclick="registrarPedido()">
-        <i class="fas fa-save"></i> Registrar Pedido
-      </button>
-    </div>
-  </div>
 @stop
 
 @section('css')
-  <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css"/>
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-  <style>
-    /* Focus accesible */
-    input.form-control:focus, select.form-control:focus, .select2-selection:focus {
-      border-color:#1abc9c !important;
-      box-shadow:0 0 0 .2rem rgba(26,188,156,.25) !important;
-      outline:none;
-    }
-    /* Select2 altura */
-    .select2-container--default .select2-selection--single{
-      height:38px; border:1px solid #ced4da; border-radius:.25rem; display:flex; align-items:center;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered{
-      line-height:36px; padding-left:.5rem;
-    }
-    .card{ transition: box-shadow .2s; }
-    .card:hover{ box-shadow:0 6px 20px rgba(0,0,0,.08); }
-    .btn:hover{ opacity:.95; }
-
-    /* Tarjetas de ítems del carrito */
-    .item-card{
-      border:1px solid #eee; border-radius:12px; padding:.75rem; margin-bottom:.75rem;
-      display:flex; gap:.75rem; align-items:stretch;
-    }
-    .item-thumb{
-      width:64px; height:64px; object-fit:contain; border-radius:8px; background:#fff;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.05);
-    }
-    .item-body{ flex:1; display:flex; flex-direction:column; gap:.35rem; }
-    .item-row{ display:flex; justify-content:space-between; align-items:center; gap:.5rem; }
-    .qty-group { display:flex; align-items:center; gap:.25rem; }
-    .qty-btn { min-width:36px; }
-    .checkout-bar{
-      position:fixed; left:0; right:0; bottom:0; background:#fff; padding:.6rem 0; z-index:1000;
-      border-top:1px solid #eee;
-    }
-
-    /* Modal full-height en móviles */
-    @media (max-width: 575.98px){
-      #modalAgregarProducto .modal-dialog{ margin:0; height:100%; max-width:100%; }
-      #modalAgregarProducto .modal-content{ height:100%; border-radius:0; }
-      #modalAgregarProducto .modal-body{ overflow-y:auto; }
-    }
-  </style>
+    <style>
+        input.form-control:focus, select.form-control:focus {
+            border-color: #1abc9c;
+            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+        }
+        /*modificar el alto de select 2*/
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            border-radius: 0.25rem;
+            border: 1px solid #ced4da;
+        }
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
 @stop
 
 @section('js')
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-  <script>
-    // ===== Estado =====
-    let CART = []; // { id_producto, codigo_producto, imagen_producto, texto_producto, id_forma_venta, tipo_venta, precio_venta, cantidad, sub_total, promocion, descripcion_regalo, descripcion_descuento_porcentaje, eq }
-    let idProductoSeleccionado = "";
-
-    const money = n => (Number(n || 0)).toFixed(2);
-
-    // ===== Init =====
-    $(function(){
-      $('#caja-busqueda-producto').select2({ placeholder:'Buscar producto', width:'100%' });
-
-      // Cargar pendientes del cliente y construir lista
-      Swal.fire({title:'Cargando...', text:'Verificando pedidos pendientes', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
-      const idCliente = '{{ $asignacion->cliente->id }}';
-      $.get('{{ route("pedidos.vendedor.obtenerPedidosPendientes", ":id") }}'.replace(':id', idCliente))
-        .done(resp=>{
-          Swal.close();
-          (resp.pedidos || []).forEach(p => {
-            const foto = (!p.foto_producto || p.foto_producto==='')
-              ? '{{ asset('images/logo_color.webp') }}?v={{ time() }}'
-              : '{{ route("productos.imagen", ":foto") }}?v={{ time() }}'.replace(':foto', p.id_producto);
-
-            const desc = Number(p.descripcion_descuento_porcentaje || 0);
-            const unit = Number(p.precio_venta);
-            const qty  = Number(p.cantidad);
-            const sub  = (unit * qty) * (1 - desc/100);
-
-            CART.push({
-              id_producto: p.id_producto,
-              codigo_producto: p.codigo_producto,
-              imagen_producto: foto,
-              texto_producto: p.nombre_producto,
-              id_forma_venta: p.id_forma_venta,
-              tipo_venta: p.tipo_venta,
-              precio_venta: unit,
-              cantidad: qty,
-              sub_total: money(sub),
-              promocion: p.promocion ? '1' : '0',
-              descripcion_regalo: p.descripcion_regalo || '',
-              descripcion_descuento_porcentaje: desc,
-              eq: 1
+    <script>
+        let idProducto_para_tabla="";
+        let tablaProductos = [];
+        $(document).ready(function(){
+            $('#caja-busqueda-producto').select2({
+                placeholder: 'Buscar producto por código o nombre',
+                width: '100%',
             });
-          });
-          renderCart();
-        })
-        .fail(()=>{
-          Swal.close();
-          Swal.fire({icon:'error', title:'Error', text:'No se pudieron obtener los pedidos pendientes.'});
+
+            Swal.fire({
+                title: 'Cargando...',
+                text: 'Verificando pedidos pendientes',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                    let idCliente = '{{ $asignacion->cliente->id }}';
+                    $.ajax({
+                        url: '{{ route("pedidos.vendedor.obtenerPedidosPendientes", ":id") }}'.replace(':id', idCliente),
+                        type: 'GET',
+                        success: function(response) {
+                            Swal.close();
+                            response.pedidos.forEach(function(pedido) {
+                                let foto = '';
+                                if (pedido.foto_producto == null || pedido.foto_producto == '') {
+                                    foto = '{{ asset('images/logo_color.webp') }} ?v={{ time() }}';
+                                } else {
+                                    foto = '{{ route("productos.imagen", ":foto") }} ?v={{ time() }}'.replace(':foto', pedido.id_producto);
+                                }
+
+                                let producto={
+                                    'id_producto': pedido.id_producto,
+                                    'codigo_producto': pedido.codigo_producto,
+                                    'imagen_producto' : foto,
+                                    'texto_producto': pedido.nombre_producto,
+                                    'id_forma_venta': pedido.id_forma_venta,
+                                    'tipo_venta': pedido.tipo_venta,
+                                    'precio_venta': pedido.precio_venta,
+                                    'cantidad': pedido.cantidad,
+                                    'sub_total': ((pedido.precio_venta * pedido.cantidad)-(pedido.precio_venta * pedido.cantidad * (pedido.descripcion_descuento_porcentaje / 100))),
+                                    'promocion': pedido.promocion,
+                                    'descripcion_regalo': pedido.descripcion_regalo,
+                                    'descripcion_descuento_porcentaje': pedido.descripcion_descuento_porcentaje? pedido.descripcion_descuento_porcentaje : '0',
+                                };
+                                tablaProductos.push(producto);
+                            });
+                            if (tablaProductos.length > 0) {
+                                construirTablaProductos();
+                            } else {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Sin Pedidos Pendientes',
+                                    text: 'No hay pedidos pendientes para este cliente.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                });
+                            }
+                        },
+                        error: function() {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'No se pudieron obtener los pedidos pendientes.'
+                            });
+                        }
+                    });
+                }
+            });
+
         });
 
-      // Modal: eventos
-      $('#btn-buscar-producto').on('click', buscarProducto);
-      $('#forma-venta').on('change', onFormaChange);
-      $('#cantidad').on('input', recalcSubtotal);
-      $('#qty-menos').on('click', ()=>{ let v = Math.max(1, Number($('#cantidad').val()||1)-1); $('#cantidad').val(v); recalcSubtotal(); });
-      $('#qty-mas').on('click', ()=>{ let v = Math.max(1, Number($('#cantidad').val()||1)+1); $('#cantidad').val(v); recalcSubtotal(); });
-      $('#btn-agregar').on('click', agregarAlPedido);
-    });
+        $('#btn-buscar-producto').on('click', function() {
+            let productoId = $('#caja-busqueda-producto').val();
+            idProducto_para_tabla = productoId;
+            if (productoId) {
+                $.ajax({
+                    url: "{{ route('pedidos.vendedor.obtenerProducto',':id') }}".replace(':id', productoId),
+                    type: 'GET',
+                    success: function(data) {
+                        let foto = '';
+                        if (data.producto.foto_producto == null || data.producto.foto_producto == '') {
+                            foto = '{{ asset('images/logo_color.webp') }} ?v={{ time() }}';
+                        } else {
+                            foto = '{{ route("productos.imagen", ":foto") }} ?v={{ time() }}'.replace(':foto', data.producto.id);
+                        }
 
-    // ===== Buscar producto =====
-    function buscarProducto(){
-      const productoId = $('#caja-busqueda-producto').val();
-      idProductoSeleccionado = productoId;
-      if(!productoId){
-        Swal.fire({icon:'warning', title:'Selecciona', text:'Elige un producto.'});
-        return;
-      }
+                        let opciones = '<option value="">Selecciona una forma de venta</option>';
 
-      $.get("{{ route('pedidos.vendedor.obtenerProducto',':id') }}".replace(':id', productoId))
-        .done(data=>{
-          const p  = data.producto;
-          const fv = data.formasVenta || [];
-          const foto = (!p.foto_producto)
-            ? '{{ asset('images/logo_color.webp') }}?v={{ time() }}'
-            : '{{ route("productos.imagen", ":foto") }}?v={{ time() }}'.replace(':foto', p.id);
+                        data.formasVenta.forEach(function(forma) {
+                            opciones += `<option value="${forma.id}">${forma.tipo_venta}</option>`;
+                        });
 
-          // pintar
-          $('#panel-detalle').removeClass('d-none');
-          $('#placeholder-detalle').addClass('d-none');
+                        let tabla_formas_venta = `
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Tipo de Venta</th>
+                                        <th>Precio de Venta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        data.formasVenta.forEach(function(forma) {
+                            tabla_formas_venta += `
+                                <tr>
+                                    <td>${forma.tipo_venta}</td>
+                                    <td>${forma.precio_venta} Bs.-</td>
+                                </tr>
+                            `;
+                        });
+                        tabla_formas_venta += `
+                                </tbody>
+                            </table>
+                        `;
 
-          $('#id-producto').val(p.id);
-          $('#foto-producto').attr('src', foto);
-          $('#nombre-producto').text(p.nombre_producto);
-          $('#codigo-producto').text(`Código: ${p.codigo}`);
-          $('#stock-producto').text(p.cantidad + (p.detalle_cantidad ? (' ' + p.detalle_cantidad) : ''));
-          $('#stock-base').val(p.cantidad);
-          $('#promocion').val(p.promocion ? '1':'0');
-          $('#promocion-descuento').val(p.descripcion_descuento_porcentaje || 0);
-          $('#promocion-regalo').val(p.descripcion_regalo || '');
-          if(p.promocion){
-            $('#promo-box').removeClass('d-none');
-            $('#promo-descuento').text(`Descuento: ${p.descripcion_descuento_porcentaje || 0}%`);
-            $('#promo-regalo').text(p.descripcion_regalo ? `Regalo: ${p.descripcion_regalo}` : '');
-          }else{
-            $('#promo-box').addClass('d-none');
-          }
 
-          const $fv = $('#forma-venta');
-          $fv.empty().append(`<option value="">Selecciona una forma</option>`);
-          fv.forEach(x => $fv.append(`<option value="${x.id}" data-precio="${x.precio_venta}" data-eq="${x.equivalencia_cantidad}">${x.tipo_venta}</option>`));
-          $('#precio-unitario').val('0.00');
-          $('#cantidad').val(1);
-          $('#equivalencia').val(0);
-          $('#sub-total').text('0.00');
-        })
-        .fail(()=> Swal.fire({icon:'error', title:'Error', text:'No se pudo obtener el producto.'}));
-    }
+                        let promoHtml = '';
+                            if (data.producto.promocion) {
+                                promoHtml = `
+                                    <p class="card-text">
+                                        <strong>Descuento del :</strong> 
+                                        <span class="badge bg-success text-lg fs-6">
+                                            ${data.producto.descripcion_descuento_porcentaje + "%" || 'No disponible'}
+                                        </span>
+                                        <br>
+                                        <br>
+                                        <strong>Regalo:</strong> 
+                                        <span class="badge bg-info text-dark text-lg fs-6">
+                                            ${data.producto.descripcion_regalo || 'No disponible'}
+                                        </span>
+                                    </p>
+                                `;
 
-    function onFormaChange(){
-      const opt = $('#forma-venta option:selected');
-      const precio = Number(opt.data('precio') || 0);
-      const eq = Number(opt.data('eq') || 0);
-      $('#precio-unitario').val(money(precio));
-      $('#equivalencia').val(eq);
-      recalcSubtotal();
-    }
+                            } else {
+                                promoHtml = `<p class="card-text text-muted">
+                                            <i class="fas fa-info-circle me-2"></i> El producto no tiene promoción
+                                        </p>`;
+                        }
+                        $('#resultado-busqueda').empty();
+                        // Aquí puedes agregar el producto a la tabla
+                        $('#resultado-busqueda').append(`
+                            <div class="col-12">
+                                <div class="card d-flex w-100">
+                                    <hidden id="id-producto-agregar-pedido" value="${data.producto.id}" />  
+                                    <div class="card-body d-flex flex-column align-items-center text-center">
+                                        <img src="${foto}" 
+                                            class="img-fluid rounded mb-3 shadow-sm" 
+                                            id="foto-producto-agregar-pedido" 
+                                            alt="${data.producto.nombre_producto}" 
+                                            style="max-height: 150px; object-fit: contain;">
+                                        
+                                        <h5 class="card-title fw-bold" id="id-texto-producto-agregar-pedido">${data.producto.nombre_producto}</h5>
+                                        
+                                        <p class="card-text mb-1"><strong>Código:</strong> ${data.producto.codigo}</p>
+                                        <p class="card-text mb-1 text-truncate" style="max-width: 320px;">
+                                            <strong>Descripción:</strong> ${data.producto.descripcion_producto || 'No disponible'}
+                                        </p>
+                                        <p class="card-text">
+                                            <strong>Stock:</strong> ${data.producto.cantidad || 'No disponible'} 
+                                            ${data.producto.detalle_cantidad || ''}
+                                        </p>
 
-    function recalcSubtotal(){
-      let qty = Math.max(1, Number($('#cantidad').val()||1));
-      $('#cantidad').val(qty);
-      const unit = Number($('#precio-unitario').val()||0);
-      const descPct = Number($('#promocion-descuento').val()||0);
-      const promoOn = $('#promocion').val()==='1';
-      const unitFinal = promoOn ? unit * (1 - descPct/100) : unit;
-      const sub = qty * unitFinal;
-      $('#sub-total').text(money(sub));
+                                        ${promoHtml}
 
-      // validar contra stock base según equivalencia
-      const eq = Number($('#equivalencia').val()||0);
-      const stockBase = Number($('#stock-base').val()||0);
-      if(eq>0 && qty*eq>stockBase){
-        const max = Math.floor(stockBase/eq);
-        if(max<=0){
-          $('#cantidad').val(0);
-          $('#sub-total').text('0.00');
-          Swal.fire({icon:'warning', title:'Sin stock', text:'No hay stock suficiente para esta forma.'});
-        }else{
-          $('#cantidad').val(max);
-          recalcSubtotal();
-          Swal.fire({icon:'warning', title:'Ajustado', text:`Cantidad máxima disponible: ${max}.`});
+                                        <div class="card-text">
+                                            <strong>Formas de Venta:</strong>
+                                            <div class="table-responsive">
+                                                ${tabla_formas_venta}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card p-3">
+                                        <div class="row">
+                                            <div class="col-md-6 col-sm-12">
+                                                <label for="forma-venta-agregar-producto-agregar" class="form-label fw-bold mb-1">
+                                                    <i class="fas fa-tag text-primary"></i> Forma de Venta
+                                                </label>
+                                                <select id="forma-venta-agregar-producto-agregar" class="form-control" onchange="actualizarPrecioPedidoAgregar(this)">
+                                                    ${opciones}
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-6 col-sm-12">
+                                                <label for="precio-pedido-agregar" class="form-label fw-bold mb-1">
+                                                    <i class="fas fa-dollar-sign text-success"></i> Precio
+                                                </label>
+                                                <input id="precio-pedido-agregar" type="text" class="form-control" value="0.0" readonly style="text-align: right;">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 col-sm-12">
+                                                <label for="cantidad-precio-pedido" class="form-label fw-bold mb-1">
+                                                    <i class="fas fa-sort-numeric-up text-info"></i> Cantidad
+                                                </label>
+                                                <input type="number" id="cantidad-precio-pedido" class="form-control" value="0" min="1" oninput="calcularCantidadPedidoAgregar(this)" style="text-align: center;">
+                                            </div>
+
+                                            <div class="col-md-6 col-sm-12">
+                                                <label for="total-precio-perdido" class="form-label fw-bold mb-1">
+                                                    <i class="fas fa-calculator text-warning"></i> Sub Total
+                                                </label>
+                                                <input type="number" id="total-precio-perdido" class="form-control" value="0" min="1" readonly style="text-align: right;">
+                                            </div>
+                                            <input type="hidden" id="id-producto-promocion-pedido" value="${data.producto.promocion}" />
+                                            <input type="hidden" id="id-producto-promocion-regalo-pedido" value="${data.producto.descripcion_regalo}" />
+                                            <input type="hidden" id="id-producto-promocion-descuento-pedido" value="${data.producto.descripcion_descuento_porcentaje}" />
+                                            <input type="hidden" id="id-producto-cantidad-pedido" value="${data.producto.cantidad}" />
+                                            <input type="hidden" id="id-convalidacion-cantidad" value="0" />
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        `);
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo obtener el producto',
+                        });
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Advertencia',
+                    text: 'Por favor, selecciona un producto.',
+                });
+            }
+        });
+
+        function actualizarPrecioPedidoAgregar(select) {
+            const $inputPrecio = $('#precio-pedido-agregar');
+
+            $inputPrecio.val('');
+            $inputPrecio.attr('placeholder', 'Cargando...');
+
+            let cant_convalidacion=$('#id-convalidacion-cantidad');
+
+            const url = "{{ route('pedidos.vendedor.obtenerformaventa', ':id') }}".replace(':id', select.value);
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(data) {
+                    $inputPrecio.val(data.precio_venta);
+                    $inputPrecio.attr('placeholder', '');
+                    cant_convalidacion.val(data.equivalencia_cantidad);
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo obtener el precio de la forma de venta',
+                    });
+                    $inputPrecio.attr('placeholder', 'Error');
+                }
+            });
         }
-      }
-    }
 
-    function agregarAlPedido(){
-      const prodId = Number($('#id-producto').val());
-      const nombre = $('#nombre-producto').text();
-      const codigo = ($('#codigo-producto').text()||'').replace('Código: ','').trim();
-      const formaId = Number($('#forma-venta').val()||0);
-      const formaText = $('#forma-venta option:selected').text();
-      const unitPrice = Number($('#precio-unitario').val()||0);
-      const qty = Number($('#cantidad').val()||0);
-      const eq = Number($('#equivalencia').val()||0);
-      const promo = $('#promocion').val();
-      const descPct = Number($('#promocion-descuento').val()||0);
-      const regalo = $('#promocion-regalo').val()||'';
-      const img = $('#foto-producto').attr('src');
+        function calcularCantidadPedidoAgregar(e){
+            let cantidad = Number(e.value);
+            let precioUnitario = $('#precio-pedido-agregar').val();
+            let total = $('#total-precio-perdido');
+            let promocion = $('#id-producto-promocion-pedido').val();
+            let promocionDescuento = $('#id-producto-promocion-descuento-pedido').val();
+            let cantidadProducto = $('#id-producto-cantidad-pedido').val();
+            let convalidacionCantidad = $('#id-convalidacion-cantidad').val();
+            console.log(cantidadProducto, convalidacionCantidad);
+            if ((cantidad*convalidacionCantidad) > cantidadProducto) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Advertencia',
+                    text: `La cantidad no puede ser mayor a ${cantidad-1}.`,
+                });
+                e.value = cantidad-1;
+                cantidad = cantidad-1;
+            }
+            if( promocion === 'true' || promocion === '1'){
+                if (promocionDescuento>0) {
+                    let descuento = parseFloat(promocionDescuento);
+                    let precioConDescuento = parseFloat(precioUnitario) - (parseFloat(precioUnitario) * (descuento / 100));
+                    total.val((cantidad * precioConDescuento).toFixed(2));
+                } else {
+                    total.val((cantidad * parseFloat(precioUnitario)).toFixed(2));
+                }
+            } else {
+                total.val((cantidad * parseFloat(precioUnitario)).toFixed(2));
+            }
+        }
 
-      if(!prodId || !formaId){
-        Swal.fire({icon:'warning', title:'Faltan datos', text:'Selecciona la forma de venta.'});
-        return;
-      }
-      if(qty<=0){
-        Swal.fire({icon:'warning', title:'Cantidad inválida', text:'La cantidad debe ser mayor a 0.'});
-        return;
-      }
+        function construirTablaProductos(){
+            $('#tabla-agregar-producto').empty();
 
-      const unitFinal = promo==='1' ? unitPrice*(1-descPct/100) : unitPrice;
-      const subtotal = unitFinal*qty;
+            if (tablaProductos.length === 0) {
+                $('#tabla-agregar-producto').append(`
+                    <tr>
+                        <td colspan="9" class="text-center">No hay productos agregados al pedido.</td>
+                    </tr>
+                `);
+                return;
+            }
 
-      // Unificar líneas iguales
-      const idx = CART.findIndex(x => x.id_producto===prodId && x.id_forma_venta===formaId);
-      if(idx>=0){
-        CART[idx].cantidad = Number(CART[idx].cantidad) + qty;
-        const unitF = CART[idx].promocion==='1' ? CART[idx].precio_venta*(1-Number(CART[idx].descripcion_descuento_porcentaje||0)/100) : CART[idx].precio_venta;
-        CART[idx].sub_total = money(unitF*Number(CART[idx].cantidad));
-      }else{
-        CART.push({
-          id_producto: prodId,
-          codigo_producto: codigo,
-          imagen_producto: img,
-          texto_producto: nombre,
-          id_forma_venta: formaId,
-          tipo_venta: formaText,
-          precio_venta: unitPrice,
-          cantidad: qty,
-          sub_total: money(subtotal),
-          promocion: promo,
-          descripcion_regalo: regalo,
-          descripcion_descuento_porcentaje: descPct,
-          eq: eq
-        });
-      }
+            tablaProductos.forEach(function(producto) {
+                $('#tabla-agregar-producto').append(`
+                    <tr>
+                        <td>${producto.codigo_producto}</td>
+                        <td><img src="${producto.imagen_producto}" alt="${producto.texto_producto}" class="img-fluid"
+                            style="max-height: 50px; max-width: 50px;"></td>
+                        <td>${producto.texto_producto}</td>
+                        <td>${producto.tipo_venta}</td>
+                        <td>${producto.precio_venta}</td>
+                        <td>${producto.cantidad}</td>
+                        <td>${producto.descripcion_descuento_porcentaje ? `<span class="badge bg-success text-lg">${producto.descripcion_descuento_porcentaje} %</span>` : 'N/A'}</td>
+                        <td>${producto.sub_total}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                `);
+            });
+            
+            // Actualizar el total del pedido
+            let totalPedido = 0;
+            tablaProductos.forEach(function(prod) {
+                totalPedido += parseFloat(prod.sub_total);
+            });
+            $('.mt-3 h4').text(`Total del Pedido: ${totalPedido.toFixed(2)}`);
+        }
 
-      renderCart();
-      // feedback
-      Swal.fire({icon:'success', title:'Agregado', text:'Producto agregado al pedido.', timer:1100, showConfirmButton:false});
-      // reset cantidad rápido
-      $('#cantidad').val(1); recalcSubtotal();
-    }
+        function registrarTabla(){
 
-    // ===== Render del carrito =====
-    function renderCart(){
-      const $list = $('#cart-list');
-      const $empty = $('#cart-empty');
-      $list.empty();
+            let productos = @json($productos);
+            let productoEncontrado = productos.find(p => p.id == idProducto_para_tabla);
+            
+            let producto={
+                'id_producto': idProducto_para_tabla,
+                'codigo_producto':productoEncontrado ? productoEncontrado.codigo : '',
+                'imagen_producto' : $('#foto-producto-agregar-pedido').attr('src'),
+                'texto_producto': $('#id-texto-producto-agregar-pedido').text(),
+                'id_forma_venta': $('#forma-venta-agregar-producto-agregar').val(),
+                'tipo_venta': $('#forma-venta-agregar-producto-agregar').find(':selected').text(),
+                'precio_venta': $('#precio-pedido-agregar').val(),
+                'cantidad': $('#cantidad-precio-pedido').val(),
+                'sub_total': $('#total-precio-perdido').val(),
+                'promocion': $('#id-producto-promocion-pedido').val(),
+                'descripcion_regalo': $('#id-producto-promocion-regalo-pedido').val(),
+                'descripcion_descuento_porcentaje': $('#id-producto-promocion-descuento-pedido').val(),
+            };
+            tablaProductos.push(producto);
+            //limpiar todos los campos
+            idProducto_para_tabla = "";
+            $('#caja-busqueda-producto').val('').trigger('change');
+            $('#resultado-busqueda').empty();
+            $('#id-producto-agregar-pedido').val('');
+            $('#foto-producto-agregar-pedido').attr('src', '');
+            $('#id-texto-producto-agregar-pedido').text('');
+            $('#forma-venta-agregar-producto-agregar').val('');
+            $('#precio-pedido-agregar').val('0.0');
+            $('#cantidad-precio-pedido').val('0');
+            $('#total-precio-perdido').val('0.0');
+            $('#id-producto-promocion-pedido').val('');
+            $('#id-producto-promocion-regalo-pedido').val('');
+            $('#id-producto-promocion-descuento-pedido').val('');
+            Swal.fire({
+                icon: 'success',
+                title: 'Producto agregado',
+                text: 'El producto ha sido agregado correctamente.',
+                timer: 2000,
+                showConfirmButton: false,
+            });
+            
 
-      if(!CART.length){
-        $empty.show();
-        $('#total-pedido').text('0.00');
-        return;
-      }
-      $empty.hide();
+            construirTablaProductos();
+        }
 
-      let total = 0;
+        function eliminarProducto(e){
+            let fila_obtener_cod_prod = $(e).closest('tr').find('td:first').text();
+            //eliminar producto de la lista tablaProductos
+            tablaProductos = tablaProductos.filter(function(prod) {
+                return prod.codigo_producto !== fila_obtener_cod_prod;
+            });
+            // Actualizar el total del pedido
+            let totalPedido = 0;
+            tablaProductos.forEach(function(prod) {
+                totalPedido += parseFloat(prod.sub_total);
+            });
+            $('.mt-3 h4').text(`Total del Pedido: ${totalPedido.toFixed(2)}`);
+            Swal.fire({
+                icon: 'success',
+                title: 'Producto eliminado',
+                text: 'El producto ha sido eliminado correctamente.',
+                timer: 2000,
+                showConfirmButton: false,
+            });
 
-      CART.forEach((it, i)=>{
-        const desc = Number(it.descripcion_descuento_porcentaje||0);
-        const promoOn = (it.promocion==='1' || it.promocion===1 || it.promocion===true);
-        const unitFinal = promoOn ? it.precio_venta*(1-desc/100) : it.precio_venta;
-        const subtotal = unitFinal * Number(it.cantidad||0);
-        total += subtotal;
+            construirTablaProductos();
+        }
 
-        const $row = $(`
-          <div class="item-card">
-            <img class="item-thumb" src="${it.imagen_producto}" alt="${it.texto_producto}">
-            <div class="item-body">
-              <div class="item-row">
-                <div class="fw-bold">${it.texto_producto}</div>
-                <button class="btn btn-outline-danger btn-sm" title="Eliminar"><i class="fas fa-trash"></i></button>
-              </div>
-              <div class="item-row small text-muted">
-                <div>Cód: ${it.codigo_producto || '-'}</div>
-                <div>${promoOn ? `<span class="badge bg-success">-${desc}%</span>` : ''}</div>
-              </div>
-              <div class="item-row">
-                <div class="small">${it.tipo_venta}</div>
-                <div class="small">P.Unit: <strong>${money(unitFinal)}</strong> Bs</div>
-              </div>
-              <div class="item-row">
-                <div class="qty-group">
-                  <button class="btn btn-outline-secondary btn-sm qty-btn btn-menos">−</button>
-                  <input type="number" min="1" class="form-control form-control-sm text-center qty-input" style="width:80px" value="${it.cantidad}">
-                  <button class="btn btn-outline-secondary btn-sm qty-btn btn-mas">+</button>
-                </div>
-                <div>Subt: <strong class="text-success">${money(subtotal)}</strong> Bs</div>
-              </div>
-            </div>
-          </div>
-        `);
+        function registrarPedido() {
+            Swal.fire({
+                title: 'Confirmar Pedido',
+                text: "¿Estás seguro de que deseas registrar este pedido?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, registrar pedido',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    //---------
+                    if (tablaProductos.length === 0) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Advertencia',
+                            text: 'No hay productos en el pedido.',
+                        });
+                        return;
+                    }
 
-        // Eventos por fila
-        $row.find('.btn-menos').on('click', ()=>{
-          let q = Math.max(1, Number(it.cantidad)-1);
-          it.cantidad = q; it.sub_total = money(unitFinal*q);
-          renderCart();
-        });
-        $row.find('.btn-mas').on('click', ()=>{
-          let q = Math.max(1, Number(it.cantidad)+1);
-          it.cantidad = q; it.sub_total = money(unitFinal*q);
-          renderCart();
-        });
-        $row.find('.qty-input').on('input', function(){
-          let q = Math.max(1, Number(this.value||1));
-          // Validación orientativa con equivalencia si se conoce
-          if(it.eq && Number.isFinite(Number(it.eq))){
-            // aquí podrías limitar con stock actual si lo conoces por producto seleccionado
-          }
-          it.cantidad = q; it.sub_total = money(unitFinal*q);
-          renderCart();
-        });
-        $row.find('.btn-outline-danger').on('click', ()=>{
-          CART.splice(i,1);
-          renderCart();
-          Swal.fire({icon:'success', title:'Eliminado', timer:900, showConfirmButton:false});
-        });
-
-        $list.append($row);
-      });
-
-      $('#total-pedido').text(money(total));
-    }
-
-    // ===== Registrar pedido =====
-    function registrarPedido(){
-      if(!CART.length){
-        Swal.fire({icon:'warning', title:'Sin productos', text:'Agrega productos antes de registrar.'});
-        return;
-      }
-      Swal.fire({
-        title:'Confirmar Pedido', text:'¿Deseas registrar este pedido?', icon:'question',
-        showCancelButton:true, confirmButtonText:'Sí, registrar', cancelButtonText:'Cancelar'
-      }).then(r=>{
-        if(!r.isConfirmed) return;
-
-        // Enviar mismo formato que usabas (mantiene compatibilidad)
-        $.ajax({
-          url: "{{ route('pedidos.vendedor.registrarPedido') }}",
-          type: 'POST',
-          data: {
-            _token: '{{ csrf_token() }}',
-            asignacion_id: '{{ $asignacion->id }}',
-            productos: JSON.stringify(CART)
-          }
-        }).done(()=>{
-          Swal.fire({icon:'success', title:'Éxito', text:'Pedido registrado correctamente.', timer:1400, showConfirmButton:false})
-            .then(()=> window.location.href = "{{ route('asignacionvendedor.index') }}");
-        }).fail(xhr=>{
-          Swal.fire({
-            icon:'error', 
-            title:'Error', 
-            text: (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo registrar el pedido.'
-        });
-        });
-      });
-    }
-  </script>
+                    $.ajax({
+                        url: "{{ route('pedidos.vendedor.registrarPedido') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            asignacion_id: '{{ $asignacion->id }}',
+                            productos: JSON.stringify(tablaProductos),
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Éxito',
+                                text: 'Pedido registrado correctamente.',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            }).then(() => {
+                                // Redirigir a la página de pedidos
+                                window.location.href = "{{ route('asignacionvendedor.index') }}";
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: xhr.responseJSON.message || 'No se pudo registrar el pedido.',
+                            });
+                        }
+                    });
+                    //--------------
+                }
+            });
+        }
+    </script>
 @stop
