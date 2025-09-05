@@ -131,6 +131,21 @@ class PedidoController extends Controller
             $numero_pedido = $max_pedido + 1;
         }
 
+        //validacion de productos con pedido
+
+        foreach ($productos as $producto) {
+
+            $obtenerProducto = Producto::find($producto['id_producto']);
+            if($obtenerProducto->cantidad < $producto['cantidad'])
+            {
+                return response()->json([
+                    'message' => 'No hay suficiente cantidad del producto: '.$obtenerProducto->descripcion_producto.'. Stock disponible: '.$obtenerProducto->cantidad." ".$obtenerProducto->detalle_cantidad
+                ], 400);
+            }
+        }
+
+        //registro de pedidos
+
         foreach ($productos as $producto) {
             $pedido = new Pedido();
             $pedido->id_usuario = auth()->id();

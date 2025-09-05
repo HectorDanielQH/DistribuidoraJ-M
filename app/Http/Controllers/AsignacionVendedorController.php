@@ -33,6 +33,8 @@ class AsignacionVendedorController extends Controller
             });
         }
 
+        $asignaciones=$query->orderBy('updated_at', 'desc')->paginate(10);
+
         $asignaciones = $query->paginate(10);
 
         return view('vendedor.asignaciones.index_asignaciones', compact('asignaciones'))

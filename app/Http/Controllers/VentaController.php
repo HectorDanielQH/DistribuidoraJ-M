@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\Venta;
 use Carbon\Carbon;
@@ -68,7 +69,7 @@ class VentaController extends Controller
 
     public function obtenerVentas(Request $request)
     {
-        $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+        /*$fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
         $fechaFin    = Carbon::parse($request->input('fecha_fin'))->endOfDay();
 
         // Total por pedido (usuario + pedido)
@@ -124,7 +125,15 @@ class VentaController extends Controller
             'usuarios'         => $usuarios,          // detalle usuario → pedidos
             'resumen_usuarios' => $resumenUsuarios,   // resumen por vendedor
             'total_general'    => (float) round($totalGeneral, 2),
-        ]);
+        ]);*/
+
+        $ventas=Venta::all();
+        foreach($ventas as $venta){
+            $venta_pedido=Pedido::where('numero_pedido',$venta->numero_pedido)->first();
+            $venta->fecha_contabilizacion=$venta_pedido->fecha_entrega;
+            $venta->save();
+        }
+        return response()->json(['message'=>'Proceso realizado correctamente.']);
     }
 
 
