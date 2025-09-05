@@ -151,7 +151,7 @@ class PedidoAdministradorController extends Controller
                 'clientes.zona_barrio',
                 'ruta_id',
             )
-            ->orderBy('numero_pedido', 'asc')
+            ->orderBy('pedidos.id_usuario', 'asc')
             ->get();
             
         $pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
