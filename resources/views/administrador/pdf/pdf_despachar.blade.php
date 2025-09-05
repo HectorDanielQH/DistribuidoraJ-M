@@ -200,9 +200,6 @@
             </tbody>
         </table>
 
-        {{-- Observaciones por pedido (compacta) --}}
-        <div class="box box-md mb-2"></div>
-
     @endforeach
 
     {{-- Total general (compacto) --}}
