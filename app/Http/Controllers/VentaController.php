@@ -256,7 +256,7 @@ class VentaController extends Controller
             $ventas = Venta::query()
                 ->select('fecha_contabilizacion')
                 ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
-                ->groupBy('numero_pedido', 'fecha_contabilizacion')
+                ->groupBy('fecha_contabilizacion')
                 ->orderBy('fecha_contabilizacion', 'desc');
             return $dataTable->of($ventas)
                 ->addColumn('fecha_contabilizacion', function($venta){
