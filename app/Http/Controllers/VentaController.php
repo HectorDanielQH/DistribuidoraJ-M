@@ -254,7 +254,7 @@ class VentaController extends Controller
     {
         if($request->ajax()){
             $ventas = Venta::query()
-                ->select('fecha_contabilizacion')
+                ->selectRaw('DATE(fecha_contabilizacion) as fecha_contabilizacion')
                 ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
                 ->groupBy('fecha_contabilizacion')
                 ->orderBy('fecha_contabilizacion', 'desc');
