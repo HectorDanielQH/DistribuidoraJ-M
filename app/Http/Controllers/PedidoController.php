@@ -68,7 +68,11 @@ class PedidoController extends Controller
     }
 
     public function crearPedido(string $id_asignacion){
-        echo $id_asignacion;
+        $productos = Producto::select('id','codigo','nombre_producto' )
+                    ->where('cantidad', '>', 0)
+                    ->where('estado_de_baja', false)->get();
+        $asignacion = Asignacion::where('id_cliente',$id_asignacion)->first();
+        return view('vendedor.pedidos.index_pedidos', compact('asignacion','productos'));
     }
 
     public function ObtenerProductoParaPedido(string $id_producto){
