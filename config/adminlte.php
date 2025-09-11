@@ -453,6 +453,12 @@ return [
             'header'=> '.::MIS VENTAS::.',
             'can' => 'vendedor.permisos',
         ],
+        [
+            'text' => 'Mis Ventas',
+            'route' => 'preventistas.ventas.vendedor.misVentas',
+            'icon' => 'fas fa-fw fa-tasks',
+            'can' => 'vendedor.permisos',
+        ],
 
         /*
         [

@@ -85,7 +85,6 @@
       $('#tabla-asignaciones').DataTable({
         processing: true,
         serverSide: true,
-
         // 👇 Hace que, si hay columnas ocultas por responsive, se abra el detalle automáticamente
         responsive: {
           details: {
@@ -127,7 +126,7 @@
         lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
 
         columnDefs: [
-          // Prioridades responsive (0 = 'cliente' se mantiene visible; 4 = 'acciones' también)
+
           { responsivePriority: 1, targets: 0 },
           { responsivePriority: 2, targets: 4 },
 
@@ -135,6 +134,9 @@
           { targets: 3, className: 'text-center align-middle' },
           { targets: 4, className: 'text-center align-middle', width:'110px' }
         ],
+
+        //eliminar "mostrando _ registros"
+        dom: '<"d-flex flex-column flex-md-row justify-content-between align-items-center mb-3"<"mb-2 mb-md-0"l><"mb-2 mb-md-0"f><"mb-2 mb-md-0"B>>rtip',
       });
     });
 

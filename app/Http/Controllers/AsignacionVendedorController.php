@@ -13,7 +13,8 @@ class AsignacionVendedorController extends Controller
     public function index(Request $request, DataTables $dataTables)
     {
         if($request->ajax()){
-            $query = Asignacion::query();
+            $query = Asignacion::query()->where('id_usuario', auth()->user()->id)->orderBy('atencion_fecha_hora', 'asc');
+
             return $dataTables->eloquent($query)
                 ->addColumn('cliente', function($asignacion){
                     return $asignacion->cliente ? $asignacion->cliente->nombres." ".$asignacion->cliente->apellidos : 'N/A';

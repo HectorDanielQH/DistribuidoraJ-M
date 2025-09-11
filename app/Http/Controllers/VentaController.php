@@ -266,9 +266,9 @@ class VentaController extends Controller
                     return number_format($venta->total, 2, '.', ',').' Bs.-';
                 })
                 ->addColumn('acciones', function($venta){
-                    return '<button class="btn btn-info btn-sm ver-detalle" fecha-contabilizacion="'.$venta->fecha_contabilizacion.'">
+                    return '<a class="btn btn-info btn-sm ver-detalle" href="'.route('administrador.ventas.administrador.visualizacionVentasPorFechaArqueo',['fecha_arqueo' => $venta->fecha_contabilizacion]).'">
                                 <i class="fas fa-eye"></i> Ver Detalle
-                            </button>
+                            </a>
                             <button class="btn btn-primary btn-sm" fecha-contabilizacion="'.$venta->fecha_contabilizacion.'" onclick="abrirModalMoverFechaArqueo(this)">
                                 <i class="fas fa-exchange-alt"></i> Mover fecha de arqueo
                             </button>';
@@ -288,5 +288,35 @@ class VentaController extends Controller
             $venta->save();
         }
         return response()->json(['message' => 'Fecha de arqueo actualizada correctamente.'], 200);
+    }
+
+    public function visualizacionVentasPorFechaArqueo(string $fecha_arqueo)
+    {
+        $ventas = Venta::join('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->join('productos', 'ventas.id_producto', '=', 'productos.id')
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->join('users', 'ventas.id_usuario', '=', 'users.id')
+            ->select(
+                'productos.id as id_producto',
+                'productos.codigo',
+                'productos.nombre_producto',
+                'productos.cantidad as cantidad_stock',
+                'productos.detalle_cantidad',
+                'forma_ventas.tipo_venta',
+                'forma_ventas.precio_venta',
+                'ventas.id as id_pedido',
+                'ventas.numero_pedido',
+                'ventas.cantidad as cantidad_pedido',
+                'ventas.promocion',
+                'ventas.descripcion_descuento_porcentaje',
+                'ventas.descripcion_regalo',
+                DB::raw("CONCAT(users.nombres, ' ', COALESCE(users.apellido_paterno,''), ' ', COALESCE(users.apellido_materno,'')) as usuario"),
+                DB::raw("CONCAT(clientes.nombres, ' ', COALESCE(clientes.apellidos,'')) as cliente"),
+            )
+            ->whereDate('ventas.fecha_contabilizacion', $fecha_arqueo)
+            ->orderBy('ventas.numero_pedido', 'asc')
+            ->get();
+
+        return view('administrador.ventas.visualizacion_ventas_por_fecha_arqueo', compact('ventas', 'fecha_arqueo'));
     }
 }

@@ -19,6 +19,7 @@ use App\Http\Controllers\PreVentista\ProductoVendedorController;
 use App\Http\Controllers\AsignacionVendedorController;
 use App\Http\Controllers\PedidoAdministradorController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\PreVentista\VentasVendedorController;
 use App\Http\Controllers\RendimientoPersonalController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Auth;
@@ -127,6 +128,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //----------------EDICION DE VENTAS POR PEDIDO----------------//
         Route::get('ventas/administrador/ventas-por-pedido', [VentaController::class,'ventasPorFechasContabilizadas'])->name('ventas.administrador.ventasPorPedido');
         Route::put('ventas/administrador/mover-fecha-arqueo/{fecha_arqueo}', [VentaController::class,'moverFechaArqueo'])->name('ventas.administrador.moverFechaArqueo');
+        Route::get('ventas/administrador/ventas-por-pedido/{fecha_arqueo}', [VentaController::class,'visualizacionVentasPorFechaArqueo'])->name('ventas.administrador.visualizacionVentasPorFechaArqueo');
         //------------------------------------------------
 
 
@@ -154,6 +156,12 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         
         //registrar pedido desde vendedor
         Route::get('pedido/vendedor/cliente/{id}', [PedidoController::class, 'crearPedido'])->name('registrar.pedido');
+
+
+        //------------MIS VENTAS----------------
+        Route::get('ventas/vendedor/mis-ventas', [VentasVendedorController::class, 'index'])->name('ventas.vendedor.misVentas');
+        Route::get('ventas/vendedor/mis-ventas/detalle/{fecha_contabilizacion}', [VentasVendedorController::class, 'detalleVentasPorFechaContabilizacion'])->name('ventas.vendedor.detalleVentasPorFechaContabilizacion');
+        //------------------------------------
     });
     Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
 
