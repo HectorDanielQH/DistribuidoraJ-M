@@ -15,227 +15,34 @@
 @stop
 
 @section('content')
+    <!-- Modal pedidos (optimizado para móvil) -->
+    <x-adminlte-modal id="verPedidoModal" size="lg" theme="dark" icon="fas fa-box-open" title="Pedidos realizados" v-centered>
+      <div class="modal-body px-3" id="crear-tabla-pedidos"></div>
+      <x-slot name="footerSlot">
+        <x-adminlte-button theme="danger" label="Cerrar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2" />
+      </x-slot>
+    </x-adminlte-modal>
 
-  <!-- Filtros (compactos y sticky en mobile) -->
-  <div class="container mt-3">
-    <div class="card shadow-sm border-0 sticky-filters">
-      <div class="card-header d-flex justify-content-between align-items-center"
-           style="background:#2c3e50; color:#fff; border-radius:12px 12px 0 0;">
-        <h5 class="mb-0"><i class="fas fa-filter me-2"></i> Búsqueda</h5>
-        @if ($eliminar_busqueda)
-          <button class="btn btn-danger btn-sm" id="limpiarboton">
-            <i class="fas fa-times"></i> Limpiar
-          </button>
-        @endif
-      </div>
-      <div class="card-body py-3">
-        <form method="GET" action="{{ route('asignacionvendedor.index') }}">
-          <div class="form-row">
-            <div class="col-12 col-md-5 mb-2">
-              <label for="nombre" class="sr-only">Nombre completo</label>
-              <div class="input-group">
-                <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-user"></i></span></div>
-                <input type="text" class="form-control" id="nombre" name="nombre"
-                       placeholder="Ej: Juan Pérez" value="{{ $request->nombre ?? '' }}">
-              </div>
-            </div>
-            <div class="col-12 col-md-5 mb-2">
-              <label for="ci" class="sr-only">Cédula de identidad</label>
-              <div class="input-group">
-                <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-id-card"></i></span></div>
-                <input type="text" class="form-control" id="ci" name="ci"
-                       placeholder="Ej: 12345678" value="{{ $request->ci ?? '' }}">
-              </div>
-            </div>
-            <div class="col-12 col-md-2 mb-2">
-              <button type="submit" class="btn btn-primary btn-block">
-                <i class="fas fa-search"></i> Buscar
-              </button>
-            </div>
-          </div>
-        </form>
-        <div class="d-flex justify-content-between align-items-center mt-2">
-          <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Busca por nombre o CI (coincidencia parcial).</small>
-          <a href="{{ route('pedidos.vendedor.obtenerPdfRutas') }}" class="btn btn-dark btn-sm">
-            <i class="fas fa-file-pdf me-1"></i> Mis rutas
-          </a>
-        </div>
-      </div>
+    <div class="container py-3">
+      <table class="table table-striped table-bordered table-hover nowrap w-100 shadow-sm" id="tabla-asignaciones">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Celular</th>
+            <th>Ubicación</th>
+            <th>Pedido</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+      </table>
     </div>
-  </div>
-
-  <!-- Modal pedidos (optimizado para móvil) -->
-  <x-adminlte-modal id="verPedidoModal" size="lg" theme="dark" icon="fas fa-box-open" title="Pedidos realizados" v-centered>
-    <div class="modal-body px-3" id="crear-tabla-pedidos"></div>
-    <x-slot name="footerSlot">
-      <x-adminlte-button theme="danger" label="Cerrar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2" />
-    </x-slot>
-  </x-adminlte-modal>
-
-  <div class="container py-3">
-    @if($asignaciones->isEmpty())
-      <div class="alert alert-info text-center mb-0">
-        <i class="fas fa-info-circle me-2"></i> No tienes asignaciones registradas.
-      </div>
-    @else
-      <!-- Lista tipo tarjetas (MÓVIL) -->
-      <div class="d-block d-md-none">
-        <div class="row">
-          @foreach($asignaciones as $asignacion)
-            @php
-              $cliente = $asignacion->cliente;
-              $direccion = $cliente->calle_avenida ?? '';
-              $maps = 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($direccion);
-            @endphp
-            <div class="col-12 mb-3">
-              <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body">
-                  <div class="d-flex align-items-start">
-                    <div class="avatar-circle mr-3">
-                      <i class="fas fa-user"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-1" style="font-weight:700">
-                          {{ $cliente->nombres }} {{ $cliente->apellidos }}
-                        </h5>
-                        <span class="badge bg-primary">{{ \Carbon\Carbon::parse($asignacion->asignacion_fecha_hora)->format('d/m H:i') }}</span>
-                      </div>
-
-                      <div class="small text-muted mt-1">
-                        <div class="mb-1">
-                          <i class="fas fa-mobile-alt text-secondary mr-1"></i>
-                          <a href="tel:{{ $cliente->celular }}" class="text-reset text-decoration-none">{{ $cliente->celular }}</a>
-                        </div>
-                        <div class="mb-1">
-                          <i class="fas fa-map-pin text-danger mr-1"></i>
-                          <a href="{{ $maps }}" target="_blank" class="text-reset text-decoration-none">{{ $direccion ?: 'Sin dirección' }}</a>
-                        </div>
-                        <div class="mt-1">
-                          @if($asignacion->atencion_fecha_hora)
-                            <span class="badge bg-success"><i class="fas fa-check-circle mr-1"></i>Atendido</span>
-                          @else
-                            <span class="badge bg-secondary"><i class="fas fa-clock mr-1"></i>No atendido</span>
-                          @endif
-
-                          @if($asignacion->estado_pedido)
-                            <span class="badge bg-success ml-1"><i class="fas fa-check mr-1"></i>Pedido</span>
-                          @else
-                            <span class="badge bg-danger ml-1"><i class="fas fa-times mr-1"></i>Sin pedido</span>
-                          @endif
-                        </div>
-                      </div>
-
-                      <div class="d-grid gap-2 mt-3">
-                        @if($asignacion->estado_pedido)
-                          <button class="btn btn-outline-info btn-sm btn-ver-pedido" 
-                                  data-toggle="modal" data-target="#verPedidoModal"
-                                  data-cliente-id="{{ $cliente->id }}">
-                            <i class="fas fa-eye mr-1"></i> Ver pedido
-                          </button>
-                        @endif
-                        <button class="btn btn-success btn-block btn-sm btn-atender" data-asignacion-id="{{ $asignacion->id }}">
-                          <i class="fas fa-hand-pointer mr-1"></i> Atender
-                        </button>
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          @endforeach
-        </div>
-
-        <div class="d-flex justify-content-center mt-2">
-          {{ $asignaciones->appends(request()->query())->links() }}
-        </div>
-      </div>
-
-      <!-- Tabla (DESKTOP / TABLET) -->
-      <div class="d-none d-md-block">
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i> Mis Asignaciones</h5>
-            <span class="badge bg-light text-dark">
-              <i class="fas fa-layer-group me-1"></i> Total: {{ $asignaciones->total() ?? $asignaciones->count() }}
-            </span>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle text-center mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>#</th>
-                    <th>Cliente</th>
-                    <th>Celular</th>
-                    <th>Ubicación</th>
-                    <th>Asignación</th>
-                    <th>Atención</th>
-                    <th>Pedido</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @foreach($asignaciones as $asignacion)
-                    @php
-                      $cliente = $asignacion->cliente;
-                      $direccion = $cliente->calle_avenida ?? '';
-                      $maps = 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($direccion);
-                    @endphp
-                    <tr>
-                      <td>{{ $loop->iteration }}</td>
-                      <td>{{ $cliente->nombres }} {{ $cliente->apellidos }}</td>
-                      <td><a href="tel:{{ $cliente->celular }}" class="text-reset"><i class="fas fa-mobile-alt text-secondary me-1"></i>{{ $cliente->celular }}</a></td>
-                      <td><a href="{{ $maps }}" target="_blank" class="text-reset"><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ $direccion }}</a></td>
-                      <td><span class="badge bg-primary">{{ $asignacion->asignacion_fecha_hora }}</span></td>
-                      <td>
-                        @if($asignacion->atencion_fecha_hora)
-                          <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>{{ $asignacion->atencion_fecha_hora }}</span>
-                        @else
-                          <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i> No atendido</span>
-                        @endif
-                      </td>
-                      <td>
-                        @if($asignacion->estado_pedido)
-                          <span class="badge bg-success"><i class="fas fa-check me-1"></i> Sí</span>
-                          <br>
-                          <button class="btn btn-outline-info btn-sm mt-2 btn-ver-pedido" 
-                                  data-toggle="modal" data-target="#verPedidoModal"
-                                  data-cliente-id="{{ $cliente->id }}">
-                            <i class="fas fa-eye me-1"></i> Ver Pedido
-                          </button>
-                        @else
-                          @if($asignacion->atencion_fecha_hora)
-                            <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> No pidió</span>
-                          @else
-                            <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i> No atendido</span>
-                          @endif
-                        @endif
-                      </td>
-                      <td>
-                        <button class="btn btn-success btn-sm btn-atender" data-asignacion-id="{{ $asignacion->id }}">
-                          <i class="fas fa-hand-pointer me-1"></i> Atender
-                        </button>
-                      </td>
-                    </tr>
-                  @endforeach
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card-footer bg-light text-muted d-flex justify-content-between align-items-center">
-            <small><i class="fas fa-info-circle me-1"></i> Se muestran las asignaciones relacionadas a tu cuenta.</small>
-            <div>{{ $asignaciones->appends(request()->query())->links() }}</div>
-          </div>
-        </div>
-      </div>
-    @endif
-  </div>
 @stop
 
 @section('css')
   <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
+  
   <style>
     /* Enfasis y accesibilidad */
     input.form-control:focus, select.form-control:focus {
@@ -265,43 +72,72 @@
 @stop
 
 @section('js')
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
+  <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
+    
   <script>
-    // Limpiar filtros
-    $('#limpiarboton').on('click', function(){ window.location.href = "{{ route('asignacionvendedor.index') }}"; });
+    $(document).ready(function () {
+      $('#tabla-asignaciones').DataTable({
+        processing: true,
+        serverSide: true,
 
-    // Delegación: Atender
-    $(document).on('click', '.btn-atender', function(){
-      const idAsignacion = $(this).data('asignacion-id');
+        // 👇 Hace que, si hay columnas ocultas por responsive, se abra el detalle automáticamente
+        responsive: {
+          details: {
+            display: $.fn.dataTable.Responsive.display.childRowImmediate,
+            type: 'none',
+            renderer: function (api, rowIdx, columns) {
+              // Solo mostrar las columnas ocultas
+              var rows = $.map(columns, function (col) {
+                if (col.hidden) {
+                  return `
+                    <tr data-dt-column="${col.columnIndex}">
+                      <td class="fw-bold pe-3">${col.title}</td>
+                      <td>${col.data ?? ''}</td>
+                    </tr>`;
+                }
+                return '';
+              }).join('');
 
-      Swal.fire({
-        title:'¿Qué deseas hacer?', text:'Puedes crear un pedido o registrar la atención',
-        icon:'question', showCancelButton:true, showDenyButton:true,
-        confirmButtonText:'Crear Pedido', confirmButtonColor:'#28a745', denyButtonText:'Registrar Atención', cancelButtonText:'Cancelar'
-      }).then(res=>{
-        if (res.isConfirmed) {
-          window.location.href = `{{ route('pedidos.vendedor.crear', ':id') }}`.replace(':id', idAsignacion);
-        } else if (res.isDenied) {
-          Swal.fire({
-            title:'Registrar Atención', text:'¿Confirmas registrar la atención sin pedido?',
-            icon:'warning', showCancelButton:true, confirmButtonText:'Sí, registrar', cancelButtonText:'Cancelar'
-          }).then(rr=>{
-            if (!rr.isConfirmed) return;
-            $.ajax({
-              url: `{{ route('registrarAtencion.sinpedido', ':id') }}`.replace(':id', idAsignacion),
-              type:'POST',
-              data:{ _token:'{{ csrf_token() }}', _method:'PUT', id_asignacion:idAsignacion }
-            }).done(()=>{
-              Swal.fire({icon:'success', title:'Atención registrada', timer:1200, showConfirmButton:false})
-                .then(()=> location.reload());
-            }).fail(xhr=>{
-              Swal.fire({icon:'error', title:'Error', text:(xhr.responseJSON?.message || 'No se pudo registrar la atención.')});
-            });
-          });
-        }
+              return rows
+                ? $('<table class="table table-sm table-borderless mb-0"><tbody/></table>').append(rows)
+                : false; // si no hay ocultas, no muestra child
+            }
+          }
+        },
+
+        language: { url: '/i18n/es-ES.json' },
+        ajax: "{{ route('asignacionvendedor.index') }}",
+
+        columns: [
+          { data: 'cliente'  },
+          { data: 'celular' },
+          { data: 'ubicacion', orderable:false, searchable:false },
+          { data: 'tiene_pedido', orderable:false, searchable:false },
+          { data: 'acciones', orderable:false, searchable:false }
+        ],
+
+        // ⚠ Si 'acciones' (índice 4) es no ordenable, evita ordenar por esa col
+        // order: [[0, 'asc']],
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+
+        columnDefs: [
+          // Prioridades responsive (0 = 'cliente' se mantiene visible; 4 = 'acciones' también)
+          { responsivePriority: 1, targets: 0 },
+          { responsivePriority: 2, targets: 4 },
+
+          { targets: [0,1,2], className: 'align-middle' },
+          { targets: 3, className: 'text-center align-middle' },
+          { targets: 4, className: 'text-center align-middle', width:'110px' }
+        ],
       });
     });
+
 
     // Delegación: Ver pedidos del cliente
     $(document).on('click', '.btn-ver-pedido', function(){

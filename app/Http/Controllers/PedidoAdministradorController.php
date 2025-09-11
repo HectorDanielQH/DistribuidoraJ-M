@@ -9,21 +9,69 @@ use App\Models\Venta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\DataTables;
 
 class PedidoAdministradorController extends Controller
 {
-    public function index(){
-        $pedidos = Pedido::select(
-            'id_cliente',
-            'numero_pedido',
-            DB::raw('DATE(fecha_pedido) AS fecha_pedido')
-        )
-            ->whereNull('fecha_entrega')
-            ->where('estado_pedido', false)
-            ->groupBy('id_cliente', 'numero_pedido','fecha_pedido')
-            ->orderBy('numero_pedido', 'asc')
-            ->paginate(10);
-        return view('administrador.pedidos.index',compact('pedidos'));
+    public function index(Request $request, DataTables $dataTables)
+    {
+        if($request->ajax()){
+            $query=Pedido::query()->select('id_cliente','numero_pedido','id_usuario',DB::raw('DATE(fecha_pedido) AS fecha_pedido'))
+                ->whereNull('fecha_entrega')
+                ->where('estado_pedido', false)
+                ->groupBy('id_cliente', 'numero_pedido','id_usuario','fecha_pedido')
+                ->orderBy('numero_pedido', 'asc');  
+            
+            return $dataTables->eloquent($query)
+                ->addColumn('cliente', function($pedido){
+                    return $pedido->cliente ? $pedido->cliente->nombres . ' ' . $pedido->cliente->apellidos : 'N/A';
+                })
+                ->filterColumn('cliente', function ($query, $keyword) {
+                    $query->whereHas('cliente', function ($q) use ($keyword) {
+                        $q->where(DB::raw("CONCAT(nombres, ' ', apellidos)"), 'ilike', "%{$keyword}%");
+                    });
+                })
+                ->addColumn('celular', function($pedido){
+                    return $pedido->cliente ? $pedido->cliente->celular : 'N/A';
+                })
+                ->addColumn('direccion', function($pedido){
+                    return $pedido->cliente ? $pedido->cliente->calle_avenida . ' - ' . $pedido->cliente->zona_barrio : 'N/A';
+                })
+                ->addColumn('ruta', function($pedido){
+                    return $pedido->cliente->ruta_id ? $pedido->cliente->ruta->nombre_ruta : 'N/A';
+                })
+                ->addColumn('preventista', function($pedido){
+                    return $pedido->usuario ? $pedido->usuario->nombres.' '.$pedido->usuario->apellido_paterno.' '.$pedido->usuario->apellido_materno : 'N/A';
+                })
+                ->addColumn('estado', function($pedido){
+                    return $pedido->estado_pedido ? '<span class="badge badge-success">Contabilizado</span>' : '<span class="badge badge-warning">Pendiente</span>';
+                })
+                ->addColumn('acciones', function($pedido){
+                    $ruta=route('administrador.pedidos.administrador.editar', $pedido->numero_pedido);
+                    $botones = '<div class="btn-group" role="group">';
+                    $botones .= '
+                    <button type="button" class="btn btn-primary btn-sm" onclick="verPedidoCliente(this)"
+                        id-numero-pedido="' . $pedido->numero_pedido . '"
+                        data-toggle="modal" data-target="#modalVerPedido"
+                    >
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <a
+                        href="' . $ruta . '"
+                        class="btn btn-warning btn-sm"
+                    >
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarPedidoCliente(this)" id-numero-pedido="' . $pedido->numero_pedido . '"><i class="fas fa-trash"></i></button>
+                    ';
+                    $botones .= '</div>';
+                    return $botones;
+                })
+                ->rawColumns(['estado','acciones'])
+                ->make(true);
+        }
+        
+        return view('administrador.pedidos.index');
     }
 
     public function visualizacionDespachados(){
@@ -354,5 +402,118 @@ class PedidoAdministradorController extends Controller
         return response()->json([
             'pedidosPendientes' => $pedidosPendientes
         ], 200);
+    }
+
+
+
+
+    ////---------------------------EDITAR PEDIDO------------------------////
+    public function editarPedido(Request $request, string $id_numero_pedido)
+    {
+        if(Pedido::where('numero_pedido', $id_numero_pedido)->doesntExist()){
+            return redirect()->route('administrador.pedidos.administrador.visualizacion');
+        }
+
+        if ($request->ajax()) {
+            $pedido = Pedido::query()->where('numero_pedido', $id_numero_pedido);
+
+            return DataTables::of($pedido)
+                ->addColumn('producto', function ($p) {
+                    return $p->producto ? $p->producto->nombre_producto : 'N/A';
+                })
+                ->addColumn('precio_venta', function ($p) {
+                    $forma_venta=FormaVenta::find($p->id_forma_venta);
+                    return $forma_venta ? $forma_venta->precio_venta.' Bs.-' : 'N/A';
+                })
+                ->addColumn('cantidad', function ($p) {
+                    $forma_venta=FormaVenta::find($p->id_forma_venta);
+                    return $p->cantidad .' '. $forma_venta->tipo_venta;
+                })
+                ->addColumn('cantidad_stock', function ($p) {
+                    return $p->producto ? (int) ($p->producto->cantidad ?? 0).' '.$p->producto->detalle_cantidad: 'N/A';
+                })
+                ->addColumn('subtotal', function ($p) {
+                    $forma_venta=FormaVenta::find($p->id_forma_venta);
+                    $precio_venta = $forma_venta ? $forma_venta->precio_venta : 0;
+                    $cantidad = $p->cantidad ?? 0;
+                    return $precio_venta * $cantidad.' Bs.-';
+                })
+                ->addColumn('acciones', function ($p) {
+                    $id = $p->id;
+                    return '<div class="btn-group" role="group">
+                                <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="eliminarProductoPedido(this)" data-id-pedido="'.$id.'">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>';
+                })
+                ->rawColumns(['acciones'])
+                ->make(true);
+        }
+
+        $pedido = Pedido::where('numero_pedido', $id_numero_pedido)->firstOrFail();
+        $suma_pedido= Pedido::where('numero_pedido', $id_numero_pedido)
+            ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+            ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+            ->value('total');
+        return view('administrador.pedidos.editar_pedido', compact('pedido','suma_pedido'));
+    }
+
+
+    public function agregarProductoPedido(Request $request, string $id_numero_pedido)
+    {
+        $request->validate([
+            'producto_id' => 'required|exists:productos,id',
+            'tipo_venta_id' => 'required|exists:forma_ventas,id',
+            'cantidad' => 'required|integer|min:1',
+        ]);
+
+        $producto = Producto::findOrFail($request->input('producto_id'));
+        $formaVenta = FormaVenta::findOrFail($request->input('tipo_venta_id'));
+        $cantidadSolicitada = $request->cantidad;
+        $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
+
+        if ($producto->cantidad < $cantidadEnUnidades) {
+            return response()->json(['error' => 'No hay suficiente stock del producto.'], 400);
+        }
+
+        // Disminuir el stock del producto
+        $producto->cantidad -= $cantidadEnUnidades;
+        $producto->save();
+
+        Pedido::create([
+            'id_usuario' => Pedido::where('numero_pedido', $id_numero_pedido)->value('id_usuario'),
+            'id_cliente' => Pedido::where('numero_pedido', $id_numero_pedido)->value('id_cliente'),
+            'id_producto' => $producto->id,
+            'id_forma_venta' => $formaVenta->id,
+            'numero_pedido' => $id_numero_pedido,
+            'fecha_pedido' => Pedido::where('numero_pedido', $id_numero_pedido)->value('fecha_pedido')??null,
+            'fecha_entrega' => null,
+            'cantidad' => $cantidadSolicitada,
+            'estado_pedido' => false,
+            'promocion' => $producto->promocion ?? false,
+            'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
+            'descripcion_regalo' => $producto->descripcion_regalo ?? null,
+        ]);
+
+        return response()->json(['success' => true, 'mensaje' => 'Producto agregado al pedido correctamente.']);
+    }
+
+    public function eliminarProductoPedido(string $id_pedido)
+    {
+        $pedido = Pedido::findOrFail($id_pedido);
+        $producto = Producto::findOrFail($pedido->id_producto);
+        $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
+
+        // Calcular la cantidad en unidades de inventario según la forma de venta
+        $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+
+        // Aumentar el stock del producto
+        $producto->cantidad += $cantidadEnUnidades;
+        $producto->save();
+
+        $pedido->delete();
+
+        return response()->json(['success' => true, 'mensaje' => 'Producto eliminado del pedido correctamente.']);
     }
 }

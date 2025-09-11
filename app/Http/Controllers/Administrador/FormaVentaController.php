@@ -17,6 +17,15 @@ class FormaVentaController extends Controller
         $formasVenta = FormaVenta::where('id_producto', $id_producto)->get();
 
         return $dataTable->of($formasVenta)
+            ->editColumn('tipo_venta', function ($formaVenta) {
+                $btn="
+                <button class='btn btn-sm btn-info ml-2' id-forma-venta='". $formaVenta->id ."' nombre-forma-venta='". $formaVenta->tipo_venta ."' onclick='editarNombreFormaVenta(this)'>
+                    <i class='fas fa-edit l-2'></i>
+                </button>
+                ";
+                $render=$formaVenta->tipo_venta . ' ' . $btn;
+                return $render;
+            })
             ->editColumn('precio_venta', function ($formaVenta) {
                 return $formaVenta->precio_venta. ' Bs.-';
             })
@@ -31,7 +40,7 @@ class FormaVentaController extends Controller
                 $acciones .= '</div>';
                 return $acciones;
             })
-            ->rawColumns(['acciones'])
+            ->rawColumns(['acciones', 'tipo_venta'])
             ->make(true);
     }
 
@@ -83,7 +92,6 @@ class FormaVentaController extends Controller
      */
     public function update(Request $request, FormaVenta $formaVenta)
     {
-        //
     }
 
     /**
@@ -123,5 +131,28 @@ class FormaVentaController extends Controller
             'id_producto' => $formaVenta->id_producto,
             'mensaje' => 'Stock actualizado correctamente.'
         ]);
+    }
+    public function updatePresentacionProducto(Request $request, string $id)
+    {
+        $request->validate([
+            'nuevo_nombre' => 'required|string|max:255',
+        ],[
+            'nuevo_nombre.required' => 'El nombre de la forma de venta es obligatorio.',
+            'nuevo_nombre.string' => 'El nombre de la forma de venta debe ser una cadena de texto.',
+            'nuevo_nombre.max' => 'El nombre de la forma de venta no puede exceder los 255 caracteres.',
+        ]);
+
+        $formaVenta = FormaVenta::findOrFail($id);
+        $formaVenta->tipo_venta = trim(strtoupper($request->nuevo_nombre));
+        $formaVenta->save();
+
+        return response()->json(['success' => true, 'mensaje' => 'Nombre de la forma de venta actualizado correctamente.']);
+    }
+
+
+    public function mostrarFormasVenta(string $id_producto)
+    {
+        $formaVenta = FormaVenta::where('id_producto', $id_producto)->where('activo', true)->get();
+        return response()->json($formaVenta);
     }
 }

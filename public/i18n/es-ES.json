@@ -2,16 +2,16 @@
     "processing": "Procesando...",
     "lengthMenu": "Mostrar _MENU_ registros",
     "zeroRecords": "No se encontraron resultados",
-    "emptyTable": "Ningún dato disponible en esta tabla",
-    "infoEmpty": "Mostrando registros del 0 al 0 de un total de 0 registros",
+    "emptyTable": "No hay datos disponibles en esta tabla",
+    "infoEmpty": "Mostrando registros del 0 al 0 de un total de 0",
     "infoFiltered": "(filtrado de un total de _MAX_ registros)",
     "search": "Buscar:",
     "loadingRecords": "Cargando...",
     "paginate": {
-        "first": "Primero",
-        "last": "Último",
-        "next": "Siguiente",
-        "previous": "Anterior"
+        "first": "<<",
+        "last": ">>",
+        "next": ">",
+        "previous": "<"
     },
     "aria": {
         "sortAscending": ": Activar para ordenar la columna de manera ascendente",
@@ -19,13 +19,13 @@
     },
     "buttons": {
         "copy": "Copiar",
-        "colvis": "Visibilidad",
+        "colvis": "Columnas",
         "collection": "Colección",
-        "colvisRestore": "Restaurar visibilidad",
-        "copyKeys": "Presione ctrl o u2318 + C para copiar los datos de la tabla al portapapeles del sistema. <br \/> <br \/> Para cancelar, haga clic en este mensaje o presione escape.",
+        "colvisRestore": "Restaurar columnas",
+        "copyKeys": "Presione Ctrl o ⌘ + C para copiar los datos de la tabla al portapapeles. <br/><br/> Para cancelar, haga clic en este mensaje o presione Escape.",
         "copySuccess": {
-            "1": "Copiada 1 fila al portapapeles",
-            "_": "Copiadas %ds fila al portapapeles"
+            "1": "Se copió 1 fila al portapapeles",
+            "_": "Se copiaron %d filas al portapapeles"
         },
         "copyTitle": "Copiar al portapapeles",
         "csv": "CSV",
@@ -38,17 +38,17 @@
         "print": "Imprimir",
         "renameState": "Cambiar nombre",
         "updateState": "Actualizar",
-        "createState": "Crear Estado",
-        "removeAllStates": "Remover Estados",
-        "removeState": "Remover",
-        "savedStates": "Estados Guardados",
+        "createState": "Crear estado",
+        "removeAllStates": "Eliminar todos",
+        "removeState": "Eliminar",
+        "savedStates": "Estados guardados",
         "stateRestore": "Estado %d"
     },
     "autoFill": {
         "cancel": "Cancelar",
-        "fill": "Rellene todas las celdas con <i>%d<\/i>",
-        "fillHorizontal": "Rellenar celdas horizontalmente",
-        "fillVertical": "Rellenar celdas verticalmente"
+        "fill": "Rellenar todas las celdas con <i>%d<\/i>",
+        "fillHorizontal": "Rellenar horizontalmente",
+        "fillVertical": "Rellenar verticalmente"
     },
     "decimal": ",",
     "searchBuilder": {
@@ -68,15 +68,15 @@
                 "notBetween": "No entre",
                 "not": "Diferente de",
                 "after": "Después",
-                "notEmpty": "No Vacío"
+                "notEmpty": "No vacío"
             },
             "number": {
                 "between": "Entre",
                 "equals": "Igual a",
-                "gt": "Mayor a",
+                "gt": "Mayor que",
                 "gte": "Mayor o igual a",
                 "lt": "Menor que",
-                "lte": "Menor o igual que",
+                "lte": "Menor o igual a",
                 "notBetween": "No entre",
                 "notEmpty": "No vacío",
                 "not": "Diferente de",
@@ -89,26 +89,26 @@
                 "equals": "Igual a",
                 "startsWith": "Empieza con",
                 "not": "Diferente de",
-                "notContains": "No Contiene",
+                "notContains": "No contiene",
                 "notStartsWith": "No empieza con",
                 "notEndsWith": "No termina con",
-                "notEmpty": "No Vacío"
+                "notEmpty": "No vacío"
             },
             "array": {
                 "not": "Diferente de",
                 "equals": "Igual",
                 "empty": "Vacío",
                 "contains": "Contiene",
-                "notEmpty": "No Vacío",
+                "notEmpty": "No vacío",
                 "without": "Sin"
             }
         },
-        "data": "Data",
-        "deleteTitle": "Eliminar regla de filtrado",
-        "leftTitle": "Criterios anulados",
+        "data": "Columna",
+        "deleteTitle": "Eliminar condición",
+        "leftTitle": "Condiciones anuladas",
         "logicAnd": "Y",
         "logicOr": "O",
-        "rightTitle": "Criterios de sangría",
+        "rightTitle": "Condiciones agrupadas",
         "title": {
             "0": "Constructor de búsqueda",
             "_": "Constructor de búsqueda (%d)"
@@ -124,10 +124,10 @@
         "count": "{total}",
         "countFiltered": "{shown} ({total})",
         "emptyPanes": "Sin paneles de búsqueda",
-        "loadMessage": "Cargando paneles de búsqueda",
-        "title": "Filtros Activos - %d",
-        "showMessage": "Mostrar Todo",
-        "collapseMessage": "Colapsar Todo"
+        "loadMessage": "Cargando paneles de búsqueda...",
+        "title": "Filtros activos - %d",
+        "showMessage": "Mostrar todo",
+        "collapseMessage": "Colapsar todo"
     },
     "select": {
         "cells": {
@@ -145,20 +145,16 @@
     },
     "thousands": ".",
     "datetime": {
-        "previous": "Anterior",
+        "previous": "<",
+        "next": ">",
         "hours": "Horas",
         "minutes": "Minutos",
         "seconds": "Segundos",
         "unknown": "-",
-        "amPm": [
-            "AM",
-            "PM"
-        ],
+        "amPm": ["AM", "PM"],
         "months": {
             "0": "Enero",
             "1": "Febrero",
-            "10": "Noviembre",
-            "11": "Diciembre",
             "2": "Marzo",
             "3": "Abril",
             "4": "Mayo",
@@ -166,34 +162,35 @@
             "6": "Julio",
             "7": "Agosto",
             "8": "Septiembre",
-            "9": "Octubre"
+            "9": "Octubre",
+            "10": "Noviembre",
+            "11": "Diciembre"
         },
         "weekdays": {
             "0": "Dom",
             "1": "Lun",
             "2": "Mar",
+            "3": "Mié",
             "4": "Jue",
             "5": "Vie",
-            "3": "Mié",
             "6": "Sáb"
-        },
-        "next": "Próximo"
+        }
     },
     "editor": {
         "close": "Cerrar",
         "create": {
             "button": "Nuevo",
-            "title": "Crear Nuevo Registro",
+            "title": "Crear nuevo registro",
             "submit": "Crear"
         },
         "edit": {
             "button": "Editar",
-            "title": "Editar Registro",
+            "title": "Editar registro",
             "submit": "Actualizar"
         },
         "remove": {
             "button": "Eliminar",
-            "title": "Eliminar Registro",
+            "title": "Eliminar registro",
             "submit": "Eliminar",
             "confirm": {
                 "_": "¿Está seguro de que desea eliminar %d filas?",
@@ -201,13 +198,13 @@
             }
         },
         "error": {
-            "system": "Ha ocurrido un error en el sistema (<a target=\"\\\" rel=\"\\ nofollow\" href=\"\\\">Más información&lt;\\\/a&gt;).<\/a>"
+            "system": "Ha ocurrido un error en el sistema (<a target=\"_blank\" rel=\"nofollow\" href=\"#\">Más información</a>)."
         },
         "multi": {
-            "title": "Múltiples Valores",
-            "restore": "Deshacer Cambios",
-            "noMulti": "Este registro puede ser editado individualmente, pero no como parte de un grupo.",
-            "info": "Los elementos seleccionados contienen diferentes valores para este registro. Para editar y establecer todos los elementos de este registro con el mismo valor, haga clic o pulse aquí, de lo contrario conservarán sus valores individuales."
+            "title": "Múltiples valores",
+            "restore": "Deshacer cambios",
+            "noMulti": "Este registro solo puede editarse individualmente.",
+            "info": "Los elementos seleccionados contienen diferentes valores. Para establecer el mismo valor en todos, haga clic aquí, de lo contrario conservarán sus valores individuales."
         }
     },
     "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
@@ -215,14 +212,14 @@
         "creationModal": {
             "button": "Crear",
             "name": "Nombre:",
-            "order": "Clasificación",
+            "order": "Orden",
             "paging": "Paginación",
             "select": "Seleccionar",
             "columns": {
-                "search": "Búsqueda de Columna",
-                "visible": "Visibilidad de Columna"
+                "search": "Búsqueda en columnas",
+                "visible": "Visibilidad de columnas"
             },
-            "title": "Crear Nuevo Estado",
+            "title": "Crear nuevo estado",
             "toggleLabel": "Incluir:",
             "scroller": "Posición de desplazamiento",
             "search": "Búsqueda",
@@ -230,14 +227,14 @@
         },
         "removeJoiner": "y",
         "removeSubmit": "Eliminar",
-        "renameButton": "Cambiar Nombre",
-        "duplicateError": "Ya existe un Estado con este nombre.",
-        "emptyStates": "No hay Estados guardados",
-        "removeTitle": "Remover Estado",
-        "renameTitle": "Cambiar Nombre Estado",
+        "renameButton": "Cambiar nombre",
+        "duplicateError": "Ya existe un estado con este nombre.",
+        "emptyStates": "No hay estados guardados",
+        "removeTitle": "Eliminar estado",
+        "renameTitle": "Cambiar nombre del estado",
         "emptyError": "El nombre no puede estar vacío.",
         "removeConfirm": "¿Seguro que quiere eliminar %s?",
-        "removeError": "Error al eliminar el Estado",
+        "removeError": "Error al eliminar el estado",
         "renameLabel": "Nuevo nombre para %s:"
     },
     "infoThousands": "."

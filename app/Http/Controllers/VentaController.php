@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\User;
 use App\Models\Venta;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\DataTables;
 
 class VentaController extends Controller
 {
@@ -242,7 +246,33 @@ class VentaController extends Controller
             ]);
         }
 
-
         return response()->json(['error' => 'Periodo no válido'], 400);
+    }
+
+
+    public function ventasPorFechasContabilizadas(Request $request, DataTables $dataTable)
+    {
+        if($request->ajax()){
+            $ventas = Venta::query()
+                ->select('fecha_contabilizacion')
+                ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
+                ->groupBy('numero_pedido', 'fecha_contabilizacion')
+                ->orderBy('fecha_contabilizacion', 'desc');
+            return $dataTable->of($ventas)
+                ->addColumn('fecha_contabilizacion', function($venta){
+                    return Carbon::parse($venta->fecha_contabilizacion)->format('d/m/Y');
+                })
+                ->addColumn('monto_contabilizado', function($venta){
+                    return number_format($venta->total, 2, '.', ',').' Bs.-';
+                })
+                ->addColumn('acciones', function($venta){
+                    return '<button class="btn btn-info btn-sm ver-detalle" data-numero-pedido="'.$venta->numero_pedido.'">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </button>';
+                })
+                ->rawColumns(['acciones'])
+                ->make(true);
+        }
+        return view('administrador.ventas.ventas_por_pedido');
     }
 }

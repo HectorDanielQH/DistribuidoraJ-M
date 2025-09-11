@@ -6,39 +6,59 @@ use App\Models\Asignacion;
 use App\Models\Pedido;
 use App\Models\RendimientoPersonal;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 
 class AsignacionVendedorController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, DataTables $dataTables)
     {
-        // Asignaciones solo del usuario autenticado
-        $query = Asignacion::with('cliente') // para evitar N+1
-            ->where('id_usuario', auth()->id());
-
-        if ($request->filled('nombre')) {
-            $keywords = explode(' ', trim(strtoupper($request->nombre)));
-            $query->whereHas('cliente', function ($q) use ($keywords) {
-                foreach ($keywords as $word) {
-                    $q->where(function ($subquery) use ($word) {
-                        $subquery->where('nombres', 'like', '%' . $word . '%')
-                                ->orWhere('apellidos', 'like', '%' . $word . '%');
+        if($request->ajax()){
+            $query = Asignacion::query();
+            return $dataTables->eloquent($query)
+                ->addColumn('cliente', function($asignacion){
+                    return $asignacion->cliente ? $asignacion->cliente->nombres." ".$asignacion->cliente->apellidos : 'N/A';
+                })
+                ->filterColumn('cliente', function ($query, $keyword) {
+                    $query->whereHas('cliente', function ($q) use ($keyword) {
+                        $q->whereRaw("CONCAT(nombres, ' ', apellidos) ilike ?", ["%{$keyword}%"]);
                     });
-                }
-            });
+                })
+                ->addColumn('celular', function($asignacion){
+                    return $asignacion->cliente ? $asignacion->cliente->celular : 'N/A';
+                })
+                ->addColumn('ubicacion', function($asignacion){
+                    return $asignacion->cliente ? $asignacion->cliente->calle_avenida : 'N/A';
+                })
+                ->addColumn('tiene_pedido', function($asignacion){
+                    if($asignacion->numero_pedido){
+                        return '<span class="badge badge-info">Tiene Pedido</span>';
+                    } else {
+                        return '<span class="badge badge-secondary">Sin Pedido</span>';
+                    }
+                })
+                ->addColumn('acciones', function($asignacion){
+                    $ruta=route('preventistas.registrar.pedido', ['id' => $asignacion->id_cliente]);
+                    $botones = '<div class="btn-group" role="group">';
+                    if(!$asignacion->estado_pedido){
+                        $botones .= '
+                            <a href="'.$ruta.'" class="btn btn-success btn-sm">
+                                <i class="fas fa-check"></i> Atender Cliente
+                            </a>
+                        ';
+                    } else {
+                        $botones .= '
+                            <a href="'.$ruta.'" class="btn btn-warning btn-sm">
+                                <i class="fas fa-check"></i> Editar Pedido
+                            </a>
+                        ';
+                    }
+                    $botones .= '</div>';
+                    return $botones;
+                })
+                ->rawColumns(['tiene_pedido','acciones'])
+                ->make(true);
         }
-
-        if ($request->filled('ci')) {
-            $query->whereHas('cliente', function ($q) use ($request) {
-                $q->where('cedula_identidad', 'like', '%' . trim(strtoupper($request->ci)) . '%');
-            });
-        }
-
-        $asignaciones=$query->orderBy('updated_at', 'desc')->paginate(10);
-
-        $asignaciones = $query->paginate(10);
-
-        return view('vendedor.asignaciones.index_asignaciones', compact('asignaciones'))
-            ->with('eliminar_busqueda', $request->filled('nombre') || $request->filled('ci'));
+        return view('vendedor.asignaciones.index_asignaciones');
     }
 
     public function registrarAtencion(Request $request, string $id)

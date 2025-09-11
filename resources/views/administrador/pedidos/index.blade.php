@@ -25,85 +25,42 @@
                             <i class="fas fa-list"></i> Lista de Pedidos Pendientes
                         </h3>
                         <div class="card-tools d-flex">
-                            <button href="#" class="btn btn-success btn-sm mr-4" id="btnDespacharPedidos">
+                            <button class="btn btn-success btn-sm mr-4" id="btnDespacharPedidos">
                                 <i class="fas fa-truck"></i> Despachar Pedidos 
                             </button>
 
-
-                            <button href="#" class="btn btn-success btn-sm mr-4" id="btnCantidadPedidos">
+                            <button class="btn btn-success btn-sm mr-4" id="btnCantidadPedidos">
                                 <i class="fas fa-truck"></i> Ver cantidad para despacho
                             </button>
                         </div>
                     </div>
-                <div class="card-body">
-                    @if($pedidos->isEmpty())
-                        <div class="alert alert-info text-center">
-                            <i class="fas fa-info-circle"></i> No hay pedidos pendientes.
-                        </div>
-                    @else
-                        <div class="table-responsive">
-                            <table class="table table-striped table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Nro. de Pedido</th>
-                                        <th>Cliente</th>
-                                        <th>Dirección</th>
-                                        <th>Zona</th>
-                                        <th>Preventista</th>
-                                        <th>Fecha Pedido</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($pedidos as $pedido)
-                                        <tr>
-                                            <td>{{$loop->iteration}}</td>
-                                            <td>Pedido #{{$pedido->numero_pedido}}</td>
-                                            <td>{{$pedido->cliente->nombres}} {{$pedido->cliente->apellidos}}</td>
-                                            <td>{{$pedido->cliente->calle_avenida}}</td>
-                                            <td>
-                                                @php
-                                                    $pedido_ob=\App\Models\Pedido::where('numero_pedido', $pedido->numero_pedido)->first();
-                                                    $cliente=\App\Models\Cliente::where('id', $pedido_ob->id_cliente)->first();
-                                                @endphp
-                                                {{$cliente->ruta->nombre_ruta ?? 'Sin ruta'}}
-                                            </td>
-                                            <td>
-                                                {{$pedido_ob->usuario->nombres}} {{$pedido_ob->usuario->apellido_paterno}} 
-                                                {{$pedido_ob->usuario->apellido_materno}}
-                                            </td>
-                                            <td>{{$pedido->fecha_pedido}}</td>
-                                            <td>
-                                                <!--spiner-->
-                                                <span class="badge bg-danger text-white">
-                                                    <i class="fas fa-spinner fa-spin"></i> Pendiente
-                                                </span>
-                                            </td>
-                                            <td class="text-center">
-                                                <button onclick="verPedidoCliente(this)" id-numero-pedido="{{$pedido->numero_pedido}}" class="btn btn-info btn-sm">
-                                                    <i class="fas fa-eye"></i> Ver
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-3">
-                            {{ $pedidos->links() }}
-                        </div>
-                    @endif
-                </div>
                 </div>
             </div>
         </div>
     </div>
-
+    <div class="container">
+        <table class="table table-striped table-bordered" id="pedidosTabla">
+            <thead>
+                <tr>
+                    <th>Nro. de Pedido</th>
+                    <th>Cliente</th>
+                    <th>Dirección</th>
+                    <th>Ruta</th>
+                    <th>Preventista</th>
+                    <th>Fecha Pedido</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
 @stop
 
 @section('css')
+    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
+  
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -125,8 +82,46 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
+    
     <script>
+        $(document).ready(function () {
+            $('#pedidosTabla').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                language: { url: '/i18n/es-ES.json' },
+                pageLength: 5,
+                lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+                ajax: {
+                    url: "{{ route('administrador.pedidos.administrador.visualizacion') }}",
+                },
+                columns: [
+                    { data:'numero_pedido'},
+                    { data:'cliente' },
+                    { data:'direccion' },
+                    { data:'ruta' },
+                    { data:'preventista' },
+                    { data:'fecha_pedido' },
+                    { data:'estado' },
+                    { data: 'acciones', orderable: false, searchable: false }
+                ],
+                columnDefs: [
+                    { targets: '_all', className: 'dt-head-center dt-body-center align-middle td-center' }
+                ],
+                drawCallback: function () {
+                    const $w = $('#tabla-productos_wrapper');
+                    $w.find('td.td-center .d-flex').addClass('justify-content-center');
+                    $w.find('td.td-center img').addClass('d-block mx-auto');
+                }
+            });
+        });
+
+
+
         function verPedidoCliente(e) {
         let numeroPedido = $(e).attr('id-numero-pedido');
         let widthValue = window.innerWidth <= 600 ? '100%' : '60%';

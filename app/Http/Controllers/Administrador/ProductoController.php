@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
 use App\Models\FormaVenta;
+use App\Models\Linea;
+use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
@@ -55,7 +57,7 @@ class ProductoController extends Controller
                         </div>
                     ';
 
-                    return '<div class="text-center">' . $cantidadHtml . $boton . '</div>';
+                    return '<div class="w-full d-flex flex-column justify-content-center align-items-center">' . $cantidadHtml . $boton . '</div>';
                 })
                 ->addColumn('formas_venta', function ($producto) {
                     $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
@@ -111,42 +113,57 @@ class ProductoController extends Controller
 
                     $regalo = ($producto->descripcion_regalo !== null && $producto->descripcion_regalo !== '' )
                         ? $producto->descripcion_regalo
-                        :'N/A';
-                    $render = '<div class="d-flex flex-column align-items-center justify-content-center mb-2 bg-white">';
+                        : 'N/A';
+
+                    $id = (int) $producto->id;
+
+                    $boxOpen  = '<div class="text-center"><div class="d-inline-block bg-light border rounded px-3 py-2 shadow-sm">';
+                    $boxClose = '</div></div>';
+
                     if ($producto->promocion) {
-                        $render = '
-                        <span>
-                            Descuento: <strong>' . $descuento . '</strong><br>
-                            Regalo: <strong>' . $regalo . '</strong>
-                        </span>
-                        <br/>
-                        <div class="btn-group mt-2" role="group">
-                            <button class="btn btn-sm btn-warning" type="button" id-producto="' . $producto->id .  
-                            '" editar-promocion-procentaje="' . $producto->descripcion_descuento_porcentaje . '" editar-promocion-regalo="' . $producto->descripcion_regalo .
-                            '" onclick="editarPromocion(this)">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" type="button" id-producto="' . $producto->id . '" onclick="eliminarPromocion(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        ';
-                    } else {
-                        $render='
-                            <button class="btn btn-sm btn-success" type="button" id-producto="' . $producto->id . '" onclick="agregarPromocion(this)">
-                                <i class="fas fa-plus"></i> Agregar Promoción
-                            </button>
-                        ';
-                        $render .= '<span class="badge bg-secondary fs-6">Sin Promoción</span>';
+                        return $boxOpen . '
+                            <div class="mb-2">
+                                <span class="badge bg-success me-1"><i class="fas fa-percent me-1"></i>'.$descuento.'</span>
+                                <span class="badge bg-info"><i class="fas fa-gift me-1"></i>'.$regalo.'</span>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Acciones promoción">
+                                <button class="btn btn-warning"
+                                        type="button"
+                                        title="Editar"
+                                        id-producto="'.$id.'"
+                                        editar-promocion-procentaje="'.$producto->descripcion_descuento_porcentaje.'"
+                                        editar-promocion-regalo="'.$producto->descripcion_regalo.'"
+                                        onclick="editarPromocion(this)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger"
+                                        type="button"
+                                        title="Eliminar"
+                                        id-producto="'.$id.'"
+                                        onclick="eliminarPromocion(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ' . $boxClose;
                     }
-                    $render .= '</div>';
-                    return $render;
+
+                    // Sin promoción
+                    return $boxOpen . '
+                        <button class="btn btn-success btn-sm mb-1"
+                                type="button"
+                                id-producto="'.$id.'"
+                                onclick="agregarPromocion(this)">
+                            <i class="fas fa-plus me-1"></i> Agregar promoción
+                        </button>
+                        <div><span class="badge bg-secondary">Sin promoción</span></div>
+                    ' . $boxClose;
                 })
                 ->addColumn('acciones', function ($producto) {
+                    $route=route('administrador.productos.edit', ['producto' => $producto->id]);
                     $acciones = '<div class="btn-group" role="group">';
-                    $acciones .= '<button type="button" class="btn btn-warning" onclick="visualizarProducto(this)" data-id-producto="' . $producto->id . '" data-toggle="modal" data-target="#ver-distribuidora-producto" title="Ver producto">
-                        <i class="fas fa-cog"></i>
-                    </button>';
+                    $acciones .= "<a href='". $route ."' class='btn btn-warning' title='Editar Producto'>
+                        <i class='fas fa-edit'></i>
+                    </a>";
                     if($producto->estado_de_baja) {
                         $acciones .= '<button type="button" class="btn btn-secondary" onclick="ProductoDeAlta(this)" id-producto="' . $producto->id . '">
                             <i class="fas fa-eye-slash"></i>
@@ -164,7 +181,6 @@ class ProductoController extends Controller
                 })
                 ->rawColumns(['acciones', 'imagen', 'formas_venta', 'promocion_vista', 'stock'])
                 ->make(true);
-
         }
 
         $proveedores = Proveedor::all();
@@ -202,7 +218,8 @@ class ProductoController extends Controller
      */
     public function create()
     {
-        //
+        $proveedores = Proveedor::all();
+        return view('administrador.productos.create_productos',compact('proveedores'));
     }
 
     /**
@@ -211,114 +228,114 @@ class ProductoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'proveedor_id' => 'required|exists:proveedors,id',
-            'marca_id' => 'required|exists:marcas,id',
-            'linea_id' => 'required|exists:lineas,id',
-            'codigo' => 'required|string|max:255|unique:productos,codigo',
-            'nombreProducto' => 'required|string|max:255',
-            'descripcionProducto' => 'required|string|max:1000',
-            'cantidadProducto' => 'required|integer|min:0',
-            'descripcionCantidad' => 'required|string|max:255',
-            'precioCompra' => 'required|numeric|min:0',
-            'descripcionCompra' => 'required|string|max:255',
-            'vencimientoProducto' => 'nullable|date|after:today',
-            'presentacionProducto' => 'nullable|string|max:255',
-            'habilitarPromocion' => 'nullable',
-            'promocionDescuento' => 'nullable|integer|min:0|max:100',
-            'promocionRegalo' => 'nullable|string|max:255',
+            'proveedor' => 'required|exists:proveedors,id',
+            'marca_producto' => 'required|exists:marcas,id',
+            'linea_producto' => 'required|exists:lineas,id',
+            'codigo_producto' => 'required|string|max:255|unique:productos,codigo',
+            'nombre_producto' => 'required|string|max:255',
+            'descripcion_producto' => 'required|string|max:1000',
+            'cantidad' => 'required|integer|min:0',
+            'detalle_cantidad' => 'required|string|max:255',
+            'precio_compra' => 'required|numeric|min:0',
+            'detalle_precio_compra' => 'required|string|max:255',
+            'fecha_vencimiento' => 'nullable|date|after:today',
+            'presentacion' => 'nullable|string|max:255',
+            'promocion' => 'nullable',
+            'descuento_porcentaje' => 'nullable|integer|min:0|max:100',
+            'descuento_promocion' => 'nullable|string|max:255',
             'imagen_producto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'forma_venta' => 'required|array|min:1',
-            'cantidad_venta' => 'required|array|min:1',
-            'equivalencia_stock' => 'required|array|min:1',
+            'nombre_forma_venta' => 'required|array|min:1',
+            'precio_forma_venta' => 'required|array|min:1',
+            'equivalencia' => 'required|array|min:1',
         ],[
-            'proveedor_id.required' => 'El proveedor es obligatorio.',
-            'marca_id.required' => 'La marca es obligatoria.',
-            'linea_id.required' => 'La línea es obligatoria.',
-            'codigo.required' => 'El código es obligatorio.',
-            'codigo.unique' => 'El código debe ser único.',
-            'nombreProducto.required' => 'El nombre del producto es obligatorio.',
-            'descripcionProducto'=> 'La descripción del producto es obligatoria.',
-            'cantidadProducto.required' => 'La cantidad es obligatoria.',
-            'cantidadProducto.integer' => 'La cantidad debe ser un número entero.',
-            'cantidadProducto.min' => 'La cantidad no puede ser negativa.',
-            'descripcionCantidad.required' => 'La descripción de la cantidad es obligatoria.',
-            'precioCompra.required' => 'El precio de compra es obligatorio.',
-            'precioCompra.numeric' => 'El precio de compra debe ser un número.',
-            'precioCompra.min' => 'El precio de compra no puede ser negativo.',
-            'descripcionCompra.required' => 'La descripción del precio de compra es obligatoria.',
-            'vencimientoProducto.date' => 'La fecha de vencimiento no es una fecha válida.',
-            'presentacionProducto.max' => 'La presentación no puede exceder los 255 caracteres.',
-            'promocionDescuento.integer' => 'El descuento de la promoción debe ser un número entero.',
-            'promocionDescuento.min' => 'El descuento de la promoción no puede ser negativo.',
-            'promocionDescuento.max' => 'El descuento de la promoción no puede ser mayor a 100.',
-            'promocionRegalo.max' => 'La descripción del regalo de la promoción no puede exceder los 255 caracteres.',
+            'proveedor.required' => 'El proveedor es obligatorio.',
+            'marca_producto.required' => 'La marca es obligatoria.',
+            'linea_producto.required' => 'La línea es obligatoria.',
+            'codigo_producto.required' => 'El código es obligatorio.',
+            'codigo_producto.unique' => 'El código debe ser único.',
+            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
+            'descripcion_producto'=> 'La descripción del producto es obligatoria.',
+            'cantidad.required' => 'La cantidad es obligatoria.',
+            'cantidad.integer' => 'La cantidad debe ser un número entero.',
+            'cantidad.min' => 'La cantidad no puede ser negativa.',
+            'detalle_cantidad.required' => 'La descripción de la cantidad es obligatoria.',
+            'precio_compra.required' => 'El precio de compra es obligatorio.',
+            'precio_compra.numeric' => 'El precio de compra debe ser un número.',
+            'precio_compra.min' => 'El precio de compra no puede ser negativo.',
+            'detalle_precio_compra.required' => 'La descripción del precio de compra es obligatoria.',
+            'fecha_vencimiento.date' => 'La fecha de vencimiento no es una fecha válida.',
+            'fecha_vencimiento.after' => 'La fecha de vencimiento debe ser una fecha futura.',
+            'presentacion.max' => 'La presentación no puede exceder los 255 caracteres.',
+            'descuento_porcentaje.integer' => 'El descuento de la promoción debe ser un número entero.',
+            'descuento_porcentaje.min' => 'El descuento de la promoción no puede ser negativo.',
+            'descuento_porcentaje.max' => 'El descuento de la promoción no puede ser mayor a 100.',
+            'descuento_promocion.max' => 'La descripción del regalo de la promoción no puede exceder los 255 caracteres.',
             'imagen_producto.image' => 'El archivo debe ser una imagen.',
             'imagen_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif, svg o webp.',
             'imagen_producto.max' => 'La imagen no puede exceder los 2MB.',
-            'forma_venta.required' => 'La forma de venta es obligatoria.',
-            'forma_venta.array' => 'La forma de venta debe ser un arreglo.',
-            'forma_venta.min' => 'Debe haber al menos una forma de venta.',
-            'cantidad_venta.required' => 'La cantidad de venta es obligatoria.',
-            'cantidad_venta.array' => 'La cantidad de venta debe ser un arreglo.',
-            'cantidad_venta.min' => 'Debe haber al menos una cantidad de venta.',
-            'equivalencia_stock.required' => 'La equivalencia de stock es obligatoria.',
-            'equivalencia_stock.array' => 'La equivalencia de stock debe ser un arreglo.',
-            'equivalencia_stock.min' => 'Debe haber al menos una equivalencia de stock.',
+            'nombre_forma_venta.required' => 'La forma de venta es obligatoria.',
+            'nombre_forma_venta.array' => 'La forma de venta debe ser un arreglo.',
+            'nombre_forma_venta.min' => 'Debe haber al menos una forma de venta.',
+            'precio_forma_venta.required' => 'La cantidad de venta es obligatoria.',
+            'precio_forma_venta.array' => 'La cantidad de venta debe ser un arreglo.',
+            'precio_forma_venta.min' => 'Debe haber al menos una cantidad de venta.',
+            'equivalencia.required' => 'La equivalencia de stock es obligatoria.',
+            'equivalencia.array' => 'La equivalencia de stock debe ser un arreglo.',
+            'equivalencia.min' => 'Debe haber al menos una equivalencia de stock.',
         ]);
 
         if($request->hasFile('imagen_producto')) {
             $file = $request->file('imagen_producto');
             $path=$file->store('foto_producto','local');
             $producto = Producto::create([
-                'id_proveedor' => $request->proveedor_id,
-                'id_marca' => $request->marca_id,
-                'id_linea' => $request->linea_id,
-                'codigo' => $request->codigo,
-                'nombre_producto' => $request->nombreProducto,
-                'descripcion_producto' => $request->descripcionProducto,
-                'cantidad' => $request->cantidadProducto,
-                'detalle_cantidad' => $request->descripcionCantidad,
-                'precio_compra' => str_replace(',', '.', $request->precioCompra),
-                'detalle_precio_compra' => $request->descripcionCompra,
-                'fecha_vencimiento' => $request->vencimientoProducto ?? null,
-                'presentacion' => $request->presentacionProducto,
-                'promocion' => $request->habilitarPromocion ? true : false,
-                'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? 0,
-                'descripcion_regalo' => $request->promocionRegalo ?? null,
+                'id_proveedor' => $request->proveedor,
+                'id_marca' => $request->marca_producto,
+                'id_linea' => $request->linea_producto,
+                'codigo' => $request->codigo_producto,
+                'nombre_producto' => trim(strtoupper($request->nombre_producto)),
+                'descripcion_producto' => trim(strtoupper($request->descripcion_producto)),
+                'cantidad' => $request->cantidad,
+                'detalle_cantidad' => trim(strtoupper($request->detalle_cantidad)),
+                'precio_compra' => str_replace(',', '.', $request->precio_compra),
+                'detalle_precio_compra' => trim(strtoupper($request->detalle_precio_compra)),
+                'fecha_vencimiento' => $request->fecha_vencimiento ?? null,
+                'presentacion' => trim(strtoupper($request->presentacion)) ?? null,
+                'promocion' => $request->promocion ? true : false,
+                'descripcion_descuento_porcentaje' => $request->descripcion_descuento_porcentaje ?? 0,
+                'descuento_promocion' => trim(strtoupper($request->descuento_promocion)) ?? null,
                 'foto_producto' => $path
             ]);   
         }
         else {
             $producto = Producto::create([
-                'id_proveedor' => $request->proveedor_id,
-                'id_marca' => $request->marca_id,
-                'id_linea' => $request->linea_id,
-                'codigo' => $request->codigo,
-                'nombre_producto' => $request->nombreProducto,
-                'descripcion_producto' => $request->descripcionProducto,
-                'cantidad' => $request->cantidadProducto,
-                'detalle_cantidad' => $request->descripcionCantidad,
-                'precio_compra' => str_replace(',', '.', $request->precioCompra),
-                'detalle_precio_compra' => $request->descripcionCompra,
-                'fecha_vencimiento' => $request->vencimientoProducto ?? null,
-                'presentacion' => $request->presentacionProducto,
-                'promocion' => $request->habilitarPromocion ? true : false,
-                'descripcion_descuento_porcentaje' => $request->promocionDescuento ?? 0,
-                'descripcion_regalo' => $request->promocionRegalo ?? null,
+                'id_proveedor' => $request->proveedor,
+                'id_marca' => $request->marca_producto,
+                'id_linea' => $request->linea_producto,
+                'codigo' => $request->codigo_producto,
+                'nombre_producto' => trim(strtoupper($request->nombre_producto)),
+                'descripcion_producto' => trim(strtoupper($request->descripcion_producto)),
+                'cantidad' => $request->cantidad,
+                'detalle_cantidad' => trim(strtoupper($request->detalle_cantidad)),
+                'precio_compra' => str_replace(',', '.', $request->precio_compra),
+                'detalle_precio_compra' => trim(strtoupper($request->detalle_precio_compra)),
+                'fecha_vencimiento' => $request->fecha_vencimiento ?? null,
+                'presentacion' => trim(strtoupper($request->presentacion)) ?? null,
+                'promocion' => $request->promocion ? true : false,
+                'descripcion_descuento_porcentaje' => $request->descuento_porcentaje ?? 0,
+                'descuento_promocion' => trim(strtoupper($request->descuento_promocion)) ?? null,
             ]);
         }
-        foreach ($request->forma_venta as $key => $forma_venta) {
+
+        foreach ($request->nombre_forma_venta as $key => $nombreFormaVenta) {
             FormaVenta::create([
-                'tipo_venta' => $forma_venta,
-                'precio_venta' => str_replace(',', '.', $request->cantidad_venta[$key]),
-                'equivalencia_cantidad' => $request->equivalencia_stock[$key],
+                'tipo_venta' => trim(strtoupper($nombreFormaVenta)),
+                'precio_venta' => str_replace(',', '.', $request->precio_forma_venta[$key]),
+                'equivalencia_cantidad' => $request->equivalencia[$key],
                 'id_producto' => $producto->id
             ]);
         }
 
-        return response()->json([
-            'success' => true
-        ]);
+        return redirect()->route('administrador.productos.index')->with('success', 'Producto creado exitosamente.');
     }
 
     /**
@@ -326,15 +343,8 @@ class ProductoController extends Controller
      */
     public function show(string $id_producto)
     {
-        $producto = Producto::findOrFail($id_producto);
-        $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
-        return response()->json([
-            'proveedor' => $producto->proveedor,
-            'marca' => $producto->marca,
-            'linea' => $producto->linea,
-            'producto' => $producto,
-            'formasVenta' => $formasVenta
-        ]);
+        $producto = Producto::where('id', $id_producto)->with(['proveedor', 'marca', 'linea'])->firstOrFail();
+        return view('administrador.productos.show_producto', compact('producto'));
     }
 
     public function obtenerCodigo()
@@ -353,7 +363,11 @@ class ProductoController extends Controller
      */
     public function edit(string $producto)
     {
-        //
+        $producto = Producto::findOrFail($producto);
+        $proveedores=Proveedor::all();
+        $marcas=Marca::all();
+        $lineas=Linea::all();
+        return view('administrador.productos.edit_productos', compact('producto','proveedores','marcas','lineas'));
     }
 
     /**
@@ -361,7 +375,78 @@ class ProductoController extends Controller
      */
     public function update(Request $request, string $producto)
     {
-        //
+        $request->validate([
+            'proveedor' => 'required|exists:proveedors,id',
+            'marca_producto' => 'required|exists:marcas,id',
+            'linea_producto' => 'required|exists:lineas,id',
+            'codigo_producto' => 'required|string|max:255|unique:productos,codigo,'.$producto,
+            'nombre_producto' => 'required|string|max:255',
+            'descripcion_producto' => 'required|string|max:1000',
+            'cantidad' => 'required|integer|min:0',
+            'detalle_cantidad' => 'required|string|max:255',
+            'precio_compra' => 'required|numeric|min:0',
+            'detalle_precio_compra' => 'required|string|max:255',
+            'fecha_vencimiento' => 'nullable|date|after:today',
+            'presentacion' => 'nullable|string|max:255',
+            'promocion' => 'nullable',
+            'descuento_porcentaje' => 'nullable|integer|min:0|max:100',
+            'descuento_promocion' => 'nullable|string|max:255',
+            'imagen_producto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+        ],[
+            'proveedor.required' => 'El proveedor es obligatorio.',
+            'marca_producto.required' => 'La marca es obligatoria.',
+            'linea_producto.required' => 'La línea es obligatoria.',
+            'codigo_producto.required' => 'El código es obligatorio.',
+            'codigo_producto.unique' => 'El código debe ser único.',
+            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
+            'descripcion_producto'=> 'La descripción del producto es obligatoria.',
+            'cantidad.required' => 'La cantidad es obligatoria.',
+            'cantidad.integer' => 'La cantidad debe ser un número entero.',
+            'cantidad.min' => 'La cantidad no puede ser negativa.',
+            'detalle_cantidad.required' => 'La descripción de la cantidad es obligatoria.',
+            'precio_compra.required' => 'El precio de compra es obligatorio.',
+            'precio_compra.numeric' => 'El precio de compra debe ser un número.',
+            'precio_compra.min' => 'El precio de compra no puede ser negativo.',
+            'detalle_precio_compra.required' => 'La descripción del precio de compra es obligatoria.',
+            'fecha_vencimiento.date' => 'La fecha de vencimiento no es una fecha válida.',
+            'fecha_vencimiento.after' => 'La fecha de vencimiento debe ser una fecha futura.',
+            'presentacion.max' => 'La presentación no puede exceder los 255 caracteres.',
+            'descuento_porcentaje.integer' => 'El descuento de la promoción debe ser un número entero.',
+            'descuento_porcentaje.min' => 'El descuento de la promoción no puede ser negativo.',
+            'descuento_porcentaje.max' => 'El descuento de la promoción no puede ser mayor a 100.',
+            'descuento_promocion.max' => 'La descripción del regalo de la promoción no puede exceder los 255 caracteres.',
+            'imagen_producto.image' => 'El archivo debe ser una imagen.',
+            'imagen_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif, svg o webp.',
+            'imagen_producto.max' => 'La imagen no puede exceder los 2MB.',
+        ]);
+
+        $producto = Producto::findOrFail($producto);
+        $producto->id_proveedor = $request->proveedor;
+        $producto->id_marca = $request->marca_producto;
+        $producto->id_linea = $request->linea_producto;
+        $producto->codigo = $request->codigo_producto;
+        $producto->nombre_producto = trim(strtoupper($request->nombre_producto));
+        $producto->descripcion_producto = trim(strtoupper($request->descripcion_producto));
+        $producto->cantidad = $request->cantidad;
+        $producto->detalle_cantidad = trim(strtoupper($request->detalle_cantidad));
+        $producto->precio_compra = str_replace(',', '.', $request->precio_compra);
+        $producto->detalle_precio_compra = trim(strtoupper($request->detalle_precio_compra));
+        $producto->fecha_vencimiento = $request->fecha_vencimiento ?? null;
+        $producto->presentacion = trim(strtoupper($request->presentacion)) ?? null;
+        $producto->promocion = $request->promocion ? true : false;
+        $producto->descripcion_descuento_porcentaje = $request->descuento_porcentaje ?? 0;
+        $producto->descripcion_regalo = trim(strtoupper($request->descuento_promocion)) ?? null;
+        if($request->hasFile('imagen_producto')) {
+            if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
+                Storage::disk('local')->delete($producto->foto_producto);
+            }
+            $file = $request->file('imagen_producto');
+            $path=$file->store('foto_producto','local');
+            $producto->foto_producto = $path;
+        }
+        $producto->save();
+
+        return redirect()->route('administrador.productos.index');
     }
 
     /**
@@ -399,6 +484,7 @@ class ProductoController extends Controller
 
         return response()->file(storage_path('app/private/' . $producto->foto_producto));
     }
+    
     public function actualizarCantidadProducto(Request $request, string $id)
     {
         $producto = Producto::findOrFail($id);
@@ -468,158 +554,6 @@ class ProductoController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function editarFotografia(Request $request, string $id)
-    {
-        $request->validate([
-            'foto_producto' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-        ], [
-            'foto_producto.required' => 'La imagen del producto es obligatoria.',
-            'foto_producto.image' => 'El archivo debe ser una imagen.',
-            'foto_producto.mimes' => 'La imagen debe ser de tipo jpeg, png, jpg, gif, svg o webp.',
-            'foto_producto.max' => 'La imagen no puede exceder los 2MB.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-
-        if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
-            Storage::disk('local')->delete($producto->foto_producto);
-        }
-
-        $file = $request->file('foto_producto');
-        $path = $file->store('foto_producto', 'local');
-        $producto->foto_producto = $path;
-        $producto->save();
-
-        return response()->json(['file' => $path]);
-    }
-
-    public function editarCodigoManual(Request $request, string $id)
-    {
-        $request->validate([
-            'codigo_producto' => 'required|string|max:255|unique:productos,codigo,' . $id,
-        ], [
-            'codigo_producto.required' => 'El código es obligatorio.',
-            'codigo_producto.unique' => 'El código debe ser único.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-        $producto->codigo = $request->codigo_producto;
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-
-    public function editarCodigoAutogenerar(Request $request, string $id)
-    {
-        $producto = Producto::findOrFail($id);
-        $prefijo = "PROD-";
-        do {
-            $codigo_numerico = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $codigo_unico = $prefijo . $codigo_numerico;
-        } while (Producto::where('codigo', $codigo_unico)->exists());
-
-        $producto->codigo = $codigo_unico;
-        $producto->save();
-
-        return response()->json(['codigo' => $codigo_unico]);
-    }
-
-    public function editarNombre(Request $request, string $id)
-    {
-        $request->validate([
-            'nombre_producto' => 'required|string|max:255',
-        ], [
-            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-        $producto->nombre_producto = trim(strtoupper($request->nombre_producto));
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-
-    public function editarProveedorMarcaLinea(Request $request, string $id)
-    {
-        $request->validate([
-            'id_proveedor' => 'required|exists:proveedors,id',
-            'id_marca' => 'required|exists:marcas,id',
-            'id_linea' => 'required|exists:lineas,id',
-        ], [
-            'id_proveedor.required' => 'El proveedor es obligatorio.',
-            'id_marca.required' => 'La marca es obligatoria.',
-            'id_linea.required' => 'La línea es obligatoria.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-
-        $producto->id_proveedor = $request->id_proveedor;
-        $producto->id_marca = $request->id_marca;
-        $producto->id_linea = $request->id_linea;
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-
-    public function updateDescripcion(Request $request, string $id)
-    {
-        $request->validate([
-            'descripcion_producto' => 'required|string|max:1000',
-        ], [
-            'descripcion_producto.required' => 'La descripción del producto es obligatoria.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-        $producto->descripcion_producto = trim(strtoupper($request->descripcion_producto));
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-    public function updatePrecioCompraProducto(Request $request, string $id)
-    {
-        $request->validate([
-            'precio_compra_producto' => 'required|numeric|min:0',
-        ], [
-            'precio_compra_producto.required' => 'El precio de compra es obligatorio.',
-            'precio_compra_producto.numeric' => 'El precio de compra debe ser un número.',
-            'precio_compra_producto.min' => 'El precio de compra no puede ser negativo.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-        $producto->precio_compra = str_replace(',', '.', $request->precio_compra_producto);
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-    public function updatePrecioDescripcionProducto(Request $request, string $id)
-    {
-        $request->validate([
-            'descripcion_precio_compra_producto' => 'required|string|max:255',
-        ], [
-            'descripcion_precio_compra_producto.required' => 'La descripción del precio es obligatoria.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-        $producto->detalle_precio_compra = trim(strtoupper($request->descripcion_precio_compra_producto));
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-    public function updatePresentacionProducto(Request $request, string $id)
-    {
-        $request->validate([
-            'presentacion_producto' => 'nullable|string|max:255',
-        ], [
-            'presentacion_producto.max' => 'La presentación no puede exceder los 255 caracteres.',
-        ]);
-
-        $producto = Producto::findOrFail($id);
-        $producto->presentacion = trim(strtoupper($request->presentacion_producto));
-        $producto->save();
-
-        return response()->json(['success' => true]);
-    }
-
     public function darBaja(Request $request, string $id)
     {
         $producto = Producto::findOrFail($id);
@@ -627,5 +561,53 @@ class ProductoController extends Controller
         $producto->save();
 
         return response()->json(['success' => true]);
+    }
+
+
+    public function obtenerProductoPorNombre(Request $request)
+    {
+        $search = strtoupper($request->q); // Select2 manda el término en "q"
+        $perPage = 10; // cuántos productos por página
+        $page = $request->page ?? 1;
+
+        $query = Producto::query()
+            ->where('estado_de_baja', false);
+
+        if (!empty($search)) {
+            $query->whereRaw('UPPER(nombre_producto) ILIKE ?', ['%' . $search . '%'])
+                ->orWhereRaw('UPPER(codigo) ILIKE ?', ['%' . $search . '%']);
+        }
+
+        $productos = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Formato compatible con Select2
+        $results = $productos->items();
+
+        return response()->json([
+            'items' => $results,
+            'total_count' => $productos->total(),
+            'per_page' => $productos->perPage(),
+            'current_page' => $productos->currentPage(),
+            'has_more' => $productos->hasMorePages(),
+        ]);
+    }
+
+    public function obtenerProductoPorId(string $codigo)
+    {
+        $producto = Producto::findOrFail($codigo);
+        return response()->json($producto);
+    }
+
+    public function obtenerProductosParaEdicion(Request $request){
+        $term = trim($request->get('term'));
+        $productos = Producto::where('estado_de_baja', false)
+            ->where(function($query) use ($term) {
+                $query->where('nombre_producto', 'ILIKE', '%' . strtoupper($term) . '%')
+                      ->orWhere('codigo', 'ILIKE', '%' . strtoupper($term) . '%');
+            })
+            ->limit(10)
+            ->get();
+
+        return response()->json($productos);
     }
 }

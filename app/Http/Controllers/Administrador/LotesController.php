@@ -21,6 +21,11 @@ class LotesController extends Controller
                 ->addColumn('producto', function($lote){
                     return $lote->producto ? $lote->producto->nombre_producto : 'N/A';
                 })
+
+                ->addColumn('cantidad', function($lote){
+                    return $lote->cantidad ? $lote->cantidad : 'N/A';
+                })
+
                 ->addColumn('acciones', function($lote){
                     $botones = '<div class="btn-group" role="group">';
                     $botones .= '
@@ -172,9 +177,8 @@ class LotesController extends Controller
 
     public function obtenerProducto(Request $request)
     {
-        $search = trim(strtoupper($request->get('query'))); // <-- aquí recuperas lo que escribe el usuario
-
-        // Busca por nombre o código
+        $search = trim(strtoupper($request->get('query'))); 
+        
         $productos = Producto::where('nombre_producto', 'LIKE', "%{$search}%")
             ->orWhere('codigo', 'LIKE', "%{$search}%")
             ->limit(10)

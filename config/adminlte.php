@@ -385,12 +385,12 @@ return [
 
         ],
         [
-            'header' => '.:: PEDIDOS Y VENTAS::.',
+            'header' => '.:: PEDIDOS::.',
             'can' => 'administrador.permisos',
         ],
         [
             'text' => 'Pedidos Pendientes',
-            'route' => 'pedidos.administrador.visualizacion',
+            'route' => 'administrador.pedidos.administrador.visualizacion',
             'icon' => 'fas fa-fw fa-shopping-cart',
             'can' => 'administrador.permisos',
         ],
@@ -401,11 +401,22 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'header' => '.:: VENTAS ::.',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'text' => 'Ventas',
             'route' => 'ventas.index',
             'icon' => 'fas fa-fw fa-receipt',
             'can' => 'administrador.permisos',
-        ],/*
+        ],
+        [
+            'text' => 'Ventas por pedido',
+            'route' => 'administrador.ventas.administrador.ventasPorPedido',
+            'icon' => 'fas fa-fw fa-edit',
+            'can' => 'administrador.permisos',
+        ],
+        /*
         [
             'header' => '.:: REPORTES ::.',
             'can' => 'administrador.permisos',
@@ -436,6 +447,10 @@ return [
             'text' => 'Mis Asignaciones',
             'route' => 'asignacionvendedor.index',
             'icon' => 'fas fa-fw fa-tasks',
+            'can' => 'vendedor.permisos',
+        ],
+        [
+            'header'=> '.::MIS VENTAS::.',
             'can' => 'vendedor.permisos',
         ],
 

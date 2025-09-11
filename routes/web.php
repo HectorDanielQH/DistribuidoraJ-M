@@ -37,7 +37,6 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('usuarios/imagenperfil/{id}', [UsuarioController::class, 'imagenPerfil'])->name('usuarios.imagenperfil');
     //--Rutas Productos para todos los usuarios autenticados---
     Route::get('productos/imagenproducto/{id}', [ProductoController::class, 'imagenProducto'])->name('productos.imagen');
-    Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
     Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
     //pdf descargar catalogo --VENDEDOR --ADMINISTRADOR
     Route::get('productos/vendedor/descargar-catalogo', [ProductoVendedorController::class, 'descargarCatalogo'])->name('productos.vendedor.descargarCatalogo');
@@ -62,22 +61,21 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::put('productos/editarPromocion/{id}',[ProductoController::class, 'editarPromocion'])->name('productos.editarPromocion');
         Route::put('productos/editarStock/{id}',[FormaVentaController::class, 'editarStock'])->name('productos.editarStock');
 
+        Route::get('productos/obtener-productos-por-marca/{id}', [FormaVentaController::class, 'show'])->name('productos.obtenerProductosPorMarca');
+
+
+        Route::get('productos/obtener-formas-venta-productos/{id}', [FormaVentaController::class, 'mostrarFormasVenta'])->name('productos.mostrarFormasVenta');
+
+
+        //Ruta de Forma Venta para el producto
+        Route::put('productos/editarFormaVenta/{id}',[FormaVentaController::class, 'updatePresentacionProducto'])->name('formaventas.editarNombreFormaVenta');
+
         
         //Rutas de Promocion
         Route::put('productos/agregarPromocion/{id}',[ProductoController::class, 'agregarPromocion'])->name('productos.agregarPromocion'); 
         Route::delete('productos/eliminarPromocion/{id}',[ProductoController::class, 'eliminarPromocion'])->name('productos.eliminarPromocion');
 
         //Rutas de actualizacion de datos de productos
-        Route::put('productos/editarFotografia/{id}',[ProductoController::class, 'editarFotografia'])->name('productos.editarFotografia');
-        Route::put('productos/editarCodigoManual/{id}',[ProductoController::class, 'editarCodigoManual'])->name('productos.updateCodigo');
-        Route::put('productos/editarCodigoAutogenerar/{id}',[ProductoController::class, 'editarCodigoAutogenerar'])->name('productos.autogenerarCodigo');
-        Route::put('productos/editarNombre/{id}',[ProductoController::class, 'editarNombre'])->name('productos.updateNombre');
-        Route::put('productos/editarProveedorMarcaLinea/{id}',[ProductoController::class, 'editarProveedorMarcaLinea'])->name('productos.updateProveedor');
-        Route::put('productos/editarDescripcion/{id}',[ProductoController::class, 'updateDescripcion'])->name('productos.updateDescripcion');
-        Route::put('productos/editarPrecioCompraProducto/{id}',[ProductoController::class, 'updatePrecioCompraProducto'])->name('productos.updatePrecioCompraProducto');
-        Route::put('productos/actualizarCantidadProducto/{id}', [ProductoController::class, 'actualizarCantidadProducto'])->name('productos.updateCantidadStock');
-        Route::put('productos/editarPrecioDesccripcionProducto/{id}',[ProductoController::class, 'updatePrecioDescripcionProducto'])->name('productos.updatePrecioDescripcionProducto');
-        Route::put('productos/editarPresentacionProducto/{id}',[ProductoController::class, 'updatePresentacionProducto'])->name('productos.updatePresentacionProducto');
         Route::put('productos/darBajaoAlta/{id}', [ProductoController::class, 'darBaja'])->name('productos.dardealtaobaja');
 
         //Ruta de informacion de productos de bajo stock
@@ -109,6 +107,28 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //Lotes de productos
         Route::get('lotes/obtenerProducto', [LotesController::class, 'obtenerProducto'])->name('lote.productos.buscarProducto');
         Route::get('lotes/obtenerDetalleProducto/{id}', [LotesController::class, 'obtenerDetalleProducto'])->name('lote.productos.detalleProducto');
+        Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
+
+        //Productos
+        Route::put('productos/actualizar-cantidad/{id}', [ProductoController::class, 'actualizarCantidadProducto'])->name('productos.updateCantidadStock');
+        Route::get('productos/obtener/nombres', [ProductoController::class, 'obtenerProductoPorNombre'])->name('productos.busquedaNombreProducto');
+        Route::get('productos/obtener/id/{id}', [ProductoController::class, 'obtenerProductoPorId'])->name('productos.busquedaIdProducto');
+
+        //----PRODUCTOS SECCION EDICION DE PEDIDOS DESDE ADMINISTRADOR----
+        Route::get('productos/obtener-productos-para-edicion', [ProductoController::class, 'obtenerProductosParaEdicion'])->name('productos.obtenerProductosParaEdicion');
+
+        //Pedido administrador Controller
+        Route::get('pedidos/administrador/visualizacion', [PedidoAdministradorController::class,'index'])->name('pedidos.administrador.visualizacion');
+        Route::get('pedidos/administrador/visualizacion/{id}/editar', [PedidoAdministradorController::class,'editarPedido'])->name('pedidos.administrador.editar');
+        Route::put('pedidos/administrador/visualizacion/actualizar/{id}', [PedidoAdministradorController::class,'agregarProductoPedido'])->name('pedidos.administrador.agregarProducto');
+        Route::delete('pedidos/administrador/visualizacion/eliminar-producto/{id}', [PedidoAdministradorController::class,'eliminarProductoPedido'])->name('pedidos.administrador.eliminarProducto');
+
+
+        //----------------EDICION DE VENTAS POR PEDIDO----------------//
+        Route::get('ventas/administrador/ventas-por-pedido', [VentaController::class,'ventasPorFechasContabilizadas'])->name('ventas.administrador.ventasPorPedido');
+        //------------------------------------------------
+
+
 
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
@@ -130,6 +150,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('productos/vendedor/ver-detalle-productos-promocion', [ProductoVendedorController::class, 'verDetalleProductosPromocion'])->name('productos.vendedor.verDetalleProductosPromocion');
         Route::get('productos/vendedor/ver-detalle-productos-formas-venta/{id}', [ProductoVendedorController::class, 'verDetalleFormaVenta'])->name('productos.vendedor.verFormasVenta');
         Route::get('productos/vendedor/ver-detalle-productos-promocion/{id}', [ProductoVendedorController::class, 'verDetallePromocion'])->name('productos.vendedor.verDetallePromocion');
+        
+        //registrar pedido desde vendedor
+        Route::get('pedido/vendedor/cliente/{id}', [PedidoController::class, 'crearPedido'])->name('registrar.pedido');
     });
     Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
 
@@ -142,7 +165,6 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::put('asignacionVendedores/registrar-atencion/{id}', [AsignacionVendedorController::class, 'registrarAtencion'])->name('registrarAtencion.sinpedido');
 
     //Crear pedidos desdee vendedor
-    Route::get('pedidos/vendedor/crear/{id}', [PedidoController::class, 'crearPedido'])->name('pedidos.vendedor.crear');
     Route::get('pedidos/vendedor/obtenerproducto/{id}', [PedidoController::class, 'ObtenerProductoParaPedido'])->name('pedidos.vendedor.obtenerProducto');
     Route::get('pedidos/vendedor/obtenerformaventa/{id}', [PedidoController::class, 'ObtenerFormaVenta'])->name('pedidos.vendedor.obtenerformaventa');
     Route::post('pedidos/vendedor/registrarpedido', [PedidoController::class, 'registrarPedido'])->name('pedidos.vendedor.registrarPedido');
@@ -155,7 +177,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
 
     //pedido administrador Controller
-    Route::get('pedidos/administrador/visualizacion', [PedidoAdministradorController::class,'index'])->name('pedidos.administrador.visualizacion');
+    
     Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
     Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
     
