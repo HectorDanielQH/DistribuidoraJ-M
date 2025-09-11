@@ -38,7 +38,7 @@ class AsignacionVendedorController extends Controller
                     }
                 })
                 ->addColumn('acciones', function($asignacion){
-                    $ruta=route('preventistas.registrar.pedido',  $asignacion->id_cliente);
+                    $ruta=route('preventistas.registrar.pedido', ['id' => $asignacion->id_cliente]);
                     $botones = '<div class="btn-group" role="group">';
                     if(!$asignacion->estado_pedido){
                         $botones .= '
