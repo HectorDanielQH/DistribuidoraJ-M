@@ -135,8 +135,6 @@
           { targets: 4, className: 'text-center align-middle', width:'110px' }
         ],
 
-        //eliminar "mostrando _ registros"
-        dom: '<"d-flex flex-column flex-md-row justify-content-between align-items-center mb-3"<"mb-2 mb-md-0"l><"mb-2 mb-md-0"f><"mb-2 mb-md-0"B>>rtip',
       });
     });
 
