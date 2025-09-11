@@ -266,13 +266,27 @@ class VentaController extends Controller
                     return number_format($venta->total, 2, '.', ',').' Bs.-';
                 })
                 ->addColumn('acciones', function($venta){
-                    return '<button class="btn btn-info btn-sm ver-detalle" data-numero-pedido="'.$venta->numero_pedido.'">
+                    return '<button class="btn btn-info btn-sm ver-detalle" fecha-contabilizacion="'.$venta->fecha_contabilizacion.'">
                                 <i class="fas fa-eye"></i> Ver Detalle
+                            </button>
+                            <button class="btn btn-primary btn-sm" fecha-contabilizacion="'.$venta->fecha_contabilizacion.'" onclick="abrirModalMoverFechaArqueo(this)">
+                                <i class="fas fa-exchange-alt"></i> Mover fecha de arqueo
                             </button>';
                 })
                 ->rawColumns(['acciones'])
                 ->make(true);
         }
         return view('administrador.ventas.ventas_por_pedido');
+    }
+
+    public function moverFechaArqueo(Request $request, string $fecha_arqueo)
+    {
+        $nueva_fecha = $request->input('nueva_fecha');
+        $ventas = Venta::whereDate('fecha_contabilizacion', $fecha_arqueo)->get();
+        foreach ($ventas as $venta) {
+            $venta->fecha_contabilizacion = $nueva_fecha;
+            $venta->save();
+        }
+        return response()->json(['message' => 'Fecha de arqueo actualizada correctamente.'], 200);
     }
 }

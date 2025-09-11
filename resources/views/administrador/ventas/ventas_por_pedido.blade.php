@@ -91,5 +91,48 @@
                 ],
             })
         });
+
+        function abrirModalMoverFechaArqueo(e){
+            let fecha_contabilizacion = $(e).attr('fecha-contabilizacion');
+            Swal.fire({
+                title: 'Mover Fecha de Arqueo',
+                html: `
+                    <p>Está a punto de mover la fecha de arqueo <strong>${fecha_contabilizacion}</strong>.</p>
+                    <p>Seleccione la nueva fecha de arqueo:</p>
+                    <input type="date" id="nueva-fecha-arqueo" class="form-control" />
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Mover Fecha',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    const nuevaFecha = Swal.getPopup().querySelector('#nueva-fecha-arqueo').value;
+                    if (!nuevaFecha) {
+                        Swal.showValidationMessage('Por favor, seleccione una nueva fecha de arqueo.');
+                    }
+                    return { nuevaFecha: nuevaFecha };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let nuevaFecha = result.value.nuevaFecha;
+                    $.ajax({
+                        url: "{{ route('administrador.ventas.administrador.moverFechaArqueo', ['fecha_arqueo' => ':fecha_contabilizacion']) }}".replace(':fecha_contabilizacion', fecha_contabilizacion),
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            _method: 'PUT',
+                            nueva_fecha: nuevaFecha,
+                        },
+                        success: function(response) {
+                            Swal.fire('Éxito', 'La fecha de arqueo ha sido movida exitosamente.', 'success').then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error', 'Hubo un problema al mover la fecha de arqueo. Inténtelo de nuevo.', 'error');
+                        }
+                    });
+                }
+            });
+        }
     </script>
 @stop

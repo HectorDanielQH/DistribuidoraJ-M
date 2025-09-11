@@ -126,6 +126,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //----------------EDICION DE VENTAS POR PEDIDO----------------//
         Route::get('ventas/administrador/ventas-por-pedido', [VentaController::class,'ventasPorFechasContabilizadas'])->name('ventas.administrador.ventasPorPedido');
+        Route::put('ventas/administrador/mover-fecha-arqueo/{fecha_arqueo}', [VentaController::class,'moverFechaArqueo'])->name('ventas.administrador.moverFechaArqueo');
         //------------------------------------------------
 
 
