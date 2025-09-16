@@ -185,9 +185,11 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     //pdf vendedor
     Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
 
-    //pedido administrador Controller
-    
+    //pedido administrador Controller--producto despachado
     Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
+   
+    
+
     Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
     
     Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
@@ -202,7 +204,10 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::delete('pedidos/administrador/producto/eliminar-promocion/total/{id}', [PedidoAdministradorController::class,'productoEliminarPromocionTotal'])->name('pedidos.administrador.producto.eliminar.promocion.total');
     Route::post('pedidos/administrador/producto/contabilizar-pedidos-pendientes',[PedidoAdministradorController::class,'contabilizarPedidosPendientes'])->name('pedidos.administrador.contabilizarTodosLosPendientes');
     //pedido administrador pdf
+    
     Route::get('pedidos/administrador/visualizacion-pdf-despachar', [PedidoAdministradorController::class,'visualizacionPdfDespachar'])->name('pedidos.administrador.visualizacionPdfDespachar');
+
+    Route::get('pedidos/administrador/visualizacion-pdf-despachar-pendientes', [PedidoAdministradorController::class,'visualizacionPdfDespacharPendientes'])->name('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes');
 
     //rendimiento personal Controller
     Route::get('rendimientopersonal/obtener-rendimiento-personal/{id}', [RendimientoPersonalController::class, 'rendimientoPersonal'])->name('rendimientopersonal.obtenerRendimientoPersonal');

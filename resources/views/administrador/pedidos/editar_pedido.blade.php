@@ -106,6 +106,7 @@
         <table class="table table-striped table-bordered" id="pedidosTabla">
             <thead>
                 <tr>
+                    <th>Imagen</th>
                     <th>Producto</th>
                     <th>Precio Venta</th>
                     <th>Cantidad</th>
@@ -174,6 +175,7 @@
                     url: "{{ route('administrador.pedidos.administrador.editar', $pedido->numero_pedido) }}",
                 },
                 columns: [
+                    { data: 'imagen',   name: 'producto',   defaultContent: 'N/A' },
                     { data: 'producto',   name: 'producto',   defaultContent: 'N/A' },
                     { data: 'precio_venta', className: 'text-end', orderable: false, searchable: false },
                     { data: 'cantidad',     className: 'text-center' },
