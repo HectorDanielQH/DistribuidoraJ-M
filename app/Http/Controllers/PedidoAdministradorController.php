@@ -63,7 +63,6 @@ class PedidoAdministradorController extends Controller
                     >
                         <i class="fas fa-edit"></i>
                     </a>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="eliminarPedidoCliente(this)" id-numero-pedido="' . $pedido->numero_pedido . '"><i class="fas fa-trash"></i></button>
                     ';
                     $botones .= '</div>';
                     return $botones;

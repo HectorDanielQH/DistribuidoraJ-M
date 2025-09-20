@@ -160,7 +160,9 @@
                 responsive: true,
                 language: { url: '/i18n/es-ES.json' },
                 pageLength: 5,
-                lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+                lengthMenu: [[5, 10, 25, 50, -1
+
+                ], [5, 10, 25, 50, 'Todos']],
                 ajax: {
                 url: "{{ route('administrador.productos.index') }}",
                 type: "GET",
@@ -179,17 +181,55 @@
                 columnDefs: [
                     { targets: '_all', className: 'dt-head-center dt-body-center align-middle td-center' }
                 ],
-                // Tras cada draw, si hay flex/imagenes, céntralos también
-                drawCallback: function () {
-                    const $w = $('#tabla-productos_wrapper');
-                    // Centrar flex internos de celdas centradas
-                    $w.find('td.td-center .d-flex').addClass('justify-content-center');
-                    // Centrar imágenes
-                    $w.find('td.td-center img').addClass('d-block mx-auto');
-                }
+                dom:
+                    "<'row align-items-center mb-2'<'col-12 d-flex flex-wrap justify-content-between gap-2'\
+                        <'d-flex flex-wrap align-items-center gap-2 dt-left'Bl>\
+                        <'dt-right'f>>>\
+                    <'row'<'col-12'tr>>\
+                    <'row align-items-center mt-2'<'col-12 d-flex flex-wrap justify-content-between gap-2'\
+                        <'dt-info'i><'dt-paging'p>>>",
+
+                buttons: [
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
+                        className: 'btn btn-danger',
+                        titleAttr: 'Exportar a PDF',
+                        exportOptions: { columns: [0,2,3,4,5] },
+                        customize: function (doc) {
+                                doc.styles.title = { color: '#4a4a4a', fontSize: 20, alignment: 'center' };
+                                doc.styles.tableHeader = { fillColor: '#1abc9c', color: 'white', alignment: 'center' };
+                                if (doc.content[1]) {
+                                doc.content[1].margin = [0,0,0,0];
+                                doc.content[1].layout = {
+                                    hLineWidth: () => 0.5, vLineWidth: () => 0.5,
+                                    hLineColor: () => '#aaa', vLineColor: () => '#aaa',
+                                    paddingLeft: () => 4, paddingRight: () => 4
+                                };
+                                }
+                            }
+                        },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Imprimir',
+                        className: 'btn btn-info',
+                        titleAttr: 'Imprimir',
+                        exportOptions: { columns: ':visible' }
+                    },
+                    {
+                        extend: 'pageLength',
+                        className: 'btn btn-secondary',
+                        titleAttr: 'Cantidad de filas a mostrar'
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fas fa-columns"></i> Columnas',
+                        className: 'btn btn-secondary',
+                        titleAttr: 'Columnas'
+                    }
+                ],
             });
         });
-
     </script>
     <script>
         $(document).ready(function() {
