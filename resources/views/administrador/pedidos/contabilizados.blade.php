@@ -162,7 +162,7 @@
                                 `El pedido Nro. ${numero_pedido} ha sido recontabilizado.`,
                                 'success'
                             );
-                            $('#tablaPedidosContabilizados').DataTable().ajax.reload();
+                            $('#tablaPedidosContabilizados').DataTable().ajax.reload(null, false);
                         },
                         error: function(xhr) {
                             Swal.fire(
