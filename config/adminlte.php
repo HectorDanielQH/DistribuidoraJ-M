@@ -401,6 +401,12 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'text' => 'Pedidos Contabilizados',
+            'route' => 'administrador.pedidos.administrador.visualizacionContabilizados',
+            'icon' => 'fas fa-fw fa-shopping-cart',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'header' => '.:: VENTAS ::.',
             'can' => 'administrador.permisos',
         ],

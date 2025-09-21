@@ -158,11 +158,9 @@
                 processing: true,
                 serverSide: true,
                 responsive: true,
+                pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
                 language: { url: '/i18n/es-ES.json' },
-                pageLength: 5,
-                lengthMenu: [[5, 10, 25, 50, -1
-
-                ], [5, 10, 25, 50, 'Todos']],
                 ajax: {
                 url: "{{ route('administrador.productos.index') }}",
                 type: "GET",
@@ -177,55 +175,37 @@
                     { data: 'promocion_vista', orderable: false, searchable: false , width: '10%' },
                     { data: 'acciones', orderable: false, searchable: false , width: '15%' },
                 ],
-                 // Centrar header y body en TODAS las columnas
-                columnDefs: [
-                    { targets: '_all', className: 'dt-head-center dt-body-center align-middle td-center' }
-                ],
-                dom:
-                    "<'row align-items-center mb-2'<'col-12 d-flex flex-wrap justify-content-between gap-2'\
-                        <'d-flex flex-wrap align-items-center gap-2 dt-left'Bl>\
-                        <'dt-right'f>>>\
-                    <'row'<'col-12'tr>>\
-                    <'row align-items-center mt-2'<'col-12 d-flex flex-wrap justify-content-between gap-2'\
-                        <'dt-info'i><'dt-paging'p>>>",
-
+                dom: `
+                    <'row mb-2'<'col-12 d-flex justify-content-between align-items-center'Bf>>
+                    <'row'<'col-12'tr>>
+                    <'row'<'col-12 d-flex justify-content-between align-items-center'ip>>
+                `,
                 buttons: [
-                    {
-                        extend: 'pdfHtml5',
-                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
-                        className: 'btn btn-danger',
-                        titleAttr: 'Exportar a PDF',
-                        exportOptions: { columns: [0,2,3,4,5] },
-                        customize: function (doc) {
-                                doc.styles.title = { color: '#4a4a4a', fontSize: 20, alignment: 'center' };
-                                doc.styles.tableHeader = { fillColor: '#1abc9c', color: 'white', alignment: 'center' };
-                                if (doc.content[1]) {
-                                doc.content[1].margin = [0,0,0,0];
-                                doc.content[1].layout = {
-                                    hLineWidth: () => 0.5, vLineWidth: () => 0.5,
-                                    hLineColor: () => '#aaa', vLineColor: () => '#aaa',
-                                    paddingLeft: () => 4, paddingRight: () => 4
-                                };
-                                }
-                            }
-                        },
-                    {
-                        extend: 'print',
-                        text: '<i class="fas fa-print"></i> Imprimir',
-                        className: 'btn btn-info',
-                        titleAttr: 'Imprimir',
-                        exportOptions: { columns: ':visible' }
-                    },
                     {
                         extend: 'pageLength',
                         className: 'btn btn-secondary',
-                        titleAttr: 'Cantidad de filas a mostrar'
+                        text: '<i class="fas fa-list-ol"></i> Mostrar filas',
+                        titleAttr: 'Mostrar filas'
                     },
                     {
                         extend: 'colvis',
-                        text: '<i class="fas fa-columns"></i> Columnas',
                         className: 'btn btn-secondary',
+                        text: '<i class="fas fa-columns"></i> Columnas',
                         titleAttr: 'Columnas'
+                    },
+                    /*html*/
+                    {
+                        extend: 'pdfHtml5',
+                        className: 'btn btn-danger',
+                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
+                        titleAttr: 'Exportar a PDF',
+                    },
+                    /*imprimir*/
+                    {
+                        extend: 'print',
+                        className: 'btn btn-info',
+                        text: '<i class="fas fa-print"></i> Imprimir',
+                        titleAttr: 'Imprimir',
                     }
                 ],
             });

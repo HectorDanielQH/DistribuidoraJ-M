@@ -24,7 +24,7 @@
                     <th>Cliente</th>
                     <th>Fecha pedido</th>
                     <th>Fecha entrega</th>
-                    <th>Monto estimado</th>
+                    <th>Monto Contabilizado</th>
                     <th>Preventista</th>
                     <th>Ruta</th>
                     <th>Acciones</th>
@@ -79,13 +79,13 @@
             serverSide: true,
             responsive: true,
             language: {url: '/i18n/es-ES.json'},
-            ajax: "{{ route('pedidos.administrador.devolucionPedido') }}",
+            ajax: "{{ route('administrador.pedidos.administrador.visualizacionContabilizados') }}",
             columns: [
                 { data: 'numero_pedido', name: 'numero_pedido' },
                 { data: 'cliente', name: 'cliente' },
                 { data: 'fecha_pedido', name: 'fecha_entrega' },
                 { data: 'fecha_entrega', name: 'fecha_entrega' },
-                { data: 'monto_estimado', name: 'monto_estimado' },
+                { data: 'monto_contabilizado', name: 'monto_contabilizado' },
                 { data: 'preventista', name: 'preventista' },
                 { data: 'ruta', name: 'ruta' },
                 { data: 'acciones', name: 'acciones', orderable: false, searchable: false },

@@ -266,7 +266,7 @@ class VentaController extends Controller
                     return number_format($venta->total, 2, '.', ',').' Bs.-';
                 })
                 ->addColumn('acciones', function($venta){
-                    return '<a class="btn btn-info btn-sm ver-detalle" href="'.route('administrador.ventas.administrador.visualizacionVentasPorFechaArqueo',['fecha_arqueo' => $venta->fecha_contabilizacion]).'">
+                    return '<a class="btn btn-info btn-sm ver-detalle" href="'.route('administrador.ventas.administrador.verVentaPorFechaArqueo',['fecha_arqueo' => $venta->fecha_contabilizacion]).'">
                                 <i class="fas fa-eye"></i> Ver Detalle
                             </a>
                             <button class="btn btn-primary btn-sm" fecha-contabilizacion="'.$venta->fecha_contabilizacion.'" onclick="abrirModalMoverFechaArqueo(this)">
@@ -318,5 +318,76 @@ class VentaController extends Controller
             ->get();
 
         return view('administrador.ventas.visualizacion_ventas_por_fecha_arqueo', compact('ventas', 'fecha_arqueo'));
+    }
+
+
+    public function verVentaPorFechaArqueo(Request $request, string $fecha_arqueo)
+    {
+        // Interpretamos la fecha recibida (YYYY-MM-DD) y armamos el rango del día
+        $inicio = Carbon::parse($fecha_arqueo)->startOfDay();   // 00:00:00
+        $fin    = Carbon::parse($fecha_arqueo)->endOfDay();     // 23:59:59
+
+        if ($request->ajax()) {
+            $query = DB::table('ventas')
+                ->whereBetween('ventas.fecha_contabilizacion', [$inicio, $fin]) // usa índice
+                ->orderBy('ventas.numero_pedido', 'asc');
+
+            return DataTables::of($query)
+                ->addColumn('numero_pedido', function($venta) {
+                    return $venta->numero_pedido;
+                })
+                ->addColumn('cliente', function($venta) {
+                    $cliente = Cliente::find($venta->id_cliente);
+                    if ($cliente) {
+                        return $cliente->nombres . ' ' . $cliente->apellidos;
+                    } else {
+                        return 'N/A';
+                    }
+                })
+                ->addColumn('fecha_pedido', function($venta) {
+                    $pedidos = Pedido::where('numero_pedido', $venta->numero_pedido)->first();
+                    if ($pedidos) {
+                        return Carbon::parse($pedidos->fecha_pedido)->format('d/m/Y H:i');
+                    } else {
+                        return 'N/A';
+                    }
+                })
+                ->addColumn('fecha_entrega', function($venta) {
+                    return Carbon::parse($venta->fecha_contabilizacion)->format('d/m/Y H:i');
+                })
+                ->addColumn('monto_contabilizado', function($venta) {
+                    $formaVenta = DB::table('forma_ventas')->where('id', $venta->id_forma_venta)->first();
+                    if ($formaVenta) {
+                        $monto = $venta->cantidad * $formaVenta->precio_venta;
+                        return number_format($monto, 2, '.', ',').' Bs.-';
+                    } else {
+                        return 'N/A';
+                    }
+                })
+                ->addColumn('preventista', function($venta) {
+                    $usuario = User::find($venta->id_usuario);
+                    if ($usuario) {
+                        return $usuario->nombres . ' ' . $usuario->apellido_paterno . ' ' . $usuario->apellido_materno;
+                    } else {
+                        return 'N/A';
+                    }
+                })
+                ->addColumn('ruta', function($venta) {
+                    $cliente = Cliente::find($venta->id_cliente);
+                    if ($cliente) {
+                        return $cliente->ruta->nombre_ruta ?? 'N/A';
+                    } else {
+                        return 'N/A';
+                    }
+                })
+                ->make(true);
+        }
+
+        $total_monto_contabilizado = DB::table('ventas')
+            ->whereBetween('ventas.fecha_contabilizacion', [$inicio, $fin])
+            ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
+            ->value('total');
+
+        return view('administrador.ventas.ver_venta_por_fecha_arqueo', compact('fecha_arqueo','total_monto_contabilizado'));
     }
 }

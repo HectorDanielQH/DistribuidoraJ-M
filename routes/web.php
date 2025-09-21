@@ -129,9 +129,26 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('ventas/administrador/ventas-por-pedido', [VentaController::class,'ventasPorFechasContabilizadas'])->name('ventas.administrador.ventasPorPedido');
         Route::put('ventas/administrador/mover-fecha-arqueo/{fecha_arqueo}', [VentaController::class,'moverFechaArqueo'])->name('ventas.administrador.moverFechaArqueo');
         Route::get('ventas/administrador/ventas-por-pedido/{fecha_arqueo}', [VentaController::class,'visualizacionVentasPorFechaArqueo'])->name('ventas.administrador.visualizacionVentasPorFechaArqueo');
-        //------------------------------------------------
 
 
+        Route::get('ventas/administrador/ventas-por-pedido/{fecha_arqueo}/ver', [VentaController::class,'verVentaPorFechaArqueo'])->name('ventas.administrador.verVentaPorFechaArqueo');
+        //-----------------------------------------------------------------------
+
+        //-----------------------PEDIDOS DESPACHADOS-----------------------//
+
+        Route::get('pedidos/administrador/visualizacion/{id}/editar-despachados', [PedidoAdministradorController::class,'editarPedidoDespachado'])->name('pedidos.administrador.editar.despachados');
+        Route::put('pedidos/administrador/visualizacion/actualizar-despachados/{id}', [PedidoAdministradorController::class,'agregarProductoPedidoDespachado'])->name('pedidos.administrador.agregarProducto.despachados');
+        Route::delete('pedidos/administrador/visualizacion/eliminar-producto/despachados/{id}', [PedidoAdministradorController::class,'eliminarProductoPedidoDespachado'])->name('pedidos.administrador.eliminarProducto.despachados');
+
+        //-----------------------------------------------------------------------
+
+        //-----------------------PEDIDOS CONTABILIZADOS-----------------------//
+        Route::get('pedidos/administrador/visualizacion-contabilizados', [PedidoAdministradorController::class,'visualizacionContabilizados'])->name('pedidos.administrador.visualizacionContabilizados');
+        Route::get('pedidos/administrador/visualizacion/{id}/editar-contabilizados', [PedidoAdministradorController::class,'editarPedidoContabilizado'])->name('pedidos.administrador.editar.contabilizados');
+        
+        Route::put('pedidos/administrador/visualizacion/actualizar-contabilizado/{id}', [PedidoAdministradorController::class,'agregarProductoPedidoContabilizado'])->name('pedidos.administrador.agregarProducto.contabilizado');
+        Route::delete('pedidos/administrador/visualizacion/eliminar-producto/contabilizado/{id}', [PedidoAdministradorController::class,'eliminarProductoPedidoContabilizado'])->name('pedidos.administrador.eliminarProducto.contabilizado');
+        //--------------------------------------------------------------------//
 
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
@@ -194,7 +211,12 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     
     Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
     Route::post('pedidos/administrador/despachar-pedidos', [PedidoAdministradorController::class,'despacharPedido'])->name('pedidos.administrador.despacharPedido');
+    
+    //--------------------------------DEVOLUCION DE PEDIDOS DESPACHADOS-----------------------------
     Route::get('pedidos/administrador/devolucion-pedidos', [PedidoAdministradorController::class,'devolucionPedido'])->name('pedidos.administrador.devolucionPedido');
+
+
+
     Route::get('pedidos/administrador/devolucion-pedidos-numero-pedido/{pedido}', [PedidoAdministradorController::class,'devolucionPedidoDevolucion'])->name('pedidos.administrador.devolucionPedidoDevolucion');
 
     Route::put('pedidos/administrador/devolucion-pedidos-numero-pedido/cantidad/{id}', [PedidoAdministradorController::class,'devolucionPedidoDevolucionCantidad'])->name('pedidos.administrador.devolucionPedidoDevolucion.cantidad');

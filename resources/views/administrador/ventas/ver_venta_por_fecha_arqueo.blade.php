@@ -8,29 +8,42 @@
             <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
             </h1>
-            <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
-                Panel en pedidos proceso de despacho y/o entrega
+            <span class="text-white" style="font-size: 1.2rem; font-weight: 500;">
+                Panel de Ventas Realizadas (Arqueos Contabilizados) {{$fecha_arqueo}}
             </span>
         </div>
     </div>
 @stop
 
 @section('content')
-    <div class="container">
-        <table class="table table-striped table-bordered" id="tablaPedidosContabilizados" >
-            <thead>
-                <tr>
-                    <th>Nro. Pedido</th>
-                    <th>Cliente</th>
-                    <th>Fecha pedido</th>
-                    <th>Fecha entrega</th>
-                    <th>Monto estimado</th>
-                    <th>Preventista</th>
-                    <th>Ruta</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-        </table>
+    {{-- DETALLE AGRUPADO POR USUARIO → PEDIDOS --}}
+    <div class="container mt-4">
+            <table id="tabla-ventas" class="table table-striped table-bordered  mt-4">
+                <thead>
+                    <tr>
+                        <th>Nro. Pedido</th>
+                        <th>Cliente</th>
+                        <th>Fecha pedido</th>
+                        <th>Fecha entrega</th>
+                        <th>Monto Contabilizado</th>
+                        <th>Preventista</th>
+                        <th>Ruta</th>
+                    </tr>
+                </thead>
+                <tfoot>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>
+                            {{$total_monto_contabilizado}} Bs.-
+                        </th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
     </div>
 @stop
 
@@ -38,7 +51,6 @@
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
-  
 
     <style>
         input.form-control:focus, select.form-control:focus {
@@ -72,58 +84,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
-
+    
     <script>
-        $('#tablaPedidosContabilizados').DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            language: {url: '/i18n/es-ES.json'},
-            ajax: "{{ route('pedidos.administrador.devolucionPedido') }}",
-            columns: [
-                { data: 'numero_pedido', name: 'numero_pedido' },
-                { data: 'cliente', name: 'cliente' },
-                { data: 'fecha_pedido', name: 'fecha_entrega' },
-                { data: 'fecha_entrega', name: 'fecha_entrega' },
-                { data: 'monto_estimado', name: 'monto_estimado' },
-                { data: 'preventista', name: 'preventista' },
-                { data: 'ruta', name: 'ruta' },
-                { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
-            ],
-            order: [[0, 'desc']],
-            dom: `
-                    <'row mb-2'<'col-12 d-flex justify-content-between align-items-center'Bf>>
-                    <'row'<'col-12'tr>>
-                    <'row'<'col-12 d-flex justify-content-between align-items-center'ip>>
-                `,
-                buttons: [
-                    {
-                        extend: 'pageLength',
-                        className: 'btn btn-secondary',
-                        text: '<i class="fas fa-list-ol"></i> Mostrar filas',
-                        titleAttr: 'Mostrar filas'
-                    },
-                    {
-                        extend: 'colvis',
-                        className: 'btn btn-secondary',
-                        text: '<i class="fas fa-columns"></i> Columnas',
-                        titleAttr: 'Columnas'
-                    },
-                    /*html*/
-                    {
-                        extend: 'pdfHtml5',
-                        className: 'btn btn-danger',
-                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
-                        titleAttr: 'Exportar a PDF',
-                    },
-                    /*imprimir*/
-                    {
-                        extend: 'print',
-                        className: 'btn btn-info',
-                        text: '<i class="fas fa-print"></i> Imprimir',
-                        titleAttr: 'Imprimir',
-                    }
+        $(document).ready(function() {
+            $('#tabla-ventas').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                pageLength: 10,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
+                language: { url: '/i18n/es-ES.json' },
+                ajax: "{{ route('administrador.ventas.administrador.verVentaPorFechaArqueo', ':fecha_arqueo') }}".replace(':fecha_arqueo', '{{ $fecha_arqueo }}'),
+                columns: [
+                    { data: 'numero_pedido', name: 'numero_pedido' },
+                    { data: 'cliente', name: 'cliente' },
+                    { data: 'fecha_pedido', name: 'fecha_pedido' },
+                    { data: 'fecha_entrega', name: 'fecha_entrega' },
+                    { data: 'monto_contabilizado', name: 'monto_contabilizado' },
+                    { data: 'preventista', name: 'preventista' },
+                    { data: 'ruta', name: 'ruta' }
                 ],
+                order: [[0, 'asc']],
             });
+        });
     </script>
 @stop
