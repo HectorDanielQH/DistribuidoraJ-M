@@ -96,34 +96,92 @@
                     <'row'<'col-12'tr>>
                     <'row'<'col-12 d-flex justify-content-between align-items-center'ip>>
                 `,
-                buttons: [
-                    {
-                        extend: 'pageLength',
-                        className: 'btn btn-secondary',
-                        text: '<i class="fas fa-list-ol"></i> Mostrar filas',
-                        titleAttr: 'Mostrar filas'
-                    },
-                    {
-                        extend: 'colvis',
-                        className: 'btn btn-secondary',
-                        text: '<i class="fas fa-columns"></i> Columnas',
-                        titleAttr: 'Columnas'
-                    },
-                    /*html*/
-                    {
-                        extend: 'pdfHtml5',
-                        className: 'btn btn-danger',
-                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
-                        titleAttr: 'Exportar a PDF',
-                    },
-                    /*imprimir*/
-                    {
-                        extend: 'print',
-                        className: 'btn btn-info',
-                        text: '<i class="fas fa-print"></i> Imprimir',
-                        titleAttr: 'Imprimir',
+            buttons: [
+                {
+                    extend: 'pageLength',
+                    className: 'btn btn-secondary',
+                    text: '<i class="fas fa-list-ol"></i> Mostrar filas',
+                    titleAttr: 'Mostrar filas'
+                },
+                {
+                    extend: 'colvis',
+                    className: 'btn btn-secondary',
+                    text: '<i class="fas fa-columns"></i> Columnas',
+                    titleAttr: 'Columnas'
+                },
+                /*html*/
+                {
+                    extend: 'pdfHtml5',
+                    className: 'btn btn-danger',
+                    text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
+                    titleAttr: 'Exportar a PDF',
+                },
+                /*imprimir*/
+                {
+                    extend: 'print',
+                    className: 'btn btn-info',
+                    text: '<i class="fas fa-print"></i> Imprimir',
+                    titleAttr: 'Imprimir',
+                }
+            ],
+        });
+
+        function recontabilizar_pedido(button) {
+            let numero_pedido = $(button).attr('data-id-pedido');
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `Esta acción recontabilizará el pedido Nro. ${numero_pedido}.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, recontabilizar',
+                cancelButtonText: 'Cancelar',
+                input: 'date',
+                inputLabel: 'Selecciona la nueva fecha de contabilización',
+                preConfirm: (fecha) => {
+                    if (!fecha) {
+                        Swal.showValidationMessage('Por favor, selecciona una fecha válida.');
                     }
-                ],
+                    return fecha;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let nueva_fecha = result.value;
+                    $.ajax({
+                        url: '{{ route("administrador.pedidos.administrador.recontabilizarPedido", ":numero_pedido") }}'.replace(':numero_pedido', numero_pedido),
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            _method: 'PUT',
+                            fecha_contabilizacion: nueva_fecha
+                        },
+                        success: function(response) {
+                            Swal.fire(
+                                'Recontabilizado',
+                                `El pedido Nro. ${numero_pedido} ha sido recontabilizado.`,
+                                'success'
+                            );
+                            $('#tablaPedidosContabilizados').DataTable().ajax.reload();
+                        },
+                        error: function(xhr) {
+                            Swal.fire(
+                                'Error',
+                                'Hubo un problema al recontabilizar el pedido.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            })
+            .catch(() => {
+                Swal.fire(
+                    'Cancelado',
+                    'La acción ha sido cancelada.',
+                    'info'
+                );
             });
+        }
+        
     </script>
 @stop

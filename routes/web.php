@@ -148,6 +148,10 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         
         Route::put('pedidos/administrador/visualizacion/actualizar-contabilizado/{id}', [PedidoAdministradorController::class,'agregarProductoPedidoContabilizado'])->name('pedidos.administrador.agregarProducto.contabilizado');
         Route::delete('pedidos/administrador/visualizacion/eliminar-producto/contabilizado/{id}', [PedidoAdministradorController::class,'eliminarProductoPedidoContabilizado'])->name('pedidos.administrador.eliminarProducto.contabilizado');
+
+
+        Route::put('pedidos/administrador/recontabilizar-pedido/{numero_pedido}', [PedidoAdministradorController::class,'recontabilizarPedido'])->name('pedidos.administrador.recontabilizarPedido');
+
         //--------------------------------------------------------------------//
 
         //Rutas generales de administrador

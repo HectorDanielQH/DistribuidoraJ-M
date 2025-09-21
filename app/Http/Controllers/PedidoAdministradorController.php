@@ -846,6 +846,14 @@ class PedidoAdministradorController extends Controller
                         >
                             <i class="fas fa-edit"></i>
                         </a>
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            onclick="recontabilizar_pedido(this)"
+                            data-id-pedido="'.$pedido->numero_pedido.'"
+                        >
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     ';
                     $botones .= '</div>';
                     return $botones;
@@ -951,6 +959,7 @@ class PedidoAdministradorController extends Controller
         ]);
 
         if($pedido_actual->estado_pedido==true){
+            $venta_contabilizada=Venta::where('numero_pedido', $pedido_actual->numero_pedido)->first();
             Venta::where('numero_pedido', $pedido_actual->numero_pedido)->delete();
             $pedidos_restantes=Pedido::where('numero_pedido', $pedido_actual->numero_pedido)->get();
             foreach($pedidos_restantes as $p){
@@ -960,7 +969,7 @@ class PedidoAdministradorController extends Controller
                     'id_producto' => $p->id_producto,
                     'id_forma_venta' => $p->id_forma_venta,
                     'numero_pedido' => $p->numero_pedido,
-                    'fecha_contabilizacion' => Venta::where('numero_pedido', $p->numero_pedido)->first()->fecha_contabilizacion??now(),
+                    'fecha_contabilizacion' => $venta_contabilizada->fecha_contabilizacion,
                     'cantidad' => $p->cantidad,
                     'promocion' => $p->promocion,
                     'descripcion_descuento_porcentaje' => $p->descripcion_descuento_porcentaje,
@@ -988,6 +997,7 @@ class PedidoAdministradorController extends Controller
         $pedido->delete();
 
         if(Pedido::where('numero_pedido', $pedido->numero_pedido)->where('estado_pedido', true)->exists()){
+            $venta_contabilizada=Venta::where('numero_pedido', $pedido->numero_pedido)->first();
             Venta::where('numero_pedido', $pedido->numero_pedido)->delete();
             $pedidos_restantes=Pedido::where('numero_pedido', $pedido->numero_pedido)->get();
             foreach($pedidos_restantes as $p){
@@ -997,7 +1007,7 @@ class PedidoAdministradorController extends Controller
                     'id_producto' => $p->id_producto,
                     'id_forma_venta' => $p->id_forma_venta,
                     'numero_pedido' => $p->numero_pedido,
-                    'fecha_contabilizacion' => Venta::where('numero_pedido', $p->numero_pedido)->first()->fecha_contabilizacion??now(),
+                    'fecha_contabilizacion' => $venta_contabilizada->fecha_contabilizacion,
                     'cantidad' => $p->cantidad,
                     'promocion' => $p->promocion,
                     'descripcion_descuento_porcentaje' => $p->descripcion_descuento_porcentaje,
@@ -1010,5 +1020,29 @@ class PedidoAdministradorController extends Controller
         }
 
         return response()->json(['success' => true, 'mensaje' => 'Producto eliminado del pedido correctamente.']);
+    }
+
+
+    public function recontabilizarPedido(Request $request, string $numero_pedido){
+        if(!Pedido::where('numero_pedido', $numero_pedido)->where('estado_pedido', true)->exists()){
+            return response()->json(['error' => 'El pedido no está contabilizado.'], 400);
+        }
+        Venta::where('numero_pedido', $numero_pedido)->delete();
+        $pedidos_restantes=Pedido::where('numero_pedido', $numero_pedido)->get();
+        foreach($pedidos_restantes as $p){
+            Venta::create([
+                'id_usuario' => $p->id_usuario,
+                'id_cliente' => $p->id_cliente,
+                'id_producto' => $p->id_producto,
+                'id_forma_venta' => $p->id_forma_venta,
+                'numero_pedido' => $p->numero_pedido,
+                'fecha_contabilizacion' => $request->input('fecha_contabilizacion').' 00:00:00',
+                'cantidad' => $p->cantidad,
+                'promocion' => $p->promocion,
+                'descripcion_descuento_porcentaje' => $p->descripcion_descuento_porcentaje,
+                'descripcion_regalo' => $p->descripcion_regalo
+            ]);
+        }
+        return response()->json(['success' => true, 'mensaje' => 'Pedido recontabilizado correctamente.'], 200);
     }
 }
