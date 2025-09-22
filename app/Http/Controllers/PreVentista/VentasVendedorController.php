@@ -20,8 +20,7 @@ class VentasVendedorController extends Controller
                 ->groupBy(DB::raw('DATE(fecha_contabilizacion)'))
                 ->where('id_usuario', $user->id)
                 ->whereNot(function($query){
-                    $query->whereBetween('fecha_contabilizacion', ['2025-09-16 00:00:00', '2025-09-16 23:59:59'])
-                            ->orWhereBetween('fecha_contabilizacion', ['2025-09-18 00:00:00', '2025-09-18 23:59:59']);
+                    $query->whereBetween('fecha_contabilizacion', ['2025-09-16 00:00:00', '2025-09-16 23:59:59']);
                 })
                 ->orderBy('fecha_contabilizacion', 'desc');
 
