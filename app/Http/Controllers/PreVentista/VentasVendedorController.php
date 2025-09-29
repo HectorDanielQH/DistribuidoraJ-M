@@ -21,6 +21,7 @@ class VentasVendedorController extends Controller
                 ->where('id_usuario', $user->id)
                 ->whereNot(function($query){
                     $query->whereBetween('fecha_contabilizacion', ['2025-09-16 00:00:00', '2025-09-16 23:59:59']);
+                    $query->orWhere('fecha_contabilizacion','>=', '2025-09-18');
                 })
                 ->orderBy('fecha_contabilizacion', 'desc');
 
