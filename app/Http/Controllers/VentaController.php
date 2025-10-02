@@ -329,7 +329,9 @@ class VentaController extends Controller
 
         if ($request->ajax()) {
             $query = DB::table('ventas')
-                ->whereBetween('ventas.fecha_contabilizacion', [$inicio, $fin]) // usa índice
+                ->select('ventas.numero_pedido', 'ventas.id_cliente', 'ventas.id_usuario')
+                ->whereBetween('ventas.fecha_contabilizacion', [$inicio, $fin])
+                ->groupBy('ventas.numero_pedido', 'ventas.id_cliente', 'ventas.id_usuario')
                 ->orderBy('ventas.numero_pedido', 'asc');
 
             return DataTables::of($query)
@@ -347,22 +349,24 @@ class VentaController extends Controller
                 ->addColumn('fecha_pedido', function($venta) {
                     $pedidos = Pedido::where('numero_pedido', $venta->numero_pedido)->first();
                     if ($pedidos) {
-                        return Carbon::parse($pedidos->fecha_pedido)->format('d/m/Y H:i');
+                        return Carbon::parse($pedidos->created_at)->format('d/m/Y H:i');
                     } else {
                         return 'N/A';
                     }
                 })
                 ->addColumn('fecha_entrega', function($venta) {
-                    return Carbon::parse($venta->fecha_contabilizacion)->format('d/m/Y H:i');
-                })
-                ->addColumn('monto_contabilizado', function($venta) {
-                    $formaVenta = DB::table('forma_ventas')->where('id', $venta->id_forma_venta)->first();
-                    if ($formaVenta) {
-                        $monto = $venta->cantidad * $formaVenta->precio_venta;
-                        return number_format($monto, 2, '.', ',').' Bs.-';
+                    $pedidos = Pedido::where('numero_pedido', $venta->numero_pedido)->first();
+                    if ($pedidos) {
+                        return Carbon::parse($pedidos->fecha_entrega)->format('d/m/Y H:i');
                     } else {
                         return 'N/A';
                     }
+                })
+                ->addColumn('monto_contabilizado', function($venta) {
+                    $total = DB::table('ventas')
+                        ->where('numero_pedido', $venta->numero_pedido)
+                        ->sum(DB::raw('cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)'));
+                    return number_format($total, 2, '.', ',').' Bs.-';
                 })
                 ->addColumn('preventista', function($venta) {
                     $usuario = User::find($venta->id_usuario);
