@@ -422,6 +422,12 @@ return [
             'icon' => 'fas fa-fw fa-edit',
             'can' => 'administrador.permisos',
         ],
+        [
+            'text' => 'Agregar Venta',
+            'route' => 'administrador.ventas.administrador.crearVenta',
+            'icon' => 'fas fa-fw fa-plus',
+            'can' => 'administrador.permisos',
+        ],
         /*
         [
             'header' => '.:: REPORTES ::.',

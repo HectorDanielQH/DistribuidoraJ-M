@@ -154,6 +154,13 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //--------------------------------------------------------------------//
 
+        //---------------------------VENTAS--------------------------------//
+
+        Route::get('ventas/administrador/crear-venta', [VentaController::class,'crearVenta'])->name('ventas.administrador.crearVenta');
+        Route::post('ventas/administrador/guardar-venta', [VentaController::class,'guardarVenta'])->name('ventas.administrador.guardarVenta');
+
+        //-----------------------------------------------------------------//
+
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
         Route::resource('proveedores', ProveedorController::class);

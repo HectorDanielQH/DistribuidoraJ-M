@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\FormaVenta;
 use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\User;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportFormObjects\Form;
 use Yajra\DataTables\DataTables;
 
 class VentaController extends Controller
@@ -400,5 +402,95 @@ class VentaController extends Controller
 
         return view('administrador.ventas.ver_venta_por_fecha_arqueo', compact('fecha_arqueo','total_monto_contabilizado'));
 
+    }
+
+    public function crearVenta()
+    {
+        $preventistas = User::role('vendedor')->get();
+        return view('administrador.ventas.crear_venta', compact('preventistas'));
+    }
+
+    public function guardarVenta(Request $request)
+    {
+        /*preventista_id: preventistaId,
+                            fecha_venta: fechaVenta,
+                            detalles: detalles
+                            
+                            detalles.push({
+                    producto_id: productoId,
+                    tipo_venta_id: tipoVentaId,
+                    cantidad: cantidad
+                });
+                            
+                            */
+        $request->validate([
+            'preventista_id' => 'required|exists:users,id',
+            'fecha_venta'    => 'required|date',
+            'detalles'       => 'required|array|min:1',
+        ]);
+
+        $preventista = User::find($request->input('preventista_id'));
+        if (!$preventista || !$preventista->hasRole('vendedor')) {
+            return response()->json(['error' => 'Preventista no válido'], 400);
+        }
+        $fechaVenta = Carbon::parse($request->input('fecha_venta'));
+
+        $numero_pedido = Pedido::max('numero_pedido')+1;
+
+        $venta_fecha_primera=Venta::where('fecha_contabilizacion',$fechaVenta)->first();
+        
+        $pedido_de_venta=Pedido::where('numero_pedido',$venta_fecha_primera->numero_pedido ?? 0)->first();
+        
+        //verificar si el producto existe y tiene stock
+        foreach ($request->input('detalles') as $detalle) {
+            $producto = Producto::find($detalle['producto_id']);
+            if (!$producto) {
+                return response()->json(['error' => 'Producto no encontrado: ID ' . $detalle['producto_id']], 404);
+            }
+            $formaVenta = FormaVenta::find($detalle['tipo_venta_id']);
+            if (!$formaVenta) {
+                return response()->json(['error' => 'Tipo de venta no encontrado: ' . $detalle['tipo_venta_id']], 404);
+            }
+            $conversion= $formaVenta->equivalencia_cantidad*$detalle['cantidad'];
+            if ($producto->cantidad < $conversion) {
+                return response()->json(['error' => 'Stock insuficiente para el producto: ' . $producto->nombre_producto], 400);
+            }
+
+            // Crear primeramente el pedido
+            Pedido::create([
+                'id_usuario' => $preventista->id,
+                'id_cliente' => 1377, // Cliente genérico CUENTA EMPRESA
+                'id_producto' => $producto->id,
+                'id_forma_venta' => $formaVenta->id,
+                'numero_pedido' => $numero_pedido,
+                'fecha_pedido' => $pedido_de_venta->fecha_pedido ?? $fechaVenta->toDateTimeString(),
+                'fecha_entrega' => $pedido_de_venta->fecha_entrega ?? $fechaVenta->toDateTimeString(),
+                'cantidad' => $detalle['cantidad'],
+                'estado_pedido' => true,
+                'promocion' => $producto->promocion,
+                'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje,
+                'descripcion_regalo' => $producto->descripcion_regalo,
+            ]);
+
+            // Registrar la venta
+            Venta::create([
+                'id_usuario' => $preventista->id,
+                'id_cliente' => 1377, // Cliente genérico CUENTA EMPRESA
+                'id_producto' => $producto->id,
+                'id_forma_venta' => $formaVenta->id,
+                'numero_pedido' => $numero_pedido,
+                'fecha_contabilizacion' => $fechaVenta->toDateTimeString(),
+                'cantidad' => $detalle['cantidad'],
+                'promocion' => $producto->promocion,
+                'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje,
+                'descripcion_regalo' => $producto->descripcion_regalo,
+            ]);
+            // Actualizar stock del producto
+            $producto->cantidad -= $conversion;
+            $producto->save();
+
+        }
+
+        return response()->json(['message' => 'Venta registrada correctamente'], 200);
     }
 }
