@@ -28,6 +28,7 @@
                         <th>Monto Contabilizado</th>
                         <th>Preventista</th>
                         <th>Ruta</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tfoot>
@@ -102,7 +103,8 @@
                     { data: 'fecha_entrega', name: 'fecha_entrega' },
                     { data: 'monto_contabilizado', name: 'monto_contabilizado' },
                     { data: 'preventista', name: 'preventista' },
-                    { data: 'ruta', name: 'ruta' }
+                    { data: 'ruta', name: 'ruta' },
+                    { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
                 ],
                 order: [[0, 'asc']],
             });

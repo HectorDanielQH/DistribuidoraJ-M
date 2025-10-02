@@ -80,6 +80,7 @@
             responsive: true,
             language: {url: '/i18n/es-ES.json'},
             ajax: "{{ route('administrador.pedidos.administrador.visualizacionContabilizados') }}",
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
             columns: [
                 { data: 'numero_pedido', name: 'numero_pedido' },
                 { data: 'cliente', name: 'cliente' },

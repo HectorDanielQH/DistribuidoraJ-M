@@ -384,6 +384,12 @@ class VentaController extends Controller
                         return 'N/A';
                     }
                 })
+                ->addColumn('acciones', function($venta) {
+                    return '<a class="btn btn-warning btn-sm" href="'.route('administrador.pedidos.administrador.editar.contabilizados', $venta->numero_pedido ).'">
+                                <i class="fas fa-edit"></i>
+                            </a>';
+                })
+                ->rawColumns(['acciones'])
                 ->make(true);
         }
 
@@ -393,5 +399,6 @@ class VentaController extends Controller
             ->value('total');
 
         return view('administrador.ventas.ver_venta_por_fecha_arqueo', compact('fecha_arqueo','total_monto_contabilizado'));
+
     }
 }
