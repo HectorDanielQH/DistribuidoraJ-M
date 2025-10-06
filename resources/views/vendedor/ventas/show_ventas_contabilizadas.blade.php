@@ -95,5 +95,42 @@
                 ],
             })
         });
+
+        function verDetalleVenta(e){
+            let idCliente = e.getAttribute('data-id-cliente');
+            let numeroPedido = e.getAttribute('data-numero-pedido');
+            Swal.fire({
+                title: 'Cargando detalle...',
+                html: 'Por favor, espere mientras se carga el detalle de la venta.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                    $.ajax({
+                        url: "{{ route('preventistas.ventas.vendedor.miNumeroDePedido', ':numero_pedido') }}".replace(':numero_pedido', numeroPedido),
+                        method: 'GET',
+                        success: function(response) {
+                            let detalleHtml = '<table class="table table-bordered"><thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>';
+                            response.forEach(item => {
+                                detalleHtml += `<tr>
+                                    <td>${item.nombre_producto}</td>
+                                    <td>${item.cantidad} ${item.detalle_cantidad}</td>
+                                    <td>${(item.cantidad * item.precio_venta).toFixed(2)} Bs.-</td>
+                                </tr>`;
+                            });
+                            detalleHtml += '</tbody></table>';
+                            Swal.fire({
+                                title: `Detalle de la Venta - Pedido Nro. ${numeroPedido}`,
+                                html: detalleHtml,
+                                width: '800px',
+                                confirmButtonText: 'Cerrar'
+                            });
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'No se pudo cargar el detalle de la venta.', 'error');
+                        }
+                    });
+                }
+            });
+        }
     </script>
 @stop

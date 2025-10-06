@@ -199,4 +199,22 @@ class PedidoController extends Controller
         $pdf->setPaper('letter', 'horizontal');
         return $pdf->stream('rutas_pedidos.pdf');
     }
+
+    public function obtenerPedidosPorNumero(string $numero_pedido){
+        $pedidos = Pedido::join('productos', 'pedidos.id_producto', '=', 'productos.id')
+                    ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+                    ->where('pedidos.numero_pedido', $numero_pedido)
+                    ->where('pedidos.id_usuario', auth()->id())
+                    ->select(
+                        'pedidos.*',
+                        'productos.codigo',
+                        'productos.nombre_producto',
+                        'productos.descripcion_producto',
+                        'productos.detalle_cantidad',
+                        'forma_ventas.tipo_venta',
+                        'forma_ventas.precio_venta'
+                    )
+                    ->get();
+        return response()->json($pedidos, 200);
+    }
 }

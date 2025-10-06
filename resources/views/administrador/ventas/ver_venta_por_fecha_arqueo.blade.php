@@ -102,7 +102,7 @@
                     { data: 'fecha_pedido', name: 'fecha_pedido' },
                     { data: 'fecha_entrega', name: 'fecha_entrega' },
                     { data: 'monto_contabilizado', name: 'monto_contabilizado' },
-                    { data: 'preventista', name: 'preventista' },
+                    { data: 'preventista', name: 'preventista', orderable: true, searchable: true },
                     { data: 'ruta', name: 'ruta' },
                     { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
                 ],

@@ -189,6 +189,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //------------MIS VENTAS----------------
         Route::get('ventas/vendedor/mis-ventas', [VentasVendedorController::class, 'index'])->name('ventas.vendedor.misVentas');
         Route::get('ventas/vendedor/mis-ventas/detalle/{fecha_contabilizacion}', [VentasVendedorController::class, 'detalleVentasPorFechaContabilizacion'])->name('ventas.vendedor.detalleVentasPorFechaContabilizacion');
+        Route::get('pedidos/vendedor/mi-numero-de-pedido/{numero_pedido}', [PedidoController::class, 'obtenerPedidosPorNumero'])->name('ventas.vendedor.miNumeroDePedido');
         //------------------------------------
     });
     Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');

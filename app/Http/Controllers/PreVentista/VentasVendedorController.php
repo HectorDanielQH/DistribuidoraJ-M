@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PreVentista;
 
 use App\Http\Controllers\Controller;
 use App\Models\Venta;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
@@ -21,7 +22,7 @@ class VentasVendedorController extends Controller
                 ->where('id_usuario', $user->id)
                 ->whereNot(function($query){
                     $query->whereBetween('fecha_contabilizacion', ['2025-09-16 00:00:00', '2025-09-16 23:59:59']);
-                    $query->orWhere('fecha_contabilizacion','>=', '2025-09-23');
+                    $query->orWhereBetween('fecha_contabilizacion', ['2025-09-25 00:00:00', '2025-09-26 23:59:59']);
                 })
                 ->orderBy('fecha_contabilizacion', 'desc');
 
@@ -58,7 +59,7 @@ class VentasVendedorController extends Controller
                     'ventas.id_cliente',
                     'ventas.numero_pedido',
                     DB::raw("CONCAT(clientes.nombres,' ',clientes.apellidos) AS cliente"),
-                    DB::raw("COALESCE(rutas.nombre, rutas.nombre_ruta, 'Sin ruta') AS ruta"),
+                    DB::raw("COALESCE(rutas.nombre_ruta, 'Sin ruta') AS ruta"),
                     DB::raw('SUM(ventas.cantidad * forma_ventas.precio_venta) AS sub_total'),
                     DB::raw('MIN(ventas.created_at) AS fecha_pedido'),
                 ])
@@ -67,7 +68,6 @@ class VentasVendedorController extends Controller
                     'ventas.numero_pedido',
                     'clientes.nombres',
                     'clientes.apellidos',
-                    'rutas.nombre',
                     'rutas.nombre_ruta'
                 )
                 ->orderByRaw('MIN(ventas.created_at) DESC');
@@ -79,10 +79,9 @@ class VentasVendedorController extends Controller
                 ->editColumn('sub_total', fn($r) => number_format((float)$r->sub_total, 2, '.', ',') . ' Bs.-')
                 ->editColumn('fecha_pedido', fn($r) => Carbon::parse($r->fecha_pedido)->format('Y-m-d H:i'))
                 ->addColumn('acciones', function ($r) {
-                    $ruta = route('preventistas.registrar.pedido', ['id' => $r->id_cliente]);
-                    return '<a href="' . e($ruta) . '" class="btn btn-primary btn-sm">
-                                <i class="fas fa-eye"></i> Ver Pedido
-                            </a>';
+                    return '<button class="btn btn-info btn-sm ver-detalle" data-id-cliente="' . $r->id_cliente . '" data-numero-pedido="' . $r->numero_pedido . '" onclick="verDetalleVenta(this)">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </button>';
                 })
                 ->rawColumns(['acciones'])
                 ->make(true);
