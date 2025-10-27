@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administrador;
 use App\Http\Controllers\Controller;
 use App\Models\Lotes;
 use App\Models\Producto;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -27,22 +28,13 @@ class LotesController extends Controller
                 })
 
                 ->addColumn('acciones', function($lote){
+                    $route=route('administrador.lote.productos.obtenerLotesProducto', ['id' => $lote->codigo_lote]);
                     $botones = '<div class="btn-group" role="group">';
                     $botones .= '
-                    <button type="button" class="btn btn-primary btn-sm" onclick="verLote(this)"
-                        id-lote="' . $lote->id . '"
-                        data-toggle="modal" data-target="#modalVerLote"
-                    >
-                        <i class="fas fa-eye"></i> Ver
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-sm" onclick="editarLote(this)"
-                    >
-                        <i class="fas fa-edit"></i> editar
-                    </button>
-                    
+                        <a class="btn btn-warning btn-sm" href="' . $route . '">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>                   
                     ';
-                    $botones .= '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarLote(this)" id-lote="' . $lote->id . '"><i class="fas fa-trash"></i> Eliminar</button>';
                     $botones .= '</div>';
                     return $botones;
                 })
@@ -205,5 +197,71 @@ class LotesController extends Controller
                 'message' => 'Producto no encontrado',
             ], 404);
         }
+    }
+
+    public function obtenerLotesProducto(Request $request, string $id)
+    {
+        if($request->ajax()){
+            $lotes=Lotes::query()->where('codigo_lote', $id);
+
+            return datatables()->eloquent($lotes)
+                ->addColumn('codigo_producto', function($lote){
+                    return $lote->producto ? $lote->producto->codigo : 'N/A';
+                })
+                ->addColumn('imagen', function($lote){
+                    $ruta = route('productos.imagen', $lote->producto->id);
+                    return '<img src="'.$ruta.'" alt="Imagen" width="50" height="50"/>';
+                })
+                ->addColumn('descripcion', function($lote){
+                    return $lote->producto ? $lote->producto->nombre_producto : 'N/A';
+                })
+                ->addColumn('cantidad_anadida', function($lote){
+                    return $lote->cantidad ? $lote->cantidad.' '.$lote->detalle_cantidad : 'N/A';
+                })
+                ->addColumn('nuevo_precio', function($lote){
+                    $valor= $lote->precio_ingreso ? number_format($lote->precio_ingreso, 2, '.', ',').' Bs.-' : 'N/A';
+                    $valor.= $lote->detalle_precio_ingreso ? ' ('.$lote->detalle_precio_ingreso.')' : '';
+                    return $valor;
+                })
+                ->addColumn('fecha_vencimiento', function($lote){
+                    $fecha=Carbon::parse($lote->fecha_vencimiento)->format('d/m/Y');
+                    return $lote->fecha_vencimiento ? $fecha : 'N/A';
+                })
+                ->addColumn('acciones', function($lote){
+                    $botones = '<button type="button" class="btn btn-danger btn-sm" onclick="eliminarLote(this)" id-lote="' . $lote->id . '"><i class="fas fa-trash"></i></button>';
+                    return $botones;
+                })
+                ->rawColumns(['imagen', 'acciones'])
+                ->make(true);        
+        }
+
+
+        $lotes = Lotes::where('codigo_lote', $id)->firstOrFail();
+
+        return view('administrador.lotes.show', compact('lotes'));
+    }
+
+    public function eliminarLote(string $id)
+    {
+        $lote = Lotes::find($id);
+
+        if (!$lote) {
+            return response()->json(['success' => false, 'message' => 'Lote no encontrado.'], 404);
+        }
+
+        // Actualizar la cantidad del producto asociado
+        $producto = Producto::find($lote->producto_id);
+        if ($producto) {
+            $producto->cantidad -= $lote->cantidad;
+            if ($producto->cantidad < 0) {
+                $producto->cantidad = 0; // Evitar cantidades negativas
+            }
+            $producto->save();
+        }
+
+        // Eliminar el lote
+        $lote->delete();
+
+        return response()->json(['success' => true, 'message' => 'Lote eliminado exitosamente.']);
     }
 }

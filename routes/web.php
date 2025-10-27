@@ -13,6 +13,9 @@ use App\Http\Controllers\Administrador\ClienteController;
 use App\Http\Controllers\Administrador\AsignacionController;
 use App\Http\Controllers\Administrador\ControlRutasController;
 use App\Http\Controllers\Administrador\NoAtendidosController;
+//----------------------------Contabilidad-----------------------------------
+use App\Http\Controllers\Contabilidad\ContabilidadVentaController;
+
 //---------------------------------------------------------------
 use App\Http\Controllers\PreVentista\ProductoVendedorController;
 
@@ -109,6 +112,8 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('lotes/obtenerProducto', [LotesController::class, 'obtenerProducto'])->name('lote.productos.buscarProducto');
         Route::get('lotes/obtenerDetalleProducto/{id}', [LotesController::class, 'obtenerDetalleProducto'])->name('lote.productos.detalleProducto');
         Route::get('productos/obtener-codigo', [ProductoController::class, 'obtenerCodigo'])->name('productos.autogenerar_codigo');
+        Route::get('lotes/obtener-lotes-producto/{id}', [LotesController::class, 'obtenerLotesProducto'])->name('lote.productos.obtenerLotesProducto');
+        Route::delete('lotes/eliminar-lote/{id}', [LotesController::class, 'eliminarLote'])->name('lote.productos.eliminarLote');
 
         //Productos
         Route::put('productos/actualizar-cantidad/{id}', [ProductoController::class, 'actualizarCantidadProducto'])->name('productos.updateCantidadStock');
@@ -252,6 +257,14 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('ventas/obtener-rendimiento-producto/{id}', [VentaController::class, 'reporteVentaProductosId'])->name('rendimientopersonal.obtenerVentasProductos');
 
 
+    //----AREA DE CONTABILIDAD--
+    Route::prefix('contabilidad')->name('contabilidad.')->group(function () {
+        //ventas por día
+        Route::get('ventas/dia', [ContabilidadVentaController::class,'ventasPorDia'])->name('ventas.porDia');
+        Route::get('ventas/dia/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventista'])->name('ventas.porDia.preventista');
+        Route::get('ventas/dia/detalle/pedidos/{fecha}/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventistaDetallePedidos'])->name('ventas.porDia.preventista.detallepedidos');
+        Route::get('ventas/dia/detalle/productos/{idventa}', [ContabilidadVentaController::class,'ventasPorDiaPreventistaDetallePedidosDetalle'])->name('ventas.porDia.preventista.detallepedidos.detalle');
+    });
     //----------------------------
     Route::resource('pedidos', PedidoController::class);
     Route::resource('rendimientopersonal', RendimientoPersonalController::class);

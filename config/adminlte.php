@@ -472,6 +472,31 @@ return [
             'can' => 'vendedor.permisos',
         ],
 
+//---------------------------AREA DE CONTABILIDAD------------------------------
+        [
+            'header'=> '.::VENTAS POR DIA::.',
+            'can' => 'contador.permisos',
+        ],
+        [
+            'text' => 'Ventas por Día',
+            'route' => 'contabilidad.ventas.porDia',
+            'icon' => 'fas fa-fw fa-calendar-day',
+            'can' => 'contador.permisos',
+        ],
+        /*
+        [
+            'header'=> '.::VENTAS POR PEDIDO::.',
+            'can' => 'contador.permisos',
+        ],
+        [
+            'header'=> '.::VENTAS POR PREVENTISTA::.',
+            'can' => 'contador.permisos',
+        ],
+        [
+            'header'=> '.::COMPARACION GANANCIAL::.',
+            'can' => 'contador.permisos',
+        ],
+*/
         /*
         [
             'text' => 'multilevel',
