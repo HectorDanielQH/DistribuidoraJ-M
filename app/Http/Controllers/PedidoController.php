@@ -122,8 +122,20 @@ class PedidoController extends Controller
 
         $asignacion = Asignacion::find($request->asignacion_id);
         $numero_pedido = null;
+
         if($asignacion->numero_pedido){
             $numero_pedido = $asignacion->numero_pedido;
+            //devolver stock de productos del pedido anterior
+            $pedidos_anteriores = Pedido::where('numero_pedido', $numero_pedido)->get();
+            foreach ($pedidos_anteriores as $pedido_anterior) {
+                $productoModel = Producto::find($pedido_anterior->id_producto);
+                $formasVenta = FormaVenta::find($pedido_anterior->id_forma_venta);
+                if ($productoModel) {
+                    $productoModel->cantidad += ($pedido_anterior->cantidad*$formasVenta->equivalencia_cantidad);
+                    $productoModel->save();
+                }
+            }
+            //eliminar pedidos anteriores
             Pedido::where('numero_pedido', $asignacion->numero_pedido)->delete();
         }
         else{

@@ -235,7 +235,6 @@
                 serverSide: true,
                 destroy: true,
                 responsive: true,
-                scrollX: true,
                 ajax: { url: url, type: 'GET' },
                 columns: [
                     { data: 'codigo_producto', name: 'codigo_producto' },
