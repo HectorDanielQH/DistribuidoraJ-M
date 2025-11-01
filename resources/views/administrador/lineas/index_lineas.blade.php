@@ -101,6 +101,7 @@
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://unpkg.com/slim-select@latest/dist/slimselect.css" rel="stylesheet"></link>
     <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/slim-select@2.6.0/dist/slimselect.css" rel="stylesheet" />
 
     <style>
         input.form-control:focus, select.form-control:focus {
@@ -123,8 +124,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/slim-select@latest/dist/slimselect.min.js"></script>
     <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slim-select@2.6.0/dist/slimselect.min.js"></script>
 
     <script>
         let slimMarca = new SlimSelect({
