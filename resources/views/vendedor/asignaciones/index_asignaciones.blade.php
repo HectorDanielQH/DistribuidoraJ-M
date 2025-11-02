@@ -132,7 +132,7 @@
 
           { targets: [0,1,2], className: 'align-middle' },
           { targets: 3, className: 'text-center align-middle' },
-          { targets: 4, className: 'text-center align-middle', width:'110px' }
+          { targets: 4, className: 'text-center align-middle'}
         ],
 
       });
