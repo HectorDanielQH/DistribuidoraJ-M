@@ -68,6 +68,22 @@
       #verPedidoModal .modal-content { height:100%; border-radius:0; }
       #verPedidoModal .modal-body { overflow-y:auto; }
     }
+    /* Permitir que solo la columna de Ubicación haga salto de línea y rompa palabras largas */
+    table.dataTable td.dt-ubicacion-wrap, 
+    table.dataTable th.dt-ubicacion-wrap {
+      white-space: normal !important;   /* permite múltiples líneas */
+      word-wrap: break-word;            /* compatibilidad */
+      overflow-wrap: anywhere;          /* rompe palabras muy largas */
+      max-width: 320px;                 /* opcional: limita ancho para forzar el wrap */
+    }
+
+    /* Opcional: en pantallas pequeñas, reduce el max-width para envolver antes */
+    @media (max-width: 576px) {
+      table.dataTable td.dt-ubicacion-wrap, 
+      table.dataTable th.dt-ubicacion-wrap {
+        max-width: 200px;
+      }
+    }
   </style>
 @stop
 
@@ -130,7 +146,8 @@
           { responsivePriority: 1, targets: 0 },
           { responsivePriority: 2, targets: 4 },
 
-          { targets: [0,1,2], className: 'align-middle' },
+          { targets: [0,1], className: 'align-middle' },
+          { targets: 2, className: 'align-middle dt-ubicacion-wrap' },
           { targets: 3, className: 'text-center align-middle' },
           { targets: 4, className: 'text-center align-middle'}
         ],
