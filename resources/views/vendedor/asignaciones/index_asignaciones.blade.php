@@ -7,7 +7,7 @@
        style="background: linear-gradient(135deg,#2c3e50,#34495e); border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,.12);">
     <div class="d-flex flex-column justify-content-center align-items-center text-center">
       <h1 class="text-white mb-1" style="font-size:1.6rem; font-weight:800; letter-spacing:.3px">
-        <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J
+        <i class="fas fa-boxes mr-2"></i> DISTRIBUIDORA H&J
       </h1>
       <span class="text-white-50" style="font-size:.95rem">Panel de Mis Asignaciones</span>
     </div>
@@ -24,17 +24,23 @@
     </x-adminlte-modal>
 
     <div class="container py-3">
-      <table class="table table-striped table-bordered table-hover nowrap w-100 shadow-sm" id="tabla-asignaciones">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Celular</th>
-            <th>Ubicación</th>
-            <th>Pedido</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-      </table>
+      <div class="card border-0 shadow-sm" style="border-radius:14px; overflow:hidden;">
+        <div class="card-body p-0">
+          <div class="table-responsive p-2 p-md-3">
+            <table class="table table-striped table-bordered table-hover nowrap w-100" id="tabla-asignaciones">
+              <thead class="thead-light">
+                <tr>
+                  <th>Cliente</th>
+                  <th>Celular</th>
+                  <th>Ubicación</th>
+                  <th>Pedido</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 @stop
 
@@ -68,21 +74,66 @@
       #verPedidoModal .modal-content { height:100%; border-radius:0; }
       #verPedidoModal .modal-body { overflow-y:auto; }
     }
-    /* Permitir que solo la columna de Ubicación haga salto de línea y rompa palabras largas */
-    table.dataTable td.dt-ubicacion-wrap, 
-    table.dataTable th.dt-ubicacion-wrap {
-      white-space: normal !important;   /* permite múltiples líneas */
-      word-wrap: break-word;            /* compatibilidad */
-      overflow-wrap: anywhere;          /* rompe palabras muy largas */
-      max-width: 320px;                 /* opcional: limita ancho para forzar el wrap */
+
+    /* ✅ Truncar texto largo en Ubicación con ellipsis */
+    #tabla-asignaciones td.ubicacion-cell {
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: help;
+      position: relative;
     }
 
-    /* Opcional: en pantallas pequeñas, reduce el max-width para envolver antes */
-    @media (max-width: 576px) {
-      table.dataTable td.dt-ubicacion-wrap, 
-      table.dataTable th.dt-ubicacion-wrap {
-        max-width: 200px;
+    /* En pantallas más grandes, permite más espacio */
+    @media (min-width: 992px){
+      #tabla-asignaciones td.ubicacion-cell {
+        max-width: 300px;
       }
+    }
+
+    /* Tabla más compacta y moderna */
+    #tabla-asignaciones th,
+    #tabla-asignaciones td {
+      vertical-align: middle;
+      font-size: 0.9rem;
+    }
+
+    #tabla-asignaciones thead th {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      color: #495057;
+    }
+
+    /* Tooltip personalizado simple (sin Bootstrap tooltip) */
+    .ubicacion-full {
+      position: absolute;
+      background: #2c3e50;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      z-index: 9999;
+      white-space: normal;
+      max-width: 300px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: none;
+      pointer-events: none;
+      line-height: 1.4;
+    }
+
+    .ubicacion-full::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: 20px;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 5px solid #2c3e50;
     }
   </style>
 @stop
@@ -98,22 +149,20 @@
     
   <script>
     $(document).ready(function () {
-      $('#tabla-asignaciones').DataTable({
+      const dt = $('#tabla-asignaciones').DataTable({
         processing: true,
         serverSide: true,
-        // 👇 Hace que, si hay columnas ocultas por responsive, se abra el detalle automáticamente
         responsive: {
           details: {
             display: $.fn.dataTable.Responsive.display.childRowImmediate,
             type: 'none',
             renderer: function (api, rowIdx, columns) {
-              // Solo mostrar las columnas ocultas
               var rows = $.map(columns, function (col) {
                 if (col.hidden) {
                   return `
                     <tr data-dt-column="${col.columnIndex}">
-                      <td class="fw-bold pe-3">${col.title}</td>
-                      <td>${col.data ?? ''}</td>
+                      <td class="font-weight-bold pr-3">${col.title}</td>
+                      <td style="white-space:normal; word-break:break-word;">${col.data ?? ''}</td>
                     </tr>`;
                 }
                 return '';
@@ -121,7 +170,7 @@
 
               return rows
                 ? $('<table class="table table-sm table-borderless mb-0"><tbody/></table>').append(rows)
-                : false; // si no hay ocultas, no muestra child
+                : false;
             }
           }
         },
@@ -130,28 +179,76 @@
         ajax: "{{ route('asignacionvendedor.index') }}",
 
         columns: [
-          { data: 'cliente'  },
+          { data: 'cliente' },
           { data: 'celular' },
-          { data: 'ubicacion', orderable:false, searchable:false },
-          { data: 'tiene_pedido', orderable:false, searchable:false },
-          { data: 'acciones', orderable:false, searchable:false }
+          { 
+            data: 'ubicacion', 
+            orderable: false, 
+            searchable: false,
+            // ✅ Renderiza la ubicación truncada con atributo data-full
+            render: function(data, type, row) {
+              if (type === 'display' && data) {
+                const textoCorto = data.length > 30 ? data.substring(0, 30) + '...' : data;
+                return `<span class="ubicacion-cell" data-full-text="${data.replace(/"/g, '&quot;')}">${textoCorto}</span>`;
+              }
+              return data;
+            }
+          },
+          { data: 'tiene_pedido', orderable: false, searchable: false },
+          { data: 'acciones', orderable: false, searchable: false }
         ],
 
-        // ⚠ Si 'acciones' (índice 4) es no ordenable, evita ordenar por esa col
-        // order: [[0, 'asc']],
+        order: [[0, 'asc']],
         lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
 
         columnDefs: [
-
           { responsivePriority: 1, targets: 0 },
           { responsivePriority: 2, targets: 4 },
 
           { targets: [0,1], className: 'align-middle' },
-          { targets: 2, className: 'align-middle dt-ubicacion-wrap' },
+          { targets: 2, className: 'align-middle' },
           { targets: 3, className: 'text-center align-middle' },
-          { targets: 4, className: 'text-center align-middle'}
-        ],
+          { targets: 4, className: 'text-center align-middle', width: '110px' }
+        ]
+      });
 
+      // ✅ Tooltip personalizado con hover (sin dependencia de Bootstrap tooltip)
+      let tooltipTimeout;
+      
+      $(document).on('mouseenter', '.ubicacion-cell', function(e) {
+        const $this = $(this);
+        const fullText = $this.attr('data-full-text');
+        
+        // Solo mostrar tooltip si el texto está truncado
+        if (fullText && fullText.length > 30) {
+          clearTimeout(tooltipTimeout);
+          
+          // Remover tooltips previos
+          $('.ubicacion-full').remove();
+          
+          // Crear tooltip
+          const $tooltip = $('<div class="ubicacion-full"></div>').text(fullText);
+          $('body').append($tooltip);
+          
+          // Posicionar tooltip
+          const offset = $this.offset();
+          const cellWidth = $this.outerWidth();
+          
+          tooltipTimeout = setTimeout(function() {
+            $tooltip.css({
+              top: offset.top + $this.outerHeight() + 10,
+              left: offset.left,
+              display: 'block'
+            }).fadeIn(200);
+          }, 300);
+        }
+      });
+
+      $(document).on('mouseleave', '.ubicacion-cell', function() {
+        clearTimeout(tooltipTimeout);
+        $('.ubicacion-full').fadeOut(150, function() {
+          $(this).remove();
+        });
       });
     });
 
@@ -195,14 +292,19 @@
         let html = '';
         agrupa.forEach(g=>{
           html += `
-            <div class="card mb-3">
+            <div class="card mb-3 border-0 shadow-sm">
               <div class="card-body">
-                <h5 class="card-title mb-2">
-                  Pedido #${g.numero_pedido}
-                  <button class="btn btn-danger btn-sm ml-2" disabled>
-                    <i class="fas fa-spinner fa-spin"></i> En proceso de entrega...
-                  </button>
-                </h5>
+                <div class="d-flex align-items-center mb-2">
+                  <div class="avatar-circle mr-2">
+                    <i class="fas fa-receipt"></i>
+                  </div>
+                  <h5 class="card-title mb-0">
+                    Pedido #${g.numero_pedido}
+                    <span class="badge badge-danger ml-2">
+                      <i class="fas fa-spinner fa-spin"></i> En proceso
+                    </span>
+                  </h5>
+                </div>
                 <div class="table-responsive">
                   <table class="table table-sm table-bordered mb-0">
                     <thead class="thead-light">
