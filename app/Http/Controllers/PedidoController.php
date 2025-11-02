@@ -146,7 +146,6 @@ class PedidoController extends Controller
         //validacion de productos con pedido
 
         foreach ($productos as $producto) {
-
             $obtenerProducto = Producto::find($producto['id_producto']);
             if($obtenerProducto->cantidad < $producto['cantidad'])
             {
