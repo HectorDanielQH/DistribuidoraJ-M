@@ -3,7 +3,7 @@
 @section('title', 'Dashboard')
 
 @section('content_header')
-    <div class="container-fluid py-4"
+    <div class="container py-4"
          style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
         <div class="d-flex flex-column justify-content-center align-items-center text-center px-3">
             <h1 class="text-white mb-2"
@@ -11,14 +11,14 @@
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
             </h1>
             <span class="text-white" style="font-weight: 500; font-size: clamp(1rem, 2.5vw, 1.4rem);">
-                Panel de Ventas por Día
+                Panel de Ventar por Pre-Ventista
             </span>
         </div>
     </div>
 @stop
 
 @section('content')
-    <div class="container-fluid my-4">
+    <div class="container my-4">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-1">
             <h2 class="text-dark mb-0" style="font-weight: 600; font-size: clamp(1.25rem, 3vw, 1.75rem);">
                 Ventas por Día <i class="fas fa-calendar-day ms-2"></i>
@@ -32,40 +32,35 @@
     <!--TABLA DE PRODUCTOS-->
     <div class="container-fluid mb-5">
         <div class="row g-4">
-            <!-- Col izquierda -->
             <div class="col-12 col-lg-5">
                 <div class="d-flex flex-column px-1">
                     <label for="preventista" class="mb-1">
-                        Seleccione un Pre-Ventista: <span class="text-danger">*</span>
+                        Seleccione fechas para realizar el cáculo: <span class="text-danger">*</span>
                     </label>
 
                     <!-- Selector + Botón: responsivo -->
                     <div class="d-flex flex-wrap align-items-stretch gap-2 mb-4">
                         <div class="flex-grow-1 min-w-0" style="min-width: 220px;">
-                            <select id="preventista" class="form-control select2 w-100">
-                                <option value="" disabled selected>-- Seleccione un Pre-Ventista --</option>
-                                @foreach ($preventistas as $preventista)
-                                    <option value="{{ $preventista->id }}">
-                                        {{ $preventista->nombres }} {{ $preventista->apellido_materno }} {{ $preventista->apellido_paterno }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <label for='fechaInicio' class="form-label">Fecha de Inicio:<span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="fechaInicio" placeholder="Fecha Inicio">
+                            <label for='fechaInicio' class="form-label">Fecha de Fin:<span class="text-danger">*</span></label>
+                            <input type="date" class="form-control mt-2" id="fechaFin" placeholder="Fecha Fin">
                         </div>
-                        <button class="btn btn-primary flex-shrink-0" id="btnBuscarVentasPorDia">
+                        <button class="btn btn-primary flex-shrink-0 ml-2" id="btnBuscarVentasPorFecha">
                             Buscar
                         </button>
                     </div>
 
                     <h5 class="text-dark">
-                        <strong>Lista de Ventas por Día</strong>
+                        <strong>Lista de ventas por preventista</strong>
                     </h5>
 
                     <!-- Tabla responsiva -->
                     <div class="table-responsive mt-3">
-                        <table id="tablaVentasPorDia" class="table table-dark table-striped table-bordered w-100">
+                        <table id="tablaVentasPreventista" class="table table-striped table-bordered w-100">
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
+                                    <th>Pre-Ventista</th>
                                     <th>Total Vendido</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -162,45 +157,54 @@
             $('.select2').select2({ width: '100%' });
 
             // DataTables base, con responsive y scrollX para pantallas pequeñas
-            $('#tablaVentasPorDia').DataTable({
+            $('#tablaVentasPreventista').DataTable({
                 responsive: true,
-                scrollX: true
+                scrollX: true,
+                language: {
+                    url: '/i18n/es-ES.json'
+                }
             });
             $('#tablaDetallePedidos').DataTable({
                 responsive: true,
-                scrollX: true
+                scrollX: true,
+                language: {
+                    url: '/i18n/es-ES.json'
+                }
             });
             $('#tablaDetalleProductos').DataTable({
                 responsive: true,
-                scrollX: true
+                scrollX: true,
+                language: {
+                    url: '/i18n/es-ES.json'
+                }
             });
         });
 
-        $('#btnBuscarVentasPorDia').on('click', function(){
-            let preventistaId = $('#preventista').val();
-            if(!preventistaId){
+        $('#btnBuscarVentasPorFecha').on('click', function(){
+            let fechaInicio=$('#fechaInicio').val();
+            let fechaFin=$('#fechaFin').val();
+
+            if(!fechaInicio || !fechaFin){
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Seleccione un Pre-Ventista',
-                    text: 'Por favor, seleccione un pre-ventista para buscar las ventas por día.',
+                    title: 'Seleccione las fechas requeridas de Inicio y Fin',
+                    text: 'Por favor, seleccione ambas fechas para continuar.',
                 });
                 return;
             }
-            let url="{{ route('contabilidad.ventas.porDia.preventista', ':idpreventista') }}".replace(':idpreventista', preventistaId);
 
-            $('#tablaVentasPorDia').DataTable({
+            let url="{{ route('contabilidad.ventas.porPreventista.opciones', [':fechainicio', ':fechafin']) }}".replace(':fechainicio', fechaInicio).replace(':fechafin', fechaFin);
+
+            $('#tablaVentasPreventista').DataTable({
                 processing: true,
                 serverSide: true,
-                language: {
-                    url: '/i18n/es-ES.json'
-                },
                 destroy: true,
                 responsive: true,
                 scrollX: true,
                 ajax: { url: url, type: 'GET' },
                 columns: [
-                    { data: 'fecha_venta', name: 'fecha_venta' },
-                    { data: 'total_venta', name: 'total_venta' },
+                    { data: 'preventista', name: 'preventista' },
+                    { data: 'total_vendido', name: 'total_vendido' },
                     { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
                 ],
             });

@@ -15,6 +15,11 @@ use Yajra\DataTables\DataTables;
 
 class ContabilidadVentaController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:contador.permisos');
+    }
+
     public function ventasPorDia(Request $request){
         $preventistas=User::role('vendedor')->get();
         return view('Contabilidad.VentasPorDia.index',compact('preventistas'));
@@ -137,6 +142,47 @@ class ContabilidadVentaController extends Controller
                 }
                 return 'N/A';
             })
+            ->make(true);
+    }
+
+    public function ventasPorPreventista(){
+        return view('Contabilidad.VentasPorPreventista.index');
+    }
+
+    public function ventasPorPreventistaOpciones(string $fechaInicio, string $fechaFin)
+    {
+        // Query agregado por preventista en un rango de fechas
+        $q = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->join('users', 'ventas.id_usuario', '=', 'users.id')
+            ->whereBetween('ventas.fecha_contabilizacion', [
+                Carbon::parse($fechaInicio)->startOfDay(),
+                Carbon::parse($fechaFin)->endOfDay()
+            ])
+            ->whereNotNull('ventas.fecha_contabilizacion')
+            ->selectRaw("ventas.id_usuario AS id_preventista")
+            ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_vendido")
+            ->groupBy('ventas.id_usuario')
+            ->orderBy('total_vendido', 'desc');
+
+        return DataTables::of($q)
+            ->addColumn('preventista', function ($row) {
+                $user=User::find($row->id_preventista);
+                return $user ? $user->nombres.' '.$user->apellidos : 'N/A';
+            })
+            ->addColumn('total_vendido', function ($row) {
+                return number_format((float)$row->total_vendido, 2, '.', '');
+            })
+            ->addColumn('acciones', function ($row) {
+                // Pasa el preventista para ver el detalle de sus ventas
+                $idPreventista = $row->id_preventista;
+                return "<button type='button' class='btn btn-warning btn-sm'
+                            onclick='verDetalleVentasPreventista(this)'
+                            data-preventista='{$idPreventista}'>
+                            Ver Detalle <i class='fas fa-eye'></i>
+                        </button>";
+            })
+            ->rawColumns(['acciones'])
             ->make(true);
     }
 }
