@@ -65,6 +65,13 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
+                            <tfoot>
+        <tr>
+            <th></th>
+            <th></th> <!-- Aquí se mostrará la suma -->
+            <th></th>
+        </tr>
+    </tfoot>
                         </table>
                     </div>
                 </div>
@@ -183,8 +190,8 @@
         });
 
         $('#btnBuscarVentasPorFecha').on('click', function(){
-            let fechaInicio=$('#fechaInicio').val();
-            let fechaFin=$('#fechaFin').val();
+            let fechaInicio = $('#fechaInicio').val();
+            let fechaFin = $('#fechaFin').val();
 
             if(!fechaInicio || !fechaFin){
                 Swal.fire({
@@ -195,7 +202,9 @@
                 return;
             }
 
-            let url="{{ route('contabilidad.ventas.porPreventista.opciones', [':fechainicio', ':fechafin']) }}".replace(':fechainicio', fechaInicio).replace(':fechafin', fechaFin);
+            let url = "{{ route('contabilidad.ventas.porPreventista.opciones', [':fechainicio', ':fechafin']) }}"
+                .replace(':fechainicio', fechaInicio)
+                .replace(':fechafin', fechaFin);
 
             $('#tablaVentasPreventista').DataTable({
                 processing: true,
@@ -203,12 +212,51 @@
                 destroy: true,
                 responsive: true,
                 scrollX: true,
+                language: {
+                    url: '/i18n/es-ES.json'
+                },
                 ajax: { url: url, type: 'GET' },
                 columns: [
                     { data: 'preventista', name: 'preventista' },
                     { data: 'total_vendido', name: 'total_vendido' },
                     { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
                 ],
+                footerCallback: function (row, data, start, end, display) {
+                    let api = this.api();
+
+                    // Función para convertir valores a número
+                    let parseNumber = function (i) {
+                        if (typeof i === 'string') {
+                            i = i.replace(/[^0-9.-]/g, '');
+                        }
+                        let v = parseFloat(i);
+                        return isNaN(v) ? 0 : v;
+                    };
+
+                    // Índice de la columna total_vendido (columna 1)
+                    let colIdx = 1;
+
+                    // Total general (todas las filas filtradas)
+                    let total = api
+                        .column(colIdx, { search: 'applied' })
+                        .data()
+                        .reduce(function (a, b) {
+                            return parseNumber(a) + parseNumber(b);
+                        }, 0);
+
+                    // Total de la página actual
+                    let pageTotal = api
+                        .column(colIdx, { page: 'current' })
+                        .data()
+                        .reduce(function (a, b) {
+                            return parseNumber(a) + parseNumber(b);
+                        }, 0);
+
+                    // Mostrar en el footer
+                    $(api.column(colIdx).footer()).html(
+                        '<strong>Total: ' + total.toFixed(2) + '</strong>'
+                    );
+                }
             });
         });
 
