@@ -82,6 +82,8 @@
                             <tr>
                                 <th>Nro. Pedido</th>
                                 <th>Cliente</th>
+                                <th>Fecha de Pedido</th>
+                                <th>Fecha de Entrega</th>
                                 <th>Total Pedido</th>
                                 <th>Ruta</th>
                                 <th>Acciones</th>
@@ -210,11 +212,14 @@
             });
         });
 
-        function verDetalleVenta(e){
-            let fecha=e.getAttribute('data-fecha');
+        function verDetalleVentasPreventista(e){
             let preventistaId=e.getAttribute('data-preventista');
-            let url="{{ route('contabilidad.ventas.porDia.preventista.detallepedidos', [':fecha', ':idpreventista']) }}"
-                     .replace(':fecha', fecha).replace(':idpreventista', preventistaId);
+            let fecha_Inicio=$('#fechaInicio').val();
+            let fecha_Fin=$('#fechaFin').val();
+            let url="{{ route('contabilidad.ventas.porPreventista.detallepedidos', [':fechainicio', ':fechafin', ':idpreventista']) }}"
+                      .replace(':fechainicio', fecha_Inicio)
+                      .replace(':fechafin', fecha_Fin)
+                      .replace(':idpreventista', preventistaId);
 
             $('#tablaDetallePedidos').DataTable({
                 processing: true,
@@ -229,6 +234,8 @@
                 columns: [
                     { data: 'nro_pedido', name: 'nro_pedido' },
                     { data: 'cliente', name: 'cliente' },
+                    { data: 'fecha_pedido', name: 'fecha_pedido' },
+                    { data: 'fecha_entrega', name: 'fecha_entrega' },
                     { data: 'total_pedido', name: 'total_pedido' },
                     { data: 'ruta', name: 'ruta' },
                     { data: 'acciones', name: 'acciones', orderable: false, searchable: false },

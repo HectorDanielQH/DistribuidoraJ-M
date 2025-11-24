@@ -268,7 +268,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('ventas/porpreventista', [ContabilidadVentaController::class,'ventasPorPreventista'])->name('ventas.porPreventista');
         //--opciones de ventas por preventista
         Route::get('ventas/porpreventista/{fechainicio}/{fechafin}', [ContabilidadVentaController::class,'ventasPorPreventistaOpciones'])->name('ventas.porPreventista.opciones');
-
+        Route::get('ventas/porpreventista/detalle/pedidos/{fechainicio}/{fechafin}/{idpreventista}', [ContabilidadVentaController::class,'ventasPorPreventistaDetallePedidos'])->name('ventas.porPreventista.detallepedidos');
     });
     //----------------------------
     Route::resource('pedidos', PedidoController::class);

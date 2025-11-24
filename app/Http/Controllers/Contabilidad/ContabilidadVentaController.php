@@ -185,4 +185,54 @@ class ContabilidadVentaController extends Controller
             ->rawColumns(['acciones'])
             ->make(true);
     }
+
+    public function ventasPorPreventistaDetallePedidos(string $fechaInicio, string $fechaFin, string $idPreventista)
+    {
+        $pedidos = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->where('ventas.id_usuario', $idPreventista)
+            ->whereBetween('ventas.fecha_contabilizacion', [
+                Carbon::parse($fechaInicio)->startOfDay(),
+                Carbon::parse($fechaFin)->endOfDay()
+            ])
+            ->whereNotNull('ventas.fecha_contabilizacion')
+            ->select(
+                'ventas.id_cliente',
+                'ventas.numero_pedido',
+                DB::raw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_pedido"),
+            )
+            ->groupBy('ventas.id_cliente', 'ventas.numero_pedido')
+            ->orderBy('ventas.numero_pedido', 'asc');
+        return DataTables::of($pedidos)
+            ->addColumn('nro_pedido', function ($row) {
+                return $row->numero_pedido;
+            })
+            ->addColumn('cliente', function ($row) {
+                $cliente=Cliente::find($row->id_cliente);
+                return $cliente ? $cliente->nombres . ' ' . $cliente->apellidos : $row->nombre_cliente;
+            })
+            ->addColumn('fecha_pedido', function ($row) {
+                $fechaPedido=Venta::where('numero_pedido',$row->numero_pedido)->first();
+                return $fechaPedido ? Carbon::parse($fechaPedido->fecha_pedido)->format('d/m/Y') : 'N/A';
+            })
+            ->addColumn('fecha_entrega', function ($row) {
+                $fechaEntrega=Venta::where('numero_pedido',$row->numero_pedido)->first();
+                return $fechaEntrega ? Carbon::parse($fechaEntrega->fecha_entrega)->format('d/m/Y') : 'N/A';
+            })
+            ->addColumn('total_pedido', function ($row) {
+                return number_format((float)$row->total_pedido, 2, '.', '');
+            })
+            ->addColumn('ruta', function ($row) {
+                $cliente=Cliente::find($row->id_cliente);
+                return $cliente ? $cliente->ruta->nombre_ruta : 'N/A';
+            })
+            ->addColumn('acciones', function ($row) {
+                return "<button type='button' class='btn btn-warning btn-sm'
+                            onclick='verDetallePedido({$row->numero_pedido})'>
+                            Detalle Pedido <i class='fas fa-eye'></i>
+                        </button>";
+            })
+            ->rawColumns(['acciones'])
+            ->make(true);
+    }
 }
