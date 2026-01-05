@@ -499,7 +499,7 @@ return [
         ],
         [
             'text' => 'Ventas por Día',
-            'route' => 'contabilidad.ventas.porDia',
+            'route' => 'contabilidad.ventas.comparacionGanancial',
             'icon' => 'fas fa-fw fa-calendar-day',
             'can' => 'contador.permisos',
         ],

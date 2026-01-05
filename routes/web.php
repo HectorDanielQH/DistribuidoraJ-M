@@ -269,6 +269,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //--opciones de ventas por preventista
         Route::get('ventas/porpreventista/{fechainicio}/{fechafin}', [ContabilidadVentaController::class,'ventasPorPreventistaOpciones'])->name('ventas.porPreventista.opciones');
         Route::get('ventas/porpreventista/detalle/pedidos/{fechainicio}/{fechafin}/{idpreventista}', [ContabilidadVentaController::class,'ventasPorPreventistaDetallePedidos'])->name('ventas.porPreventista.detallepedidos');
+
+        //--comparacion ganancial
+        Route::get('ventas/comparacionganancial', [ContabilidadVentaController::class,'comparacionGanancial'])->name('ventas.comparacionGanancial');
     });
     //----------------------------
     Route::resource('pedidos', PedidoController::class);
