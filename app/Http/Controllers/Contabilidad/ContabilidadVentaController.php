@@ -282,79 +282,86 @@ class ContabilidadVentaController extends Controller
                 $mes = request()->route('mes');
                 $anio = request()->route('anio');
 
-                $lote=Lotes::where('producto_id',$row->id_producto)
-                    ->whereMonth('ingreso_lote',$mes)
-                    ->whereYear('ingreso_lote',$anio)->get();
+                // 1. Obtenemos el producto una sola vez
+                $Producto = Producto::find($row->id_producto);
                 
-                $Producto=Producto::find($row->id_producto);
-                
-                if ($lote->isNotEmpty()){
-                    $lotes_precio = Lotes::where('producto_id', $row->id_producto)
-                        ->whereMonth('ingreso_lote', $mes)
-                        ->whereYear('ingreso_lote', $anio)
-                        ->get();
+                // 2. Traemos los lotes del mes
+                $suma_lotes = Lotes::where('producto_id', $row->id_producto)
+                    ->whereMonth('ingreso_lote', $mes)
+                    ->whereYear('ingreso_lote', $anio)
+                    ->get();
 
-                    // Verificamos que existan lotes para evitar división por cero
-                    if ($lotes_precio->isNotEmpty()) {
-                        // Usamos el método avg() de las colecciones de Laravel para el promedio
-                        $precio_compra = $lotes_precio->avg('precio_ingreso');
+                // 3. Verificamos si hay lotes (isNotEmpty es correcto para colecciones)
+                if ($suma_lotes->isNotEmpty()) {
+                    $total_precio = 0; // IMPORTANTE: Inicializar la variable para que no de error
 
-                        return 'Bs.- ' . number_format((float)$precio_compra, 2, '.', ',') . ' por ' . $Producto->detalle_cantidad;
+                    foreach ($suma_lotes as $lote) {
+                        // Multiplicamos cantidad por precio de cada lote
+                        $total_precio += ((float)$lote->precio_ingreso * (float)$lote->cantidad);
                     }
 
-                    return 'Bs.- 0.00 (Sin lotes)';
-                }
-                else{
+                    $total_cantidad = $suma_lotes->sum('cantidad');
+                    
+                    // Evitamos división por cero y calculamos el promedio real (Ponderado)
+                    $precio_compra_promedio = ($total_cantidad > 0) ? ($total_precio / $total_cantidad) : 0;
+
+                    return 'Bs.- ' . number_format((float)$precio_compra_promedio, 2, '.', ',') . ' por ' . $Producto->detalle_cantidad;
+                } else {
+                    // Si no hay lotes, usamos el precio base del maestro de productos
                     return 'Bs.- ' . number_format((float)$Producto->precio_compra, 2, '.', ',') . ' por ' . $Producto->detalle_cantidad;
                 }
-
             })
             ->addColumn('costo_total_mes_actual', function ($row) {
                 $mes = request()->route('mes');
                 $anio = request()->route('anio');
 
-                $lote=Lotes::where('producto_id',$row->id_producto)
-                    ->whereMonth('ingreso_lote',$mes)
-                    ->whereYear('ingreso_lote',$anio)->get();
+                $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                    ->where('ventas.id_producto', $row->id_producto)
+                    ->whereMonth('ventas.fecha_contabilizacion', $mes)
+                    ->whereYear('ventas.fecha_contabilizacion', $anio)
+                    ->whereNotNull('ventas.fecha_contabilizacion')
+                    ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
+                // 1. Obtenemos el producto una sola vez
+                $Producto = Producto::find($row->id_producto);
+                
+                // 2. Traemos los lotes del mes
+                $suma_lotes = Lotes::where('producto_id', $row->id_producto)
+                    ->whereMonth('ingreso_lote', $mes)
+                    ->whereYear('ingreso_lote', $anio)
+                    ->get();
 
-                $Producto=Producto::find($row->id_producto);
+                // 3. Verificamos si hay lotes (isNotEmpty es correcto para colecciones)
+                if ($suma_lotes->isNotEmpty()) {
+                    $total_precio = 0; // IMPORTANTE: Inicializar la variable para que no de error
 
-                if ($lote->isNotEmpty()){
-                    $lotes_precio = Lotes::where('producto_id', $row->id_producto)
-                        ->whereMonth('ingreso_lote', $mes)
-                        ->whereYear('ingreso_lote', $anio)
-                        ->get();
-
-                    // Verificamos que existan lotes para evitar división por cero
-                    if ($lotes_precio->isNotEmpty()) {
-                        // Usamos el método avg() de las colecciones de Laravel para el promedio
-                        $precio_compra = $lotes_precio->avg('precio_ingreso');
-
-                        $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                            ->where('ventas.id_producto', $row->id_producto)
-                            ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                            ->whereYear('ventas.fecha_contabilizacion', $anio)
-                            ->whereNotNull('ventas.fecha_contabilizacion')
-                            ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
-
-                        $costo_total = $precio_compra * $cantidad_ventas;
-
-                        return 'Bs.- ' . number_format((float)$costo_total, 2, '.', ',');
+                    foreach ($suma_lotes as $lote) {
+                        // Multiplicamos cantidad por precio de cada lote
+                        $total_precio += ((float)$lote->precio_ingreso * (float)$lote->cantidad);
                     }
 
-                    return 'Bs.- 0.00 (Sin lotes)';
+                    $total_cantidad = $suma_lotes->sum('cantidad');
+                    // Evitamos división por cero y calculamos el promedio real (Ponderado)
+                    $precio_compra_promedio = ($total_cantidad > 0) ? ($total_precio / $total_cantidad) : 0;
+                    $total_costo = $precio_compra_promedio * $cantidad_ventas;
+                    return 'Bs.- ' . number_format((float)$total_costo, 2, '.', ',');
+                } else {
+                    // Si no hay lotes, usamos el precio base del maestro de productos
+                    $total_costo = $Producto->precio_compra * $cantidad_ventas;
+                    return 'Bs.- ' . number_format((float)$total_costo, 2, '.', ',');
                 }
-                else{
-                    $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                        ->where('ventas.id_producto', $row->id_producto)
-                        ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                        ->whereYear('ventas.fecha_contabilizacion', $anio)
-                        ->whereNotNull('ventas.fecha_contabilizacion')
-                        ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
+            })
+            ->addColumn('precio_ventas', function ($row) {
+                $mes = request()->route('mes');
+                $anio = request()->route('anio');
 
-                    $costo_total = $Producto->precio_compra * $cantidad_ventas;
-                    return 'Bs.- ' . number_format((float)$costo_total, 2, '.', ',');
-                }
+                $precio_venta = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                    ->where('ventas.id_producto', $row->id_producto)
+                    ->whereMonth('ventas.fecha_contabilizacion', $mes)
+                    ->whereYear('ventas.fecha_contabilizacion', $anio)
+                    ->whereNotNull('ventas.fecha_contabilizacion')
+                    ->avg('forma_ventas.precio_venta');
+
+                return 'Bs.- ' . number_format((float)$precio_venta, 2, '.', ',');
             })
             ->addColumn('ventas_mes_actual', function ($row) {
                 $mes = request()->route('mes');
@@ -366,69 +373,51 @@ class ContabilidadVentaController extends Controller
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
                     ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
+
                 return 'Bs.- ' . number_format((float)$ventas_mes_actual, 2, '.', ',');
             })
             ->addColumn('ganancia_mes_actual', function ($row) {
                 $mes = request()->route('mes');
                 $anio = request()->route('anio');
 
-                $lote=Lotes::where('producto_id',$row->id_producto)
-                    ->whereMonth('ingreso_lote',$mes)
-                    ->whereYear('ingreso_lote',$anio)->get();
+                // Cantidad vendida
+                $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                    ->where('ventas.id_producto', $row->id_producto)
+                    ->whereMonth('ventas.fecha_contabilizacion', $mes)
+                    ->whereYear('ventas.fecha_contabilizacion', $anio)
+                    ->whereNotNull('ventas.fecha_contabilizacion')
+                    ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
 
-                $Producto=Producto::find($row->id_producto);
+                // Precio de venta promedio
+                $precio_venta = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                    ->where('ventas.id_producto', $row->id_producto)
+                    ->whereMonth('ventas.fecha_contabilizacion', $mes)
+                    ->whereYear('ventas.fecha_contabilizacion', $anio)
+                    ->whereNotNull('ventas.fecha_contabilizacion')
+                    ->avg('forma_ventas.precio_venta');
 
-                if ($lote->isNotEmpty()){
-                    $lotes_precio = Lotes::where('producto_id', $row->id_producto)
-                        ->whereMonth('ingreso_lote', $mes)
-                        ->whereYear('ingreso_lote', $anio)
-                        ->get();
+                // Cálculo del costo (similar a lo anterior)
+                $Producto = Producto::find($row->id_producto);
+                $suma_lotes = Lotes::where('producto_id', $row->id_producto)
+                    ->whereMonth('ingreso_lote', $mes)
+                    ->whereYear('ingreso_lote', $anio)
+                    ->get();
 
-                    // Verificamos que existan lotes para evitar división por cero
-                    if ($lotes_precio->isNotEmpty()) {
-                        // Usamos el método avg() de las colecciones de Laravel para el promedio
-                        $precio_compra = $lotes_precio->avg('precio_ingreso');
-
-                        $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                            ->where('ventas.id_producto', $row->id_producto)
-                            ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                            ->whereYear('ventas.fecha_contabilizacion', $anio)
-                            ->whereNotNull('ventas.fecha_contabilizacion')
-                            ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
-
-                        $ventas_mes_actual = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                            ->where('ventas.id_producto', $row->id_producto)
-                            ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                            ->whereYear('ventas.fecha_contabilizacion', $anio)
-                            ->whereNotNull('ventas.fecha_contabilizacion')
-                            ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
-
-                        $costo_total = $precio_compra * $cantidad_ventas;
-
-                        $ganancia = $ventas_mes_actual - $costo_total;
-
-                        return 'Bs.- ' . number_format((float)$ganancia, 2, '.', ',');
+                if ($suma_lotes->isNotEmpty()) {
+                    $total_precio = 0;
+                    foreach ($suma_lotes as $lote) {
+                        $total_precio += ((float)$lote->precio_ingreso * (float)$lote->cantidad);
                     }
+                    $total_cantidad = $suma_lotes->sum('cantidad');
+                    $precio_compra_promedio = ($total_cantidad > 0) ? ($total_precio / $total_cantidad) : 0;
+                } else {
+                    $precio_compra_promedio = $Producto->precio_compra;
+                }
 
-                    return 'Bs.- 0.00 (Sin lotes)';
-                }
-                else{
-                    $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                        ->where('ventas.id_producto', $row->id_producto)
-                        ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                        ->whereYear('ventas.fecha_contabilizacion', $anio)
-                        ->whereNotNull('ventas.fecha_contabilizacion')
-                        ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
-                    $ventas_mes_actual = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                        ->where('ventas.id_producto', $row->id_producto)
-                        ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                        ->whereYear('ventas.fecha_contabilizacion', $anio)
-                        ->whereNotNull('ventas.fecha_contabilizacion')
-                        ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
-                    $costo_total = $Producto->precio_compra * $cantidad_ventas;
-                    $ganancia = $ventas_mes_actual - $costo_total;
-                    return 'Bs.- ' . number_format((float)$ganancia, 2, '.', ',');
-                }
+                // Ganancia = (Precio de Venta - Precio de Compra) * Cantidad Vendida
+                $ganancia = ($precio_venta - $precio_compra_promedio) * $cantidad_ventas;
+
+                return 'Bs.- ' . number_format((float)$ganancia, 2, '.', ',');
             })
             ->rawColumns(['imagen_producto'])
             ->make(true);

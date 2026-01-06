@@ -56,6 +56,7 @@
                     <th>Cantidad Ventas</th>
                     <th>Precio de Compra</th>
                     <th>Costo Total Mes Actual</th>
+                    <th>Precio Ventas</th>
                     <th>Ventas Mes Actual</th>
                     <th>Ganancia Mes Actual</th>
                 </tr>
@@ -66,7 +67,7 @@
                     <th colspan="3" style="text-align:right">Totales:</th>
                     <th id="total-cantidad"></th>
                     <th></th> <th id="total-costo"></th>
-                    <th id="total-ventas"></th>
+                    <th></th> <th id="total-ventas"></th>
                     <th id="total-ganancia"></th>
                 </tr>
             </tfoot>
@@ -131,6 +132,7 @@
                     { data: 'cantidad_ventas' },
                     { data: 'precio_compra' },
                     { data: 'costo_total_mes_actual' },
+                    { data: 'precio_ventas' },
                     { data: 'ventas_mes_actual' },
                     { data: 'ganancia_mes_actual' }
                 ],
@@ -152,14 +154,12 @@
                         extend: 'excelHtml5',
                         text: '<i class="fas fa-file-excel"></i> Excel',
                         className: 'btn btn-success btn-sm shadow-sm',
-                        exportOptions: { columns: [0, 2, 3, 4, 5, 6, 7] }
                     },
                     {
                         extend: 'pdfHtml5',
                         text: '<i class="fas fa-file-pdf"></i> PDF',
                         className: 'btn btn-danger btn-sm shadow-sm',
                         orientation: 'landscape',
-                        exportOptions: { columns: [0, 2, 3, 4, 5, 6, 7] }
                     }
                 ],
                 // --- CÁLCULO DE TOTALES ---
@@ -179,7 +179,7 @@
                     };
 
                     // 2. Columnas a sumar: 3 (Cant), 5 (Costo), 6 (Ventas), 7 (Ganancia)
-                    let columnas = [3, 5, 6, 7];
+                    let columnas = [3, 5, 7, 8];
 
                     columnas.forEach(function (colIndex) {
                         // Sumar los datos de la PÁGINA ACTUAL
