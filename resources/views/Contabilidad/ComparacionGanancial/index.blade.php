@@ -170,8 +170,8 @@
                         if (typeof i === 'string') {
                             // Elimina "Bs", espacios, guiones y comas de miles
                             // Deja solo los números y el punto decimal
-                            let clean = i.replace(/[Bs\.\-\s]/g, '').replace(',', '.');
-                            return parseFloat(clean) || 0;
+                            i = i.replace(/Bs\.-/g, '').replace(/[\s,]/g, '');
+                            return parseFloat(i) || 0;
                         }
                         return 0;
                     };

@@ -411,9 +411,13 @@ class ContabilidadVentaController extends Controller
                     ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
                 $costo_total = $precio_compra_promedio * $cantidad_ventas;
                 $ganancia = $ventas_mes_actual - $costo_total;
-                return 'Bs.- ' . number_format((float)$ganancia, 2, '.', ',');
+                if($ganancia<0){
+                    return '<span style="color:red;">Bs.- ' . number_format((float)$ganancia, 2, '.', ',') . '</span>';
+                }else{
+                    return '<span style="color:green;">Bs.- ' . number_format((float)$ganancia, 2, '.', ',') . '</span>';
+                }
             })
-            ->rawColumns(['imagen_producto'])
+            ->rawColumns(['imagen_producto', 'ganancia_mes_actual'])
             ->make(true);
     }
 }
