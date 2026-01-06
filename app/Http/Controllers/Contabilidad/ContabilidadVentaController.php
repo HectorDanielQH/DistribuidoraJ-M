@@ -359,7 +359,7 @@ class ContabilidadVentaController extends Controller
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->sum(DB::raw('((forma_ventas.precio_venta * ventas.cantidad)/forma_ventas.equivalencia_cantidad)'));
+                    ->sum(DB::raw('forma_ventas.precio_venta'));
                 return 'Bs.- ' . number_format((float)$precio_ventas, 2, '.', ',');
             })
             ->addColumn('ventas_mes_actual', function ($row) {
@@ -371,7 +371,7 @@ class ContabilidadVentaController extends Controller
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->sum(DB::raw('((forma_ventas.precio_venta * ventas.cantidad)/forma_ventas.equivalencia_cantidad)*(forma_ventas.equivalencia_cantidad * ventas.cantidad)'));
+                    ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
                 return 'Bs.- ' . number_format((float)$ventas_mes_actual, 2, '.', ',');
             })
             ->addColumn('ganancia_mes_actual', function ($row) {
@@ -415,11 +415,10 @@ class ContabilidadVentaController extends Controller
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->sum(DB::raw('((forma_ventas.precio_venta * ventas.cantidad)/forma_ventas.equivalencia_cantidad)*(forma_ventas.equivalencia_cantidad * ventas.cantidad)'));
+                    ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
                 $costo_total = $precio_compra_promedio * $cantidad_ventas;
                 $ganancia = $ventas_mes_actual - $costo_total;
                 return 'Bs.- ' . number_format((float)$ganancia, 2, '.', ',');
-
             })
             ->rawColumns(['imagen_producto'])
             ->make(true);
