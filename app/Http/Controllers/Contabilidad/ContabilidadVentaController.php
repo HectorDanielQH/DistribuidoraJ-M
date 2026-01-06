@@ -354,14 +354,13 @@ class ContabilidadVentaController extends Controller
                 $mes = request()->route('mes');
                 $anio = request()->route('anio');
 
-                $precio_venta = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                $precio_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
                     ->where('ventas.id_producto', $row->id_producto)
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->avg('forma_ventas.precio_venta');
-
-                return 'Bs.- ' . number_format((float)$precio_venta, 2, '.', ',');
+                    ->avg(DB::raw('forma_ventas.precio_venta'));
+                return 'Bs.- ' . number_format((float)$precio_ventas, 2, '.', ',');
             })
             ->addColumn('ventas_mes_actual', function ($row) {
                 $mes = request()->route('mes');
@@ -372,8 +371,7 @@ class ContabilidadVentaController extends Controller
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->sum(DB::raw('forma_ventas.precio_venta * (ventas.cantidad*forma_ventas.equivalencia_cantidad)'));
-
+                    ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
                 return 'Bs.- ' . number_format((float)$ventas_mes_actual, 2, '.', ',');
             })
             ->addColumn('ganancia_mes_actual', function ($row) {
@@ -386,6 +384,7 @@ class ContabilidadVentaController extends Controller
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
                     ->sum(DB::raw('ventas.cantidad*forma_ventas.equivalencia_cantidad'));
+
                 // 1. Obtenemos el producto una sola vez
                 $Producto = Producto::find($row->id_producto);
                 
@@ -417,11 +416,10 @@ class ContabilidadVentaController extends Controller
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
                     ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->sum(DB::raw('forma_ventas.precio_venta * (ventas.cantidad*forma_ventas.equivalencia_cantidad)')); 
+                    ->sum(DB::raw('forma_ventas.precio_venta * ventas.cantidad'));
                 $costo_total = $precio_compra_promedio * $cantidad_ventas;
                 $ganancia = $ventas_mes_actual - $costo_total;
                 return 'Bs.- ' . number_format((float)$ganancia, 2, '.', ',');
-                
             })
             ->rawColumns(['imagen_producto'])
             ->make(true);
