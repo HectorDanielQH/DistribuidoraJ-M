@@ -11,7 +11,7 @@
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
             </h1>
             <span class="text-white" style="font-weight: 500; font-size: clamp(1rem, 2.5vw, 1.4rem);">
-                Panel de Ventas comparación ganancial+
+                Panel de comparación ganancial
             </span>
         </div>
     </div>
@@ -25,80 +25,52 @@
             </h2>
         </div>
         <p class="text-muted px-1" style="font-size: clamp(0.95rem, 2.2vw, 1.2rem);">
-            En este módulo, podrá comparar las ganancias.
+            En este módulo, podrá comparar las ganancias mensuales.
         </p>
+    </div>
+
+    <div>
+        <div class="container d-flex justify-content-center align-items-center mb-5">
+            <div class="card w-100" style="max-width: 600px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                <div class="card-body p-4">
+                    <label for="mes">Seleccione el Mes a Consultar: <span class="text-danger">*</span></label>
+                    <input type="month" name="mes" id="mes" class="form-control mb-3" style="height: 45px; font-size: 1rem; border-radius: 8px; border: 1px solid #ced4da; padding: 10px;">
+                    <div class="d-flex justify-content-center">
+                        <button id="btnBuscarComparacionGanancial" class="btn btn-primary px-4 py-2" style="border-radius: 8px; font-size: 1rem;">
+                            <i class="fas fa-search me-2"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!--TABLA DE PRODUCTOS-->
     <div class="container-fluid mb-5">
-        <div class="row g-4">
-            <!-- Col izquierda -->
-            <div class="col-12 col-lg-5">
-                <div class="d-flex flex-column px-1">
-                    <label for="preventista" class="mb-1">
-                        Seleccione un Pre-Ventista: <span class="text-danger">*</span>
-                    </label>
-
-                    
-
-                    <h5 class="text-dark">
-                        <strong>Lista de Ventas por Día</strong>
-                    </h5>
-
-                    <!-- Tabla responsiva -->
-                    <div class="table-responsive mt-3">
-                        <table id="tablaVentasPorDia" class="table table-dark table-striped table-bordered w-100">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Total Vendido</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Col derecha -->
-            <div class="col-12 col-lg-7 d-flex flex-column px-1">
-                <p class="text-muted mb-2" style="font-size: clamp(0.95rem, 2.2vw, 1.1rem);">
-                    <strong>Detalle de pedidos.</strong>
-                </p>
-
-                <div class="table-responsive">
-                    <table id="tablaDetallePedidos" class="table table-dark table-striped table-bordered w-100">
-                        <thead>
-                            <tr>
-                                <th>Nro. Pedido</th>
-                                <th>Cliente</th>
-                                <th>Total Pedido</th>
-                                <th>Ruta</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
-
-                <p class="text-muted mt-4 mb-2" style="font-size: clamp(0.95rem, 2.2vw, 1.1rem);">
-                    <strong>Detalle de productos.</strong>
-                </p>
-
-                <div class="table-responsive">
-                    <table id="tablaDetalleProductos" class="table table-dark table-striped table-bordered w-100">
-                        <thead>
-                            <tr>
-                                <th>Cod. Prod.</th>
-                                <th>Producto</th>
-                                <th>Cantidad</th>
-                                <th>Precio Unitario</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <table class="table table-bordered table-hover table-striped" id="tabla-comparacion-ganancial">
+            <thead>
+                <tr>
+                    <th>Cod. Prod.</th>
+                    <th>Imagen Prod.</th>
+                    <th>Nombre Prod.</th>
+                    <th>Cantidad Ventas</th>
+                    <th>Precio de Compra</th>
+                    <th>Costo Total Mes Actual</th>
+                    <th>Ventas Mes Actual</th>
+                    <th>Ganancia Mes Actual</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot class="bg-light font-weight-bold">
+                <tr>
+                    <th colspan="3" style="text-align:right">Totales:</th>
+                    <th id="total-cantidad"></th>
+                    <th></th> <th id="total-costo"></th>
+                    <th id="total-ventas"></th>
+                    <th id="total-ganancia"></th>
+                </tr>
+            </tfoot>
+        </table>
     </div>
 @stop
 
@@ -143,101 +115,103 @@
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
 
     <script>
-        $(document).ready(function(){
-            $('.select2').select2({ width: '100%' });
 
-            // DataTables base, con responsive y scrollX para pantallas pequeñas
-            $('#tablaVentasPorDia').DataTable({
+        $(document).ready(function() {
+            let tabla = $('#tabla-comparacion-ganancial').DataTable({
                 responsive: true,
-                scrollX: true
-            });
-            $('#tablaDetallePedidos').DataTable({
-                responsive: true,
-                scrollX: true
-            });
-            $('#tablaDetalleProductos').DataTable({
-                responsive: true,
-                scrollX: true
+                autoWidth: false,
+                processing: true,
+                serverSide: true,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+                columns: [
+                    { data: 'codigo_producto' },
+                    { data: 'imagen_producto' },
+                    { data: 'nombre_producto' },
+                    { data: 'cantidad_ventas' },
+                    { data: 'precio_compra' },
+                    { data: 'costo_total_mes_actual' },
+                    { data: 'ventas_mes_actual' },
+                    { data: 'ganancia_mes_actual' }
+                ],
+                // --- DISEÑO ESTÉTICO ---
+                dom: '<"d-flex flex-wrap justify-content-between align-items-center mb-3"Bf>rt<"d-flex flex-wrap justify-content-between align-items-center mt-3"ip>',
+                buttons: [
+                    {
+                        externd: 'lengthMenu',
+                        text: '<i class="fas fa-list"></i> Mostrar',
+                        className: 'btn btn-secondary btn-sm shadow-sm',
+                    },
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="fas fa-file-excel"></i> Excel',
+                        className: 'btn btn-success btn-sm shadow-sm',
+                        exportOptions: { columns: [0, 2, 3, 4, 5, 6, 7] }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-danger btn-sm shadow-sm',
+                        orientation: 'landscape',
+                        exportOptions: { columns: [0, 2, 3, 4, 5, 6, 7] }
+                    }
+                ],
+                // --- CÁLCULO DE TOTALES ---
+                footerCallback: function (row, data, start, end, display) {
+                    var api = this.api();
+
+                    // Función para limpiar el formato moneda y sumar
+                    var intVal = function (i) {
+                        return typeof i === 'string' ?
+                            i.replace(/[Bs\.\,\-\s]/g, '') * 1 :
+                            typeof i === 'number' ? i : 0;
+                    };
+
+                    // Columnas a sumar: 3(Cant), 5(Costo), 6(Ventas), 7(Ganancia)
+                    [3, 5, 6, 7].forEach(function (colIndex) {
+                        let total = api.column(colIndex, { page: 'current' }).data().reduce(function (a, b) {
+                            return intVal(a) + intVal(b);
+                        }, 0);
+
+                        // Aplicar formato según la columna
+                        let format = (colIndex === 3) ? total : 'Bs.- ' + total.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        $(api.column(colIndex).footer()).html(format);
+                    });
+                },
+                language: { url: '/i18n/es-ES.json' }
             });
         });
 
-        $('#btnBuscarVentasPorDia').on('click', function(){
-            let preventistaId = $('#preventista').val();
-            if(!preventistaId){
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Seleccione un Pre-Ventista',
-                    text: 'Por favor, seleccione un pre-ventista para buscar las ventas por día.',
-                });
+
+        $('#btnBuscarComparacionGanancial').on('click', function() {
+            let mesSeleccionado = $('#mes').val(); // Ejemplo: "2023-10"
+
+            if (!mesSeleccionado) {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Seleccione un mes.' });
                 return;
             }
-            let url="{{ route('contabilidad.ventas.porDia.preventista', ':idpreventista') }}".replace(':idpreventista', preventistaId);
 
-            $('#tablaVentasPorDia').DataTable({
-                processing: true,
-                serverSide: true,
-                language: {
-                    url: '/i18n/es-ES.json'
-                },
-                destroy: true,
-                responsive: true,
-                scrollX: true,
-                ajax: { url: url, type: 'GET' },
-                columns: [
-                    { data: 'fecha_venta', name: 'fecha_venta' },
-                    { data: 'total_venta', name: 'total_venta' },
-                    { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
-                ],
+            // 1. Descomponer año y mes
+            let partes = mesSeleccionado.split('-');
+            let anio = partes[0];
+            let mes = partes[1];
+
+            // 2. Construir la URL reemplazando los parámetros de tu ruta
+            // Usamos una URL base limpia generada por Blade
+            let urlBase = "{{ route('contabilidad.ventas.comparacionGanancial.filtro', ['mes' => ':MES', 'anio' => ':ANIO']) }}";
+            let urlNueva = urlBase.replace(':MES', mes).replace(':ANIO', anio);
+
+            // 3. Actualizar la URL de DataTables y recargar
+            let tabla = $('#tabla-comparacion-ganancial').DataTable();
+            tabla.ajax.url(urlNueva).load();
+
+            // Notificación de éxito
+            Swal.fire({
+                icon: 'success',
+                title: 'Búsqueda realizada',
+                text: 'Mes: ' + mes + ' Año: ' + anio,
+                timer: 2000,
+                showConfirmButton: false
             });
         });
-
-        function verDetalleVenta(e){
-            let fecha=e.getAttribute('data-fecha');
-            let preventistaId=e.getAttribute('data-preventista');
-            let url="{{ route('contabilidad.ventas.porDia.preventista.detallepedidos', [':fecha', ':idpreventista']) }}"
-                     .replace(':fecha', fecha).replace(':idpreventista', preventistaId);
-
-            $('#tablaDetallePedidos').DataTable({
-                processing: true,
-                serverSide: true,
-                language: {
-                    url: '/i18n/es-ES.json'
-                },
-                destroy: true,
-                responsive: true,
-                scrollX: true,
-                ajax: { url: url, type: 'GET' },
-                columns: [
-                    { data: 'nro_pedido', name: 'nro_pedido' },
-                    { data: 'cliente', name: 'cliente' },
-                    { data: 'total_pedido', name: 'total_pedido' },
-                    { data: 'ruta', name: 'ruta' },
-                    { data: 'acciones', name: 'acciones', orderable: false, searchable: false },
-                ],
-            });
-        }
-
-        function verDetallePedido(idPedido){
-            let url="{{ route('contabilidad.ventas.porDia.preventista.detallepedidos.detalle', ':idpedido') }}"
-                      .replace(':idpedido', idPedido);
-
-            $('#tablaDetalleProductos').DataTable({
-                processing: true,
-                serverSide: true,
-                language: {
-                    url: '/i18n/es-ES.json'
-                },
-                destroy: true,
-                responsive: true,
-                ajax: { url: url, type: 'GET' },
-                columns: [
-                    { data: 'codigo_producto', name: 'codigo_producto' },
-                    { data: 'nombre_producto', name: 'nombre_producto' },
-                    { data: 'cantidad', name: 'cantidad' },
-                    { data: 'precio_unitario', name: 'precio_unitario' },
-                    { data: 'total', name: 'total' },
-                ],
-            });
-        }
     </script>
 @stop

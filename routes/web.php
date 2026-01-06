@@ -12,6 +12,7 @@ use App\Http\Controllers\Administrador\RutasController;
 use App\Http\Controllers\Administrador\ClienteController;
 use App\Http\Controllers\Administrador\AsignacionController;
 use App\Http\Controllers\Administrador\ControlRutasController;
+use App\Http\Controllers\Administrador\MayoristaController;
 use App\Http\Controllers\Administrador\NoAtendidosController;
 //----------------------------Contabilidad-----------------------------------
 use App\Http\Controllers\Contabilidad\ContabilidadVentaController;
@@ -166,6 +167,12 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //-----------------------------------------------------------------//
 
+
+        //---------------------MAYORISTAS-------------------------//
+        Route::get('mayoristas/obtener-mayoristas', [MayoristaController::class, 'index'])->name('mayoristas.index');
+        Route::get('mayoristas/registrar-producto-mayor', [MayoristaController::class, 'crearProductoMayorista'])->name('mayoristas.crearProductoMayorista');
+        Route::get('mayoristas/guardar-producto-mayor', [MayoristaController::class, 'buscarProductoMayorista'])->name('mayoristas.buscarProductoMayorista');
+
         //Rutas generales de administrador
         Route::resource('usuarios', UsuarioController::class);
         Route::resource('proveedores', ProveedorController::class);
@@ -272,6 +279,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //--comparacion ganancial
         Route::get('ventas/comparacionganancial', [ContabilidadVentaController::class,'comparacionGanancial'])->name('ventas.comparacionGanancial');
+        Route::get('ventas/comparacionganancial/filtro/{mes}/{anio}', [ContabilidadVentaController::class,'comparacionGanancialData'])->name('ventas.comparacionGanancial.filtro');
     });
     //----------------------------
     Route::resource('pedidos', PedidoController::class);

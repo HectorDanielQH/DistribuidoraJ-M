@@ -339,6 +339,13 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'text' => 'Productos Mayoristas',
+            'route' => 'administrador.mayoristas.index',
+            'icon' => 'fas fa-fw fa-boxes',
+            'can' => 'administrador.permisos',
+        ],
+
+        [
             'text' => 'Lotes',
             'route' => 'administrador.lotes.index',
             'icon' => 'fas fa-fw fa-boxes',
@@ -498,7 +505,7 @@ return [
             'can' => 'contador.permisos',
         ],
         [
-            'text' => 'Ventas por Día',
+            'text' => 'Reporte Mensual',
             'route' => 'contabilidad.ventas.comparacionGanancial',
             'icon' => 'fas fa-fw fa-calendar-day',
             'can' => 'contador.permisos',
