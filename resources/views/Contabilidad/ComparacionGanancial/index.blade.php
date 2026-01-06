@@ -122,7 +122,8 @@
                 autoWidth: false,
                 processing: true,
                 serverSide: true,
-                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+                pageLength: 100,
+                lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
                 columns: [
                     { data: 'codigo_producto' },
                     { data: 'imagen_producto' },
@@ -137,9 +138,15 @@
                 dom: '<"d-flex flex-wrap justify-content-between align-items-center mb-3"Bf>rt<"d-flex flex-wrap justify-content-between align-items-center mt-3"ip>',
                 buttons: [
                     {
-                        externd: 'lengthMenu',
-                        text: '<i class="fas fa-list"></i> Mostrar',
-                        className: 'btn btn-secondary btn-sm shadow-sm',
+                        extend: 'colvis',
+                        text: '<i class="fas fa-columns"></i> Columnas',
+                        className: 'btn btn-info btn-sm shadow-sm',
+                    },
+                    {
+                        extend: 'pageLength',
+                        className: 'btn btn-secondary',
+                        text: '<i class="fas fa-list-ol"></i> Mostrar filas',
+                        titleAttr: 'Mostrar filas'
                     },
                     {
                         extend: 'excelHtml5',
