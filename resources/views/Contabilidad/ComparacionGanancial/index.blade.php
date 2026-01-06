@@ -164,24 +164,47 @@
                 ],
                 // --- CÁLCULO DE TOTALES ---
                 footerCallback: function (row, data, start, end, display) {
-                    var api = this.api();
+                    let api = this.api();
 
-                    // Función para limpiar el formato moneda y sumar
-                    var intVal = function (i) {
-                        return typeof i === 'string' ?
-                            i.replace(/[Bs\.\,\-\s]/g, '') * 1 :
-                            typeof i === 'number' ? i : 0;
+                    // 1. Función ultra-limpiadora de números
+                    let intVal = function (i) {
+                        if (typeof i === 'number') return i;
+                        if (typeof i === 'string') {
+                            // Elimina "Bs", espacios, guiones y comas de miles
+                            // Deja solo los números y el punto decimal
+                            let clean = i.replace(/[Bs\.\-\s]/g, '').replace(',', '.');
+                            return parseFloat(clean) || 0;
+                        }
+                        return 0;
                     };
 
-                    // Columnas a sumar: 3(Cant), 5(Costo), 6(Ventas), 7(Ganancia)
-                    [3, 5, 6, 7].forEach(function (colIndex) {
-                        let total = api.column(colIndex, { page: 'current' }).data().reduce(function (a, b) {
-                            return intVal(a) + intVal(b);
-                        }, 0);
+                    // 2. Columnas a sumar: 3 (Cant), 5 (Costo), 6 (Ventas), 7 (Ganancia)
+                    let columnas = [3, 5, 6, 7];
 
-                        // Aplicar formato según la columna
-                        let format = (colIndex === 3) ? total : 'Bs.- ' + total.toLocaleString('en-US', {minimumFractionDigits: 2});
-                        $(api.column(colIndex).footer()).html(format);
+                    columnas.forEach(function (colIndex) {
+                        // Sumar los datos de la PÁGINA ACTUAL
+                        let total = api
+                            .column(colIndex, { page: 'current' })
+                            .data()
+                            .reduce(function (a, b) {
+                                return intVal(a) + intVal(b);
+                            }, 0);
+
+                        // 3. Renderizar el resultado con formato estético
+                        if (colIndex === 3) {
+                            // Para cantidad (sin decimales)
+                            $(api.column(colIndex).footer()).html(
+                                Math.round(total).toLocaleString('es-BO')
+                            );
+                        } else {
+                            // Para moneda (con Bs.- y 2 decimales)
+                            $(api.column(colIndex).footer()).html(
+                                'Bs.- ' + total.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })
+                            );
+                        }
                     });
                 },
                 language: { url: '/i18n/es-ES.json' }
