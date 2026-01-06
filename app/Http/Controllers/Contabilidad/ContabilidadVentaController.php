@@ -262,6 +262,9 @@ class ContabilidadVentaController extends Controller
             ->addColumn('nombre_producto', function ($row) {
                 return $row->nombre_producto ?? 'N/A';
             })
+            ->filterColumn('nombre_producto', function ($query, $keyword) {
+                $query->where('productos.nombre_producto', 'ilike', "%{$keyword}%");
+            })
             ->addColumn('imagen_producto', function ($row) {
                 $url = route('productos.imagen', ['id' => $row->id_producto]);
                 return '<img src="'.$url.'" alt="Imagen" width="50" height="50" class="img-thumbnail">';
@@ -270,6 +273,7 @@ class ContabilidadVentaController extends Controller
                 $mes = request()->route('mes');
                 $anio = request()->route('anio');
                 $cantidad_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                    ->join('productos', 'ventas.id_producto', '=', 'productos.id')
                     ->where('ventas.id_producto', $row->id_producto)
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
@@ -350,23 +354,12 @@ class ContabilidadVentaController extends Controller
                     return 'Bs.- ' . number_format((float)$total_costo, 2, '.', ',');
                 }
             })
-            ->addColumn('precio_ventas', function ($row) {
-                $mes = request()->route('mes');
-                $anio = request()->route('anio');
-
-                $precio_ventas = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
-                    ->where('ventas.id_producto', $row->id_producto)
-                    ->whereMonth('ventas.fecha_contabilizacion', $mes)
-                    ->whereYear('ventas.fecha_contabilizacion', $anio)
-                    ->whereNotNull('ventas.fecha_contabilizacion')
-                    ->sum(DB::raw('forma_ventas.precio_venta'));
-                return 'Bs.- ' . number_format((float)$precio_ventas, 2, '.', ',');
-            })
             ->addColumn('ventas_mes_actual', function ($row) {
                 $mes = request()->route('mes');
                 $anio = request()->route('anio');
 
                 $ventas_mes_actual = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                                    ->join('productos', 'ventas.id_producto', '=', 'productos.id')
                     ->where('ventas.id_producto', $row->id_producto)
                     ->whereMonth('ventas.fecha_contabilizacion', $mes)
                     ->whereYear('ventas.fecha_contabilizacion', $anio)
