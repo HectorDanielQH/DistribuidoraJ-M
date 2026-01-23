@@ -324,8 +324,15 @@ class PedidoAdministradorController extends Controller
             ->where('pedidos.estado_pedido', false)
             ->orderBy('pedidos.numero_pedido', 'asc')
             ->get();
+        $path = asset('images/logo_distribuidora.jpg');
+        $logoBase64 = '';
+        if (file_exists($path)) {
+            $type = pathinfo($path, PATHINFO_EXTENSION);
+            $data = file_get_contents($path);
+            $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
 
-        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos'));
+        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos', 'logoBase64'));
         $pdf->setPaper('letter', 'horizontal');
         return $pdf->stream('productosDespachados.pdf');   
     }
