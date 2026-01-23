@@ -510,6 +510,12 @@ return [
             'icon' => 'fas fa-fw fa-calendar-day',
             'can' => 'contador.permisos',
         ],
+        [
+            'text' => 'Reporte Diario',
+            'route' => 'contabilidad.ventas.comparacionGanancialDiario',
+            'icon' => 'fas fa-fw fa-calendar-day',
+            'can' => 'contador.permisos',
+        ],
         /*
         [
             'text' => 'multilevel',

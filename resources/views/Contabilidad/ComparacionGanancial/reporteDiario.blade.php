@@ -33,8 +33,8 @@
         <div class="container d-flex justify-content-center align-items-center mb-5">
             <div class="card w-100" style="max-width: 600px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
                 <div class="card-body p-4">
-                    <label for="mes">Seleccione el Mes a Consultar: <span class="text-danger">*</span></label>
-                    <input type="month" name="mes" id="mes" class="form-control mb-3" style="height: 45px; font-size: 1rem; border-radius: 8px; border: 1px solid #ced4da; padding: 10px;">
+                    <label for="date">Seleccione la Fecha a Consultar: <span class="text-danger">*</span></label>
+                    <input type="date" name="date" id="date" class="form-control mb-3" style="height: 45px; font-size: 1rem; border-radius: 8px; border: 1px solid #ced4da; padding: 10px;">
                     <div class="d-flex justify-content-center">
                         <button id="btnBuscarComparacionGanancial" class="btn btn-primary px-4 py-2" style="border-radius: 8px; font-size: 1rem;">
                             <i class="fas fa-search me-2"></i> Buscar
@@ -55,9 +55,9 @@
                     <th>Nombre Prod.</th>
                     <th>Cantidad Ventas</th>
                     <th>Precio de Compra</th>
-                    <th>Costo Total Mes Actual</th>
-                    <th>Ventas Mes Actual</th>
-                    <th>Ganancia Mes Actual</th>
+                    <th>Costo Total Día Actual</th>
+                    <th>Ventas Día Actual</th>
+                    <th>Ganancia Día Actual</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -124,7 +124,7 @@
                 serverSide: true,
                 pageLength: 100,
                 lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
-                ajax: "{{ route('contabilidad.ventas.comparacionGanancial.filtro', ['mes' => date('m'), 'anio' => date('Y')]) }}",
+                ajax: "{{ route('contabilidad.ventas.comparacionGanancialDiario.filtro', ['dia' => date('d'), 'mes' => date('m'), 'anio' => date('Y')]) }}",
                 columns: [
                     { data: 'codigo_producto' },
                     { data: 'imagen_producto' },
@@ -212,22 +212,22 @@
 
 
         $('#btnBuscarComparacionGanancial').on('click', function() {
-            let mesSeleccionado = $('#mes').val(); // Ejemplo: "2023-10"
+            let diaSeleccionado = $('#date').val();
 
-            if (!mesSeleccionado) {
-                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Seleccione un mes.' });
+            if (!diaSeleccionado) {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Seleccione un día.' });
                 return;
             }
 
             // 1. Descomponer año y mes
-            let partes = mesSeleccionado.split('-');
+            let partes = diaSeleccionado.split('-');
             let anio = partes[0];
             let mes = partes[1];
-
+            let dia = partes[2];
             // 2. Construir la URL reemplazando los parámetros de tu ruta
             // Usamos una URL base limpia generada por Blade
-            let urlBase = "{{ route('contabilidad.ventas.comparacionGanancial.filtro', ['mes' => ':MES', 'anio' => ':ANIO']) }}";
-            let urlNueva = urlBase.replace(':MES', mes).replace(':ANIO', anio);
+            let urlBase = "{{ route('contabilidad.ventas.comparacionGanancialDiario.filtro', ['dia' => ':DIA', 'mes' => ':MES', 'anio' => ':ANIO']) }}";
+            let urlNueva = urlBase.replace(':DIA', dia).replace(':MES', mes).replace(':ANIO', anio);
 
             // 3. Actualizar la URL de DataTables y recargar
             let tabla = $('#tabla-comparacion-ganancial').DataTable();
@@ -237,7 +237,7 @@
             Swal.fire({
                 icon: 'success',
                 title: 'Búsqueda realizada',
-                text: 'Mes: ' + mes + ' Año: ' + anio,
+                text: 'Los datos se han actualizado correctamente.',
                 timer: 2000,
                 showConfirmButton: false
             });

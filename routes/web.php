@@ -280,6 +280,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //--comparacion ganancial
         Route::get('ventas/comparacionganancial', [ContabilidadVentaController::class,'comparacionGanancial'])->name('ventas.comparacionGanancial');
         Route::get('ventas/comparacionganancial/filtro/{mes}/{anio}', [ContabilidadVentaController::class,'comparacionGanancialData'])->name('ventas.comparacionGanancial.filtro');
+        //--comparacion ganancial diario
+        Route::get('ventas/comparacionGanancialDiario', [ContabilidadVentaController::class,'comparacionGanancialDiario'])->name('ventas.comparacionGanancialDiario');
+        Route::get('ventas/comparacionGanancialDiario/filtro/{dia}/{mes}/{anio}', [ContabilidadVentaController::class,'comparacionGanancialDiarioData'])->name('ventas.comparacionGanancialDiario.filtro');
     });
     //----------------------------
     Route::resource('pedidos', PedidoController::class);
