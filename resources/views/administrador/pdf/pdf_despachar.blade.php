@@ -163,7 +163,7 @@
                                                     @if($esPromo) <span class="badge bg-red">-{{ (int)$item->descripcion_descuento_porcentaje }}%</span> @endif
                                                     @if($item->descripcion_regalo) <br><span style="font-size:8px; color:#2e7d32;">+ {{ \Illuminate\Support\Str::limit($item->descripcion_regalo, 12) }}</span> @endif-->
                                                 </td>
-                                                <td style="padding: 6px 5px; font-size: 15px; text-align: center; font-weight: bold;">{{ $item->cantidad_pedido }}</td>
+                                                <td style="padding: 6px 5px; font-size: 15px; text-align: center; font-weight: bold;">{{ $item->cantidad_pedido }} ({{ $item->tipo_venta }}) </td>
                                                 <td style="padding: 6px 5px; font-size: 15px; text-align: right;">{{ number_format($parcial, 2) }}</td>
                                             </tr>
                                         @endforeach
