@@ -42,7 +42,6 @@
 </head>
 <body>
 
-    {{-- PROCESAMIENTO DE IMAGEN A BASE64 (Vital para DomPDF) --}}
     @php
         $pathImagen = public_path('images/logo_distribuidora.jpg'); 
         $logoBase64 = null;

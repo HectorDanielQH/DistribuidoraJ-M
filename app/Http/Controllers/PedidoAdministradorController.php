@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FormaVenta;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\Rutas;
+use App\Models\User;
 use App\Models\Venta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -124,7 +126,9 @@ class PedidoAdministradorController extends Controller
             ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
             ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
             ->value('total');
-        return view('administrador.pedidos.despachados', compact('suma_total_estimada'));
+
+        $preventistas=User::role('vendedor')->where('estado', 'ACTIVO')->get();
+        return view('administrador.pedidos.despachados', compact('suma_total_estimada', 'preventistas'));
     }
 
 
@@ -178,7 +182,9 @@ class PedidoAdministradorController extends Controller
             ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
             ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
             ->value('total');
-        return view('administrador.pedidos.paradespachar', compact('suma_total_estimada'));
+        
+        $preventistas=User::role('vendedor')->where('estado', 'ACTIVO')->get();
+        return view('administrador.pedidos.paradespachar', compact('suma_total_estimada', 'preventistas'));
     }
     public function visualizacionPedido(string $numero_pedido)
     {
@@ -270,6 +276,71 @@ class PedidoAdministradorController extends Controller
         return $pdf->stream('productosDespachados.pdf');   
     }
 
+    public function visualizacionPdfDespacharPorPreventistas(request $request){
+        $id_preventistas = $request->input('id_preventistas');
+        // Si los IDs vienen como string "1,2,3", los convertimos a array
+        if (is_string($id_preventistas)) {
+            $id_preventistas = explode(',', $id_preventistas);
+        }
+
+        $lista_de_pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
+            ->select(
+            'pedidos.numero_pedido',
+            'pedidos.id_usuario as id_vendedor',
+            DB::raw('DATE(pedidos.fecha_pedido) AS fecha_pedido'),
+            'clientes.nombres',
+            'clientes.apellidos',
+            'clientes.celular',
+            'clientes.calle_avenida',
+            'clientes.zona_barrio',
+            'ruta_id',      
+            )
+            ->whereNotNull('fecha_entrega')
+            ->where('estado_pedido', false)
+            ->whereIn('pedidos.id_usuario', $id_preventistas)
+            ->groupBy(
+                'pedidos.numero_pedido',
+                'pedidos.id_usuario',
+                'fecha_pedido',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'ruta_id',
+            )
+            ->orderBy('pedidos.id_usuario', 'asc')
+            ->get();
+            
+        $pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
+            ->join('productos', 'pedidos.id_producto', '=', 'productos.id')
+            ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+            ->select(
+                'productos.id as id_producto',
+                'productos.codigo',
+                'productos.nombre_producto',
+                'productos.cantidad as cantidad_stock',
+                'productos.detalle_cantidad',
+                'forma_ventas.tipo_venta',
+                'forma_ventas.precio_venta',
+                'pedidos.id as id_pedido',
+                'pedidos.id_usuario as id_vendedor',
+                'pedidos.numero_pedido',
+                'pedidos.cantidad as cantidad_pedido',
+                'pedidos.promocion',
+                'pedidos.descripcion_descuento_porcentaje',
+                'pedidos.descripcion_regalo',
+            )
+            ->whereNotNull('pedidos.fecha_entrega')
+            ->where('pedidos.estado_pedido', false)
+            ->whereIn('pedidos.id_usuario', $id_preventistas)
+            ->orderBy('pedidos.numero_pedido', 'asc')
+            ->get();
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos'));
+        $pdf->setPaper('letter', 'horizontal');
+        return $pdf->stream('productosDespachados.pdf');   
+    }
 
 
     public function visualizacionPdfDespacharPendientes(){
@@ -335,6 +406,81 @@ class PedidoAdministradorController extends Controller
         $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos', 'logoBase64'));
         $pdf->setPaper('letter', 'horizontal');
         return $pdf->stream('productosDespachados.pdf');   
+    }
+
+    public function visualizacionPdfDespacharPendientesPorPreventista(request $request){
+        $id_preventistas = $request->input('id_preventistas');
+
+        // Si los IDs vienen como string "1,2,3", los convertimos a array
+        if (is_string($id_preventistas)) {
+            $id_preventistas = explode(',', $id_preventistas);
+        }
+        
+        $lista_de_pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
+            ->select(
+            'pedidos.numero_pedido',
+            'pedidos.id_usuario as id_vendedor',
+            DB::raw('DATE(pedidos.fecha_pedido) AS fecha_pedido'),
+            'clientes.nombres',
+            'clientes.apellidos',
+            'clientes.celular',
+            'clientes.calle_avenida',
+            'clientes.zona_barrio',
+            'ruta_id',      
+            )
+            ->whereNull('fecha_entrega')
+            ->where('estado_pedido', false)
+            ->whereIn('pedidos.id_usuario', $id_preventistas)
+            ->groupBy(
+                'pedidos.numero_pedido',
+                'pedidos.id_usuario',
+                'fecha_pedido',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'ruta_id',
+            )
+            ->orderBy('pedidos.id_usuario', 'asc')
+            ->get();
+            
+        $pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
+            ->join('productos', 'pedidos.id_producto', '=', 'productos.id')
+            ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+            ->select(
+                'productos.id as id_producto',
+                'productos.codigo',
+                'productos.nombre_producto',
+                'productos.cantidad as cantidad_stock',
+                'productos.detalle_cantidad',
+                'forma_ventas.tipo_venta',
+                'forma_ventas.precio_venta',
+                'pedidos.id as id_pedido',
+                'pedidos.id_usuario as id_vendedor',
+                'pedidos.numero_pedido',
+                'pedidos.cantidad as cantidad_pedido',
+                'pedidos.promocion',
+                'pedidos.descripcion_descuento_porcentaje',
+                'pedidos.descripcion_regalo',
+            )
+            ->whereNull('pedidos.fecha_entrega')
+            ->where('pedidos.estado_pedido', false)
+            ->whereIn('pedidos.id_usuario', $id_preventistas)
+            ->orderBy('pedidos.numero_pedido', 'asc')
+            ->get();
+        $path = asset('images/logo_distribuidora.jpg');
+        $logoBase64 = '';
+        if (file_exists($path)) {
+            $type = pathinfo($path, PATHINFO_EXTENSION);
+            $data = file_get_contents($path);
+            $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos', 'logoBase64'));
+        $pdf->setPaper('letter', 'horizontal');
+        
+        return $pdf->stream('productosDespachados.pdf');     
     }
 
 

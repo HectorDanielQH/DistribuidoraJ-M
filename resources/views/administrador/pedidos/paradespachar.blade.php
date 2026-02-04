@@ -16,6 +16,44 @@
 @stop
 
 @section('content')
+    <x-adminlte-modal id="modalMin" title="Descargar por preventistas">
+        <p>
+            Descargar los pedidos pendientes de despacho organizados por rutas facilitará la logística de entrega y optimizará el tiempo del repartidor.
+        </p>
+
+        @foreach($preventistas as $preventista)
+            <div class="preventista-container mb-3">
+                <input type="checkbox" class="d-none" id="check{{ $preventista->id }}" name="preventistas[]" value="{{ $preventista->id }}">
+                
+                <label for="check{{ $preventista->id }}" class="glass-card">
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <span class="role-tag">Personal de Campo</span>
+                            <h4 class="user-name">
+                                {{ $preventista->nombres }} 
+                                <span class="last-name">{{ $preventista->apellido_paterno }} {{ $preventista->apellido_materno }}</span>
+                            </h4>
+                        </div>
+                    </div>
+
+                    <div class="status-section">
+                        <div class="indicator-ring">
+                            <div class="ring-fill"></div>
+                            <i class="fas fa-plus icon-add"></i>
+                            <i class="fas fa-check icon-check"></i>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        @endforeach
+
+        <x-slot name="footerSlot">
+            <x-adminlte-button class="mr-auto" theme="success" label="Descargar" onclick="descargarPdfRutas()"/>
+            <x-adminlte-button theme="danger" label="Cancelar" data-dismiss="modal"/>
+        </x-slot>        
+    </x-adminlte-modal>
+
+
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-12">
@@ -24,10 +62,12 @@
                         <h3 class="card-title mb-0">
                             <i class="fas fa-list"></i> Lista de pedidos para despachar
                         </h3>
-                        <div class="card-tools d-flex">
+                        <div class="card-tools d-flex justify-content-center align-items-center">
                             <a href="{{route('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes')}}" target="_blank" class="btn btn-info btn-sm mr-4">
                                 <i class="fas fa-file-pdf"></i> Imprimir Pedidos para el Repartidor
                             </a>
+                            
+                            <x-adminlte-button label="Descagar por rutas" data-toggle="modal" data-target="#modalMin" class="btn btn-success btn-sm"/>
                         </div>
                     </div>
                 </div>
@@ -61,8 +101,95 @@
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
-  
+    <style>
+        /* Estética General: Moderno y Espacioso */
+        .preventista-container {
+            perspective: 1000px;
+        }
 
+        .glass-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: #ffffff;
+            border: 2px solid #f1f5f9;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        /* Tipografía y Textos */
+        .role-tag {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #6366f1;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .user-name {
+            margin: 0;
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 1.25rem;
+        }
+
+        .last-name {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        /* El "Anillo" de selección - El detalle visual clave */
+        .indicator-ring {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .icon-check { display: none; color: white; }
+        .icon-add { color: #cbd5e1; transition: all 0.3s ease; }
+
+        /* --- EFECTOS DE ESTADO (MÁGICA) --- */
+
+        /* Hover */
+        .glass-card:hover {
+            border-color: #6366f1;
+            transform: scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.1);
+        }
+
+        .glass-card:hover .indicator-ring {
+            border-color: #6366f1;
+        }
+
+        /* Seleccionado (Checkbox Checked) */
+        input:checked + .glass-card {
+            background: #0f172a; /* Fondo oscuro tipo Dark Mode */
+            border-color: #0f172a;
+        }
+
+        input:checked + .glass-card .user-name { color: #ffffff; }
+        input:checked + .glass-card .role-tag { color: #818cf8; }
+        
+        input:checked + .glass-card .indicator-ring {
+            background: #6366f1;
+            border-color: #6366f1;
+            transform: rotate(360deg);
+        }
+
+        input:checked + .glass-card .icon-add { display: none; }
+        input:checked + .glass-card .icon-check { display: block; }
+    </style>
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -244,6 +371,32 @@
                     });
                 }
             });
+        }
+
+
+        function descargarPdfRutas() {
+            let selectedPreventistas = [];
+            document.querySelectorAll('input[name="preventistas[]"]:checked').forEach((checkbox) => {
+                selectedPreventistas.push(checkbox.value);
+            });
+
+            if (selectedPreventistas.length === 0) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Por favor, selecciona al menos un personal de campo.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+                return;
+            }
+
+            // Convertimos el array en una cadena separada por comas o parámetros
+            // Creamos la URL con los IDs seleccionados
+            let ids = selectedPreventistas.join(',');
+            let url = "{{ route('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes.porPreventista') }}?id_preventistas=" + ids;
+
+            // Abrimos en pestaña nueva
+            window.open(url, '_blank');
         }
     </script>
 @stop

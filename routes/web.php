@@ -228,8 +228,6 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
     //pedido administrador Controller--producto despachado
     Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
-   
-    
 
     Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
     
@@ -249,11 +247,16 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::delete('pedidos/administrador/producto/eliminar-promocion/{id}', [PedidoAdministradorController::class,'productoEliminarPromocion'])->name('pedidos.administrador.producto.eliminar.promocion');
     Route::delete('pedidos/administrador/producto/eliminar-promocion/total/{id}', [PedidoAdministradorController::class,'productoEliminarPromocionTotal'])->name('pedidos.administrador.producto.eliminar.promocion.total');
     Route::post('pedidos/administrador/producto/contabilizar-pedidos-pendientes',[PedidoAdministradorController::class,'contabilizarPedidosPendientes'])->name('pedidos.administrador.contabilizarTodosLosPendientes');
-    //pedido administrador pdf
+    
+    
+    //!pedido administrador pdf
     
     Route::get('pedidos/administrador/visualizacion-pdf-despachar', [PedidoAdministradorController::class,'visualizacionPdfDespachar'])->name('pedidos.administrador.visualizacionPdfDespachar');
-
     Route::get('pedidos/administrador/visualizacion-pdf-despachar-pendientes', [PedidoAdministradorController::class,'visualizacionPdfDespacharPendientes'])->name('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes');
+
+    //!pedido administrador pdf por rutas
+    Route::get('pedidos/administrador/visualizacion-pdf-por-rutas', [PedidoAdministradorController::class,'visualizacionPdfDespacharPorPreventistas'])->name('pedidos.administrador.visualizacionPdfDespachar.porPreventistas');
+    Route::get('pedidos/administrador/visualizacion-pdf-despachar-pendientes-por-rutas', [PedidoAdministradorController::class,'visualizacionPdfDespacharPendientesPorPreventista'])->name('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes.porPreventista');
 
     //rendimiento personal Controller
     Route::get('rendimientopersonal/obtener-rendimiento-personal/{id}', [RendimientoPersonalController::class, 'rendimientoPersonal'])->name('rendimientopersonal.obtenerRendimientoPersonal');
