@@ -217,6 +217,7 @@ table.dataTable th, table.dataTable td { vertical-align: middle; }
                 drawCallback: function() {
                     Swal.close();
                     let api = this.api();
+                    console.log('Respuesta AJAX:', api.ajax.json()); // Verifica la respuesta del servidor
                     let totalPagina = api.ajax.json().sumaGlobal || 0; // Asegúrate de que el servidor envíe este dato
                     $('#total-pagina').html('Bs. ' + totalPagina.toLocaleString('es-BO') + ''); // Formatear número a formato boliviano
                 }

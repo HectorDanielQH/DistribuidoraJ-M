@@ -1217,7 +1217,7 @@ class PedidoAdministradorController extends Controller
                 $query->whereNull('fecha_entrega');
                 $suma_total_estimada=Pedido::whereNull('fecha_entrega')
                                         ->where('estado_pedido', false)
-                                        ->where('pedidos.id_usuario', $request->input('preventistas', []))
+                                        ->whereIn('pedidos.id_usuario', $request->input('preventistas', []))
                                         ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
                                         ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
                                         ->value('total');
@@ -1227,13 +1227,13 @@ class PedidoAdministradorController extends Controller
 
                 $suma_total_estimada=Pedido::whereNotNull('fecha_entrega')
                                         ->where('estado_pedido', false)
-                                        ->where('pedidos.id_usuario', $request->input('preventistas', []))
+                                        ->whereIn('pedidos.id_usuario', $request->input('preventistas', []))
                                         ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
                                         ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
                                         ->value('total');
             }
             $query->where('estado_pedido', false);
-            $query->where('pedidos.id_usuario', $request->input('preventistas', []));
+            $query->whereIn('pedidos.id_usuario', $request->input('preventistas', []));
 
             return $dataTables->eloquent($query)
                 ->addColumn('imagen', function ($p){
