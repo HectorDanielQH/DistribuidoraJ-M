@@ -168,6 +168,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //-----------------------------------------------------------------//
 
 
+        //---------------------PEDIDOS POR PREVENTISTA-------------------------//
+        Route::get('pedidos/administrador/visualizacionPorPreventista', [PedidoAdministradorController::class,'visualizacionPorPreventista'])->name('pedidos.administrador.visualizacionPorPreventista');
+
         //---------------------MAYORISTAS-------------------------//
         Route::get('mayoristas/obtener-mayoristas', [MayoristaController::class, 'index'])->name('mayoristas.index');
         Route::get('mayoristas/registrar-producto-mayor', [MayoristaController::class, 'crearProductoMayorista'])->name('mayoristas.crearProductoMayorista');
@@ -230,6 +233,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
 
     Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
+    
     
     Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
     Route::post('pedidos/administrador/despachar-pedidos', [PedidoAdministradorController::class,'despacharPedido'])->name('pedidos.administrador.despacharPedido');

@@ -408,6 +408,12 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'text' => 'Pedidos por Preventista',
+            'route' => 'administrador.pedidos.administrador.visualizacionPorPreventista',
+            'icon' => 'fas fa-fw fa-shopping-cart',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'text' => 'Pedidos Contabilizados',
             'route' => 'administrador.pedidos.administrador.visualizacionContabilizados',
             'icon' => 'fas fa-fw fa-shopping-cart',

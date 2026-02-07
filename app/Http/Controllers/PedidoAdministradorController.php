@@ -1198,4 +1198,81 @@ class PedidoAdministradorController extends Controller
         }
         return response()->json(['success' => true, 'mensaje' => 'Pedido recontabilizado correctamente.'], 200);
     }
+
+
+
+    public function visualizacionPorPreventista(Request $request, DataTables $dataTables){
+        $request->validate([
+            'preventistas' => 'nullable|array',
+            'preventistas.*' => 'integer|exists:users,id',
+            'estado' => 'nullable|string|in:todos,pendientes,despachados',
+        ]);
+        if($request->ajax()){
+            $query=Pedido::query();
+            $query->join('productos', 'pedidos.id_producto', '=', 'productos.id');
+            $query->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id');
+            $query->select('pedidos.id_producto', DB::raw('SUM(pedidos.cantidad*forma_ventas.equivalencia_cantidad) AS cantidad_despacho'), DB::raw('SUM(pedidos.cantidad*forma_ventas.precio_venta) AS ingreso_estimado'));
+            $query->groupBy('pedidos.id_producto');
+            if($request->estado=='pendientes'){
+                $query->whereNull('fecha_entrega');
+                $suma_total_estimada=Pedido::whereNull('fecha_entrega')
+                                        ->where('estado_pedido', false)
+                                        ->where('pedidos.id_usuario', $request->input('preventistas', []))
+                                        ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+                                        ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+                                        ->value('total');
+            }
+            else if($request->estado=='despachados'){
+                $query->whereNotNull('fecha_entrega');
+
+                $suma_total_estimada=Pedido::whereNotNull('fecha_entrega')
+                                        ->where('estado_pedido', false)
+                                        ->where('pedidos.id_usuario', $request->input('preventistas', []))
+                                        ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+                                        ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+                                        ->value('total');
+            }
+            $query->where('estado_pedido', false);
+            $query->where('pedidos.id_usuario', $request->input('preventistas', []));
+
+            return $dataTables->eloquent($query)
+                ->addColumn('imagen', function ($p){
+                    if ($p->producto->foto_producto && Storage::disk('local')->exists($p->producto->foto_producto)) {
+                        return '<img src="' . route('productos.imagen', ['id' => $p->producto->id]) . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                    }
+                    return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                })
+                ->addColumn('codigo_producto', function ($p) {
+                    return $p->producto ? $p->producto->codigo : 'N/A';
+                })
+                ->filterColumn('codigo_producto', function ($query, $keyword) {
+                    $query->whereHas('producto', function ($q) use ($keyword) {
+                        $q->where('codigo', 'ilike', "%{$keyword}%");
+                    });
+                })
+                ->addColumn('nombre_producto', function ($p) {
+                    return $p->producto ? $p->producto->nombre_producto : 'N/A';
+                })
+                ->filterColumn('nombre_producto', function ($query, $keyword) {
+                    $query->whereHas('producto', function ($q) use ($keyword) {
+                        $q->where('nombre_producto', 'ilike', "%{$keyword}%");
+                    });
+                })
+                ->addColumn('stock_producto', function ($p) {
+                    return $p->producto ? (int) ($p->producto->cantidad ?? 0).' '.$p->producto->detalle_cantidad: 'N/A';
+                })
+                ->addColumn('cantidad_despacho', function ($p) {
+                    return $p->cantidad_despacho.' '.$p->producto->detalle_cantidad;
+                })
+                ->addColumn('ingreso_estimado', function ($p) {
+                    return $p->ingreso_estimado.' Bs.-';
+                })
+                ->rawColumns(['imagen'])
+                ->with('sumaGlobal', $suma_total_estimada)
+                ->make(true);
+        }
+    
+        $preventistas=User::role('vendedor')->where('estado','ACTIVO')->get();
+        return view('administrador.pedidos.por_preventista', compact('preventistas'));
+    }
 }
