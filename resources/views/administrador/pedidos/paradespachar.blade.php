@@ -1,247 +1,306 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Cantidad para despacho')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
-        <div class="d-flex flex-column justify-content-center align-items-center text-center">
-            <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
-                <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
-            </h1>
-            <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
-                Panel en pedidos proceso de despacho y/o entrega
-            </span>
+    <div class="dispatch-header">
+        <div>
+            <span>Preventa / almacen</span>
+            <h1>Cantidad para despacho</h1>
+            <p>Consolidado de productos que deben salir del almacen para entregar al repartidor.</p>
+        </div>
+        <div class="dispatch-actions">
+            <a href="{{ route('administrador.pedidos.administrador.visualizacion') }}" class="btn btn-outline-secondary dispatch-main-btn">
+                <i class="fas fa-arrow-left"></i> Volver a pendientes
+            </a>
+            <a href="{{ route('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes') }}" target="_blank" class="btn btn-info dispatch-main-btn">
+                <i class="fas fa-file-pdf"></i> Imprimir para repartidor
+            </a>
         </div>
     </div>
 @stop
 
 @section('content')
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">
-                            <i class="fas fa-list"></i> Lista de pedidos para despachar
-                        </h3>
-                        <div class="card-tools d-flex">
-                            <a href="{{route('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes')}}" target="_blank" class="btn btn-info btn-sm mr-4">
-                                <i class="fas fa-file-pdf"></i> Imprimir Pedidos para el Repartidor
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <section class="dispatch-summary">
+        <article>
+            <span>Pedidos pendientes</span>
+            <strong>{{ $resumenPedidos['pendientes'] ?? 0 }}</strong>
+            <small>Por preparar</small>
+        </article>
+        <article>
+            <span>Lineas reservadas</span>
+            <strong>{{ $resumenPedidos['pendientes_items'] ?? 0 }}</strong>
+            <small>Productos en pedidos</small>
+        </article>
+        <article>
+            <span>Total estimado</span>
+            <strong>Bs {{ number_format($suma_total_estimada ?? 0, 2, '.', ',') }}</strong>
+            <small>Referencia, no caja</small>
+        </article>
+    </section>
 
-    <div class="container">
+    <section class="dispatch-filters">
+        <label>
+            Ruta
+            <select id="filtro-ruta" class="form-control dispatch-filter">
+                <option value="">Todas las rutas</option>
+                @foreach($rutas as $ruta)
+                    <option value="{{ $ruta->id }}">{{ $ruta->nombre_ruta }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>
+            Preventista
+            <select id="filtro-preventista" class="form-control dispatch-filter">
+                <option value="">Todos</option>
+                @foreach($preventistas as $preventista)
+                    <option value="{{ $preventista->id }}">{{ trim($preventista->nombres.' '.$preventista->apellido_paterno.' '.$preventista->apellido_materno) }}</option>
+                @endforeach
+            </select>
+        </label>
+        <button class="btn btn-outline-secondary dispatch-main-btn" id="limpiar-filtros">
+            <i class="fas fa-eraser"></i> Limpiar
+        </button>
+    </section>
+
+    <section class="dispatch-table-shell">
         <table class="table table-striped table-bordered" id="tablaPedidosDespachados">
             <thead>
                 <tr>
                     <th>Cod. Prod.</th>
-                    <th>Imagen Producto</th>
-                    <th>Nombre Producto</th>
-                    <th>Stock Producto</th>
-                    <th>Cant. Despacho</th>
-                    <th>Ingreso Estimado</th>
+                    <th>Imagen</th>
+                    <th>Producto</th>
+                    <th>Stock actual</th>
+                    <th>Cantidad a sacar</th>
+                    <th>Pedidos</th>
+                    <th>Estado</th>
+                    <th>Total estimado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
-            <tfoot>
-                <tr colspan="6">
-                    <th colspan="6" style="text-align: right;">Total estimado a recaudar: {{ $suma_total_estimada }} Bs.-</th>
-                </tr>
-            </tfoot>
         </table>
-    </div>
-
+    </section>
 @stop
 
 @section('css')
-    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
-  
-
+    <link href="https://cdn.datatables.net/v/bs4/dt-2.3.3/b-3.2.4/b-html5-3.2.4/b-print-3.2.4/r-3.0.6/datatables.min.css" rel="stylesheet">
     <style>
-        input.form-control:focus, select.form-control:focus {
-            border-color: #1abc9c;
-            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+        .content-wrapper { background: #eef3f1; }
+        .dispatch-header, .dispatch-summary, .dispatch-filters, .dispatch-table-shell {
+            background: #ffffff;
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
         }
-        .card {
-            transition: all 0.3s ease;
+        .dispatch-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px;
         }
-        .card:hover {
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        .dispatch-header span, .dispatch-summary span {
+            color: #15803d;
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
         }
-        .btn:hover {
-            opacity: 0.9;
+        .dispatch-header h1 {
+            margin: 0;
+            color: #17211d;
+            font-size: 1.7rem;
+            font-weight: 900;
         }
-        .select2-container .select2-selection--single {
-            height: 35px;
-            padding: 6px 12px;
+        .dispatch-header p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-weight: 700;
         }
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 24px;
+        .dispatch-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
         }
-
-        /* separación entre botones y controles */
-        .dt-left .btn { margin-right: .5rem; }
-        .dt-left .dt-buttons { margin-right: .5rem; }
-
-        /* tamaño mínimo del buscador y del selector de filas */
-        .dataTables_filter input { min-width: 240px; }
-        .dataTables_length select { min-width: 90px; }
-
-        /* encabezados sin salto y celdas centradas verticalmente */
-        table.dataTable thead th { white-space: nowrap; }
-        table.dataTable th, table.dataTable td { vertical-align: middle; }
-
-        /* si hay muchas columnas, permite scroll horizontal */
-        .dataTables_wrapper .dataTables_scrollBody { overflow-x: auto !important; }
-
+        .dispatch-main-btn, .dispatch-action {
+            border-radius: 8px;
+            font-weight: 900;
+            min-height: 40px;
+        }
+        .dispatch-summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .dispatch-summary article {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .dispatch-summary strong {
+            display: block;
+            color: #111827;
+            font-size: 1.35rem;
+            font-weight: 900;
+        }
+        .dispatch-summary small {
+            color: #64748b;
+            font-weight: 800;
+        }
+        .dispatch-filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            align-items: end;
+        }
+        .dispatch-filters label {
+            margin: 0;
+            color: #475569;
+            font-weight: 900;
+        }
+        .dispatch-table-shell {
+            padding: 14px;
+            overflow-x: auto;
+        }
+        .dispatch-pill, .dispatch-ok, .dispatch-risk {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .dispatch-pill {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+        .dispatch-ok {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .dispatch-risk {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .dispatch-detail-list {
+            display: grid;
+            gap: 10px;
+            text-align: left;
+        }
+        .dispatch-detail-item {
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        @media (max-width: 767.98px) {
+            .dispatch-header, .dispatch-actions { flex-direction: column; }
+            .dispatch-main-btn, .dispatch-action { width: 100%; }
+            .dispatch-summary, .dispatch-filters { grid-template-columns: 1fr; }
+        }
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/v/bs4/dt-2.3.3/b-3.2.4/b-html5-3.2.4/b-print-3.2.4/r-3.0.6/datatables.min.js"></script>
 
     <script>
-        $('#tablaPedidosDespachados').DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            autoWidth: false,
-            deferRender: true,
-            pagingType: 'full_numbers',
-            pageLength: 10,
-            lengthChange: true,                   // << muestra selector de cantidad
-            lengthMenu: [5, 10, 25, 50, 100],
-            language: {
-                url: '/i18n/es-ES.json',
-                lengthMenu: 'Mostrar _MENU_ filas'  // etiqueta del selector
-            },
-
-            ajax: "{{ route('pedidos.administrador.visualizacionParaDespachado') }}",
-            columns: [
-                { data: 'codigo_producto', name: 'codigo_producto' },
-                { data: 'imagen', name: 'imagen'},
-                { data: 'nombre_producto',  name: 'nombre_producto' },
-                { data: 'stock_producto',   name: 'stock_producto',   className: 'text-end' },
-                { data: 'cantidad_despacho',name: 'cantidad_despacho',className: 'text-end' },
-                { data: 'ingreso_estimado', name: 'ingreso_estimado', className: 'text-end' }
-            ],
-            order: [[0, 'desc']],
-
-            // TOP: [Botones + Length]  ——  [Filtro]
-            // MIDDLE: tabla
-            // FOOTER: [Info] —— [Paginación]
-            dom:
-                "<'row align-items-center mb-2'<'col-12 d-flex flex-wrap justify-content-between gap-2'\
-                    <'d-flex flex-wrap align-items-center gap-2 dt-left'Bl>\
-                    <'dt-right'f>>>\
-                <'row'<'col-12'tr>>\
-                <'row align-items-center mt-2'<'col-12 d-flex flex-wrap justify-content-between gap-2'\
-                    <'dt-info'i><'dt-paging'p>>>",
-
-            buttons: [
-                {
-                    extend: 'pdfHtml5',
-                    text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
-                    className: 'btn btn-danger',
-                    titleAttr: 'Exportar a PDF',
-                    exportOptions: { columns: [0,2,3,4,5] },
-                    customize: function (doc) {
-                            doc.styles.title = { color: '#4a4a4a', fontSize: 20, alignment: 'center' };
-                            doc.styles.tableHeader = { fillColor: '#1abc9c', color: 'white', alignment: 'center' };
-                            if (doc.content[1]) {
-                            doc.content[1].margin = [0,0,0,0];
-                            doc.content[1].layout = {
-                                hLineWidth: () => 0.5, vLineWidth: () => 0.5,
-                                hLineColor: () => '#aaa', vLineColor: () => '#aaa',
-                                paddingLeft: () => 4, paddingRight: () => 4
-                            };
-                            }
-                        }
-                    },
-                {
-                    extend: 'print',
-                    text: '<i class="fas fa-print"></i> Imprimir',
-                    className: 'btn btn-info',
-                    titleAttr: 'Imprimir',
-                    exportOptions: { columns: ':visible' }
+        $(document).ready(function () {
+            const tabla = $('#tablaPedidosDespachados').DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: false,
+                autoWidth: false,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                language: {
+                    url: '/i18n/es-ES.json',
+                    search: 'Buscar producto',
+                    searchPlaceholder: 'Codigo o nombre'
                 },
-                {
-                    extend: 'colvis',
-                    text: '<i class="fas fa-columns"></i> Columnas',
-                    className: 'btn btn-secondary',
-                    titleAttr: 'Columnas'
-                }
-            ]
-        });
-    </script>
-
-    <script>
-        function verPedidoPorProducto(e){
-            let codigoProducto = e.getAttribute('id-codigo-producto');
-            Swal.fire({
-                title: 'Cargando pedidos...',
-                html: '<i class="fas fa-spinner fa-spin"></i> Por favor, espere.',
-                showConfirmButton: false,
-                allowOutsideClick: false,
+                ajax: {
+                    url: "{{ route('pedidos.administrador.visualizacionParaDespachado') }}",
+                    data: function (d) {
+                        d.ruta_id = $('#filtro-ruta').val();
+                        d.preventista_id = $('#filtro-preventista').val();
+                    }
+                },
+                columns: [
+                    { data: 'codigo_producto', name: 'codigo_producto' },
+                    { data: 'imagen', name: 'imagen', orderable: false, searchable: false },
+                    { data: 'nombre_producto', name: 'nombre_producto' },
+                    { data: 'stock_producto', name: 'stock_producto', orderable: false },
+                    { data: 'cantidad_despacho', name: 'cantidad_despacho', orderable: false },
+                    { data: 'pedidos_involucrados', orderable: false, searchable: false },
+                    { data: 'estado_stock', orderable: false, searchable: false },
+                    { data: 'ingreso_estimado', name: 'ingreso_estimado', orderable: false },
+                    { data: 'acciones', orderable: false, searchable: false }
+                ],
+                dom: "<'row align-items-center mb-2'<'col-md-6'B><'col-md-6'f>>" +
+                    "<'row'<'col-12'tr>>" +
+                    "<'row align-items-center mt-2'<'col-md-6'i><'col-md-6'p>>",
+                buttons: [
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> PDF',
+                        className: 'btn btn-danger dispatch-main-btn',
+                        exportOptions: { columns: [0, 2, 3, 4, 5, 7] },
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Imprimir',
+                        className: 'btn btn-info dispatch-main-btn',
+                        exportOptions: { columns: [0, 2, 3, 4, 5, 7] },
+                    }
+                ]
             });
 
-        }
+            $('.dispatch-filter').on('change', function () {
+                tabla.ajax.reload();
+            });
 
-        function contabilizarTodosLosPendientes(e) {
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "¿Deseas contabilizar todos los pedidos pendientes?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, contabilizar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
+            $('#limpiar-filtros').on('click', function () {
+                $('.dispatch-filter').val('');
+                tabla.ajax.reload();
+            });
+        });
+
+        function verPedidosPorProducto(e) {
+            const idProducto = e.getAttribute('id-producto');
+
+            $.ajax({
+                url: "{{ route('pedidos.administrador.pendientesPorProducto', ':id') }}".replace(':id', idProducto),
+                type: 'GET',
+                beforeSend: function () {
+                    Swal.fire({ title: 'Cargando pedidos...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                },
+                success: function (response) {
+                    const detalle = response.pedidos.map(item => `
+                        <div class="dispatch-detail-item">
+                            <strong>Pedido #${item.numero_pedido} - ${item.cliente}</strong>
+                            <div>Ruta: ${item.ruta}</div>
+                            <div>Preventista: ${item.preventista}</div>
+                            <div>Cantidad: ${item.cantidad} (${item.unidades} unidades)</div>
+                            <strong>Subtotal: Bs ${Number(item.subtotal).toFixed(2)}</strong>
+                        </div>
+                    `).join('');
+
                     Swal.fire({
-                        title: 'Contabilizando...',
-                        html: '<i class="fas fa-spinner fa-spin"></i> Por favor, espere.',
-                        showConfirmButton: false,
-                        allowOutsideClick: false,
+                        title: 'Pedidos que usan este producto',
+                        html: `<div class="dispatch-detail-list">${detalle}<div class="dispatch-detail-item"><strong>Total: Bs ${Number(response.total).toFixed(2)}</strong><div>Unidades a sacar: ${response.unidades}</div></div></div>`,
+                        width: window.innerWidth <= 700 ? '96%' : '720px',
+                        confirmButtonText: 'Cerrar',
                     });
-                    $.ajax({
-                        url: "{{ route('pedidos.administrador.contabilizarTodosLosPendientes') }}",
-                        type: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        success: function(response) {
-                            Swal.fire({
-                                title: 'Éxito',
-                                text: 'Todos los pedidos pendientes han sido contabilizados.',
-                                icon: 'success',
-                                confirmButtonText: 'Aceptar'
-                            }).then(() => {
-                                location.reload();
-                            });
-                        },
-                        error: function(xhr, status, error) {
-                            Swal.fire({
-                                title: 'Error',
-                                text: 'Ocurrió un error al contabilizar los pedidos. Inténtalo de nuevo más tarde.',
-                                icon: 'error',
-                                confirmButtonText: 'Aceptar'
-                            });
-                        }
-                    });
+                },
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo cargar el detalle.', 'error');
                 }
             });
         }

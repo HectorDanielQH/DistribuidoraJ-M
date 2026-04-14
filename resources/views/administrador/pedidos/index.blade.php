@@ -1,264 +1,374 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Pedidos pendientes')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
-        <div class="d-flex flex-column justify-content-center align-items-center text-center">
-            <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
-                <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
-            </h1>
-            <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
-                Panel de Pedidos Pendientes
-            </span>
+    <div class="orders-header">
+        <div>
+            <span>Preventa / preparacion</span>
+            <h1>Pedidos pendientes</h1>
+            <p>Pedidos tomados por preventistas. Aun no son venta: estan reservados para preparar despacho.</p>
+        </div>
+        <div class="orders-header-actions">
+            <a href="{{ route('pedidos.administrador.visualizacionParaDespachado') }}" class="btn btn-info orders-main-btn">
+                <i class="fas fa-boxes"></i> Ver cantidad para despacho
+            </a>
+            <button class="btn btn-success orders-main-btn" id="btnDespacharPedidos">
+                <i class="fas fa-truck"></i> Entregar al repartidor
+            </button>
         </div>
     </div>
 @stop
 
 @section('content')
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">
-                            <i class="fas fa-list"></i> Lista de Pedidos Pendientes
-                        </h3>
-                        <div class="card-tools d-flex">
-                            <button class="btn btn-success btn-sm mr-4" id="btnDespacharPedidos">
-                                <i class="fas fa-truck"></i> Despachar Pedidos 
-                            </button>
+    <section class="orders-flow">
+        <article>
+            <span>Pendientes</span>
+            <strong>{{ $resumenPedidos['pendientes'] ?? 0 }}</strong>
+            <small>Pedidos por preparar</small>
+        </article>
+        <article>
+            <span>Productos</span>
+            <strong>{{ $resumenPedidos['pendientes_items'] ?? 0 }}</strong>
+            <small>Lineas reservadas</small>
+        </article>
+        <article>
+            <span>Total estimado</span>
+            <strong>Bs {{ number_format($resumenPedidos['pendientes_total'] ?? 0, 2, '.', ',') }}</strong>
+            <small>No es caja cerrada</small>
+        </article>
+        <article>
+            <span>Despachados</span>
+            <strong>{{ $resumenPedidos['despachados'] ?? 0 }}</strong>
+            <small>En manos del repartidor</small>
+        </article>
+    </section>
 
-                            <button class="btn btn-success btn-sm mr-4" id="btnCantidadPedidos">
-                                <i class="fas fa-truck"></i> Ver cantidad para despacho
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="container">
+    <section class="orders-filters" aria-label="Filtros de pedidos pendientes">
+        <label>
+            Ruta
+            <select id="filtro-ruta" class="form-control orders-filter">
+                <option value="">Todas las rutas</option>
+                @foreach($rutas as $ruta)
+                    <option value="{{ $ruta->id }}">{{ $ruta->nombre_ruta }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>
+            Preventista
+            <select id="filtro-preventista" class="form-control orders-filter">
+                <option value="">Todos</option>
+                @foreach($preventistas as $preventista)
+                    <option value="{{ $preventista->id }}">{{ trim($preventista->nombres.' '.$preventista->apellido_paterno.' '.$preventista->apellido_materno) }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>
+            Fecha pedido
+            <input type="date" id="filtro-fecha" class="form-control orders-filter">
+        </label>
+        <button class="btn btn-outline-secondary orders-main-btn" id="limpiar-filtros">
+            <i class="fas fa-eraser"></i> Limpiar filtros
+        </button>
+    </section>
+
+    <section class="orders-table-shell">
         <table class="table table-striped table-bordered" id="pedidosTabla">
             <thead>
                 <tr>
-                    <th>Nro. de Pedido</th>
+                    <th>Pedido</th>
                     <th>Cliente</th>
-                    <th>Dirección</th>
+                    <th>Direccion</th>
                     <th>Ruta</th>
                     <th>Preventista</th>
-                    <th>Fecha Pedido</th>
+                    <th>Fecha</th>
+                    <th>Resumen</th>
+                    <th>Total</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
         </table>
-    </div>
+    </section>
 @stop
 
 @section('css')
-    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
-  
+    <link href="https://cdn.datatables.net/v/bs4/dt-2.3.3/r-3.0.6/datatables.min.css" rel="stylesheet">
     <style>
-        input.form-control:focus, select.form-control:focus {
-            border-color: #1abc9c;
-            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+        .content-wrapper { background: #eef3f1; }
+        .orders-header, .orders-flow, .orders-filters, .orders-table-shell {
+            background: #ffffff;
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
         }
-        .card {
-            transition: all 0.3s ease;
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px;
         }
-        .card:hover {
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        .orders-header span, .orders-flow span {
+            color: #15803d;
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
         }
-        .btn:hover {
-            opacity: 0.9;
+        .orders-header h1 {
+            margin: 0;
+            color: #17211d;
+            font-size: 1.7rem;
+            font-weight: 900;
+        }
+        .orders-header p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-weight: 700;
+        }
+        .orders-header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .orders-main-btn, .order-action-btn {
+            border-radius: 8px;
+            font-weight: 900;
+            min-height: 40px;
+        }
+        .orders-flow {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .orders-flow article {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+        }
+        .orders-flow strong {
+            display: block;
+            color: #111827;
+            font-size: 1.35rem;
+            font-weight: 900;
+        }
+        .orders-flow small {
+            color: #64748b;
+            font-weight: 800;
+        }
+        .orders-filters {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            align-items: end;
+        }
+        .orders-filters label {
+            margin: 0;
+            color: #475569;
+            font-weight: 900;
+        }
+        .orders-table-shell {
+            padding: 14px;
+            overflow-x: auto;
+        }
+        .order-number {
+            font-weight: 900;
+            color: #0f766e;
+        }
+        .order-client {
+            display: flex;
+            flex-direction: column;
+            min-width: 180px;
+        }
+        .order-client span, .order-summary-mini span {
+            color: #64748b;
+            font-weight: 700;
+        }
+        .order-summary-mini {
+            display: flex;
+            flex-direction: column;
+        }
+        .order-total {
+            color: #166534;
+            white-space: nowrap;
+        }
+        .order-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 8px;
+            padding: 6px 8px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .order-status-pending {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        .order-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .order-detail-list {
+            display: grid;
+            gap: 10px;
+            text-align: left;
+        }
+        .order-detail-item {
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .order-detail-item strong {
+            display: block;
+            color: #17211d;
+        }
+        .order-detail-meta {
+            color: #64748b;
+            font-weight: 800;
+        }
+        @media (max-width: 767.98px) {
+            .orders-header, .orders-header-actions { flex-direction: column; }
+            .orders-main-btn, .order-action-btn { width: 100%; }
+            .orders-flow, .orders-filters { grid-template-columns: 1fr; }
+            .order-actions { flex-direction: column; }
         }
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
-    
+    <script src="https://cdn.datatables.net/v/bs4/dt-2.3.3/r-3.0.6/datatables.min.js"></script>
+
     <script>
         $(document).ready(function () {
-            $('#pedidosTabla').DataTable({
+            const tabla = $('#pedidosTabla').DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
-                language: { url: '/i18n/es-ES.json' },
-                pageLength: 5,
-                lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+                responsive: false,
+                language: {
+                    url: '/i18n/es-ES.json',
+                    search: 'Buscar pedido',
+                    searchPlaceholder: 'Cliente, pedido o ruta'
+                },
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50], [10, 25, 50]],
                 ajax: {
                     url: "{{ route('administrador.pedidos.administrador.visualizacion') }}",
+                    data: function (d) {
+                        d.ruta_id = $('#filtro-ruta').val();
+                        d.preventista_id = $('#filtro-preventista').val();
+                        d.fecha_pedido = $('#filtro-fecha').val();
+                    }
                 },
                 columns: [
-                    { data:'numero_pedido'},
-                    { data:'cliente' },
-                    { data:'direccion' },
-                    { data:'ruta' },
-                    { data:'preventista' },
-                    { data:'fecha_pedido' },
-                    { data:'estado' },
-                    { data: 'acciones', orderable: false, searchable: false }
+                    { data:'numero_pedido', name: 'numero_pedido' },
+                    { data:'cliente', name: 'cliente' },
+                    { data:'direccion', name: 'direccion', orderable: false },
+                    { data:'ruta', name: 'ruta', orderable: false },
+                    { data:'preventista', name: 'preventista', orderable: false },
+                    { data:'fecha_pedido', name: 'fecha_pedido' },
+                    { data:'resumen', orderable: false, searchable: false },
+                    { data:'total_estimado', orderable: false, searchable: false },
+                    { data:'estado', orderable: false, searchable: false },
+                    { data:'acciones', orderable: false, searchable: false }
                 ],
-                columnDefs: [
-                    { targets: '_all', className: 'dt-head-center dt-body-center align-middle td-center' }
-                ],
-                drawCallback: function () {
-                    const $w = $('#tabla-productos_wrapper');
-                    $w.find('td.td-center .d-flex').addClass('justify-content-center');
-                    $w.find('td.td-center img').addClass('d-block mx-auto');
-                }
+            });
+
+            $('.orders-filter').on('change', function () {
+                tabla.ajax.reload();
+            });
+
+            $('#limpiar-filtros').on('click', function () {
+                $('.orders-filter').val('');
+                tabla.ajax.reload();
             });
         });
 
-
-
         function verPedidoCliente(e) {
-        let numeroPedido = $(e).attr('id-numero-pedido');
-        let widthValue = window.innerWidth <= 600 ? '100%' : '60%';
-        $.ajax({
-            url: "{{ route('pedidos.administrador.visualizacionPedido', ':id') }}".replace(':id', numeroPedido),
-            type: 'GET',
-            beforeSend: function () {
-                Swal.fire({
-                    title: 'Cargando Pedido...',
-                    html: '<i class="fas fa-spinner fa-spin"></i> Por favor, espera un momento.',
-                    showConfirmButton: false,
-                    allowOutsideClick: false,
-                    width: widthValue
-                });
-            },
-            success: function (response) {
-                Swal.close();
-                let html_tabla = `
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered align-middle">
-                            <thead class="table-dark text-center">
-                                <tr>
-                                    <th>📦 Código</th>
-                                    <th>🧾 Producto</th>
-                                    <th>📊 Stock</th>
-                                    <th>🛒 Solicitado</th>
-                                    <th>💵 Precio</th>
-                                    <th>🎁 Promoción</th>
-                                    <th>🧮 Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
+            const numeroPedido = $(e).attr('id-numero-pedido');
 
-                response.pedidos.forEach(item => {
-                    const descuento = item.descripcion_descuento_porcentaje ?? 0;
-                    const total = (item.cantidad_pedido * item.precio_venta) - ((item.cantidad_pedido * item.precio_venta * descuento) / 100);
+            $.ajax({
+                url: "{{ route('pedidos.administrador.visualizacionPedido', ':id') }}".replace(':id', numeroPedido),
+                type: 'GET',
+                beforeSend: function () {
+                    Swal.fire({
+                        title: 'Cargando pedido',
+                        html: 'Revisando productos reservados...',
+                        showConfirmButton: false,
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading(),
+                    });
+                },
+                success: function (response) {
+                    const totalPedido = response.pedidos.reduce((sum, item) => {
+                        const descuento = item.descripcion_descuento_porcentaje ?? 0;
+                        return sum + ((item.cantidad_pedido * item.precio_venta) - ((item.cantidad_pedido * item.precio_venta * descuento) / 100));
+                    }, 0);
 
-                    html_tabla += `
-                        <tr class="text-center">
-                            <td><code>${item.codigo}</code></td>
-                            <td>${item.nombre_producto}</td>
-                            <td>${item.cantidad_stock} ${item.detalle_cantidad}</td>
-                            <td><strong>${item.cantidad_pedido} ${item.tipo_venta}</strong></td>
-                            <td>${item.precio_venta} Bs</td>
-                            <td>
-                                ${item.promocion
-                                    ? `<span class="badge bg-success mb-1">${descuento}%</span><br>
-                                    <span class="badge bg-info">${item.descripcion_regalo ?? '🎁 Regalo'}</span>`
-                                    : `<span class="badge bg-secondary">Sin Promoción</span>`}
-                            </td>
-                            <td><strong>${total} Bs</strong></td>
-                        </tr>`;
-                });
+                    const detalle = response.pedidos.map(item => {
+                        const descuento = item.descripcion_descuento_porcentaje ?? 0;
+                        const total = (item.cantidad_pedido * item.precio_venta) - ((item.cantidad_pedido * item.precio_venta * descuento) / 100);
+                        const promo = item.promocion ? `Promocion: ${descuento}% ${item.descripcion_regalo || ''}` : 'Sin promocion';
 
-                const totalPedido = response.pedidos.reduce((sum, item) => {
-                    const descuento = item.descripcion_descuento_porcentaje ?? 0;
-                    return sum + ((item.cantidad_pedido * item.precio_venta) - ((item.cantidad_pedido * item.precio_venta * descuento) / 100));
-                }, 0);
-
-                html_tabla += `
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="text-end mt-3">
-                        <h5 class="text-success"><strong>🧾 Total Pedido: ${totalPedido.toFixed(2)} Bs</strong></h5>
-                    </div>`;
+                        return `<div class="order-detail-item">
+                            <strong>${item.nombre_producto}</strong>
+                            <div class="order-detail-meta">Codigo: ${item.codigo}</div>
+                            <div class="order-detail-meta">Solicitado: ${item.cantidad_pedido} ${item.tipo_venta} | Stock actual: ${item.cantidad_stock} ${item.detalle_cantidad}</div>
+                            <div class="order-detail-meta">Precio: Bs ${Number(item.precio_venta).toFixed(2)} | ${promo}</div>
+                            <strong>Subtotal: Bs ${total.toFixed(2)}</strong>
+                        </div>`;
+                    }).join('');
 
                     Swal.fire({
-                        title: `📋 Pedido N.º ${response.numero_pedido}`,
-                        html: html_tabla,
-                        icon: 'info',
-                        width: widthValue,
+                        title: `Pedido #${response.numero_pedido}`,
+                        html: `<div class="order-detail-list">${detalle}<div class="order-detail-item"><strong>Total estimado: Bs ${totalPedido.toFixed(2)}</strong></div></div>`,
+                        width: window.innerWidth <= 700 ? '96%' : '720px',
                         showCloseButton: true,
                         confirmButtonText: 'Cerrar',
                     });
                 },
-                error: function (xhr, status, error) {
-                    
-                    Swal.fire({
-                        icon: 'error',
-                        title: '❌ Error',
-                        text: 'No se pudo cargar el pedido. Intenta de nuevo.',
-                    });
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo cargar el pedido.', 'error');
                 }
             });
         }
 
         $('#btnDespacharPedidos').on('click', function () {
             Swal.fire({
-                title: '¿Estás seguro?',
-                text: "¿Deseas despachar todos los pedidos pendientes?",
+                title: 'Entregar pedidos al repartidor?',
+                text: 'Los pedidos pendientes pasaran a despachados. Todavia no se registran como venta.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: '✅ Sí, despachar',
+                confirmButtonText: 'Si, entregar',
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: "{{ route('pedidos.administrador.despacharPedido') }}",
-                        type: 'POST',
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        },
-                        beforeSend: function () {
-                            
-                        },
-                        success: function (response) {
-                            
-                            Swal.fire({
-                                icon: 'success',
-                                title: '✅ Pedidos Despachados',
-                                text: 'Todos los pedidos pendientes han sido despachados exitosamente.',
-                                confirmButtonText: 'Cerrar'
-                            }).then(() => {
-                                //pedidos.administrador.visualizacionDespachados
-                                window.location.href = "{{ route('pedidos.administrador.visualizacionDespachados') }}";
-                            });
-                        },
-                        error: function (xhr, status, error) {
-                            
-                            Swal.fire({
-                                icon: 'error',
-                                title: '❌ Error al Despachar',
-                                text: 'No se pudieron despachar los pedidos. Intenta de nuevo.',
-                            });
-                        }
-                    });
+                if (!result.isConfirmed) {
+                    return;
                 }
+
+                $.ajax({
+                    url: "{{ route('pedidos.administrador.despacharPedido') }}",
+                    type: 'POST',
+                    data: { _token: '{{ csrf_token() }}' },
+                    beforeSend: function () {
+                        Swal.fire({ title: 'Despachando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    },
+                    success: function (response) {
+                        Swal.fire('Listo', response.message, 'success').then(() => {
+                            window.location.href = "{{ route('pedidos.administrador.visualizacionDespachados') }}";
+                        });
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'No se pudieron despachar los pedidos.', 'error');
+                    }
+                });
             });
         });
-
-        $('#btnCantidadPedidos').on('click', function () {
-            /*nueva venetana con otra ruta*/
-            window.open("{{ route('pedidos.administrador.visualizacionParaDespachado') }}", '_blank');
-        });
-
     </script>
 @stop

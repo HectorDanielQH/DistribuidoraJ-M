@@ -89,7 +89,7 @@ class LotesController extends Controller
                 'fecha_vencimiento' => $data['vencimiento_producto'] ?? null,
                 'stock_antes' => $stockAntes,
                 'stock_despues' => $stockAntes + $cantidad,
-                'observacion' => $data['observacion'] ? $this->normalizarTexto($data['observacion']) : null,
+                'observacion' => ! empty($data['observacion']) ? $this->normalizarTexto($data['observacion']) : null,
             ]);
 
             $this->sincronizarProductoConLote($producto, $lote, $lote->stock_despues);
@@ -164,7 +164,7 @@ class LotesController extends Controller
                 'fecha_vencimiento' => $data['vencimiento_producto'] ?? null,
                 'stock_antes' => (int) $producto->cantidad,
                 'stock_despues' => $stockNuevo,
-                'observacion' => $data['observacion'] ? $this->normalizarTexto($data['observacion']) : null,
+                'observacion' => ! empty($data['observacion']) ? $this->normalizarTexto($data['observacion']) : null,
             ]);
 
             $producto->cantidad = $stockNuevo;

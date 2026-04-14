@@ -35,4 +35,8 @@ class Pedido extends Model
     {
         return $this->belongsTo(Producto::class, 'id_producto');
     }
+    public function formaVenta()
+    {
+        return $this->belongsTo(FormaVenta::class, 'id_forma_venta');
+    }
 }

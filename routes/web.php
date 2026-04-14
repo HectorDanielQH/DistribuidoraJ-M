@@ -149,6 +149,8 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //-----------------------PEDIDOS CONTABILIZADOS-----------------------//
         Route::get('pedidos/administrador/visualizacion-contabilizados', [PedidoAdministradorController::class,'visualizacionContabilizados'])->name('pedidos.administrador.visualizacionContabilizados');
+        Route::get('pedidos/administrador/visualizacion-contabilizados/fecha/{fecha}/pedidos', [PedidoAdministradorController::class,'pedidosContabilizadosPorFecha'])->name('pedidos.administrador.contabilizados.fecha.pedidos');
+        Route::get('pedidos/administrador/visualizacion-contabilizados/{numero_pedido}/detalle', [PedidoAdministradorController::class,'detallePedidoContabilizado'])->name('pedidos.administrador.contabilizados.detalle');
         Route::get('pedidos/administrador/visualizacion/{id}/editar-contabilizados', [PedidoAdministradorController::class,'editarPedidoContabilizado'])->name('pedidos.administrador.editar.contabilizados');
         
         Route::put('pedidos/administrador/visualizacion/actualizar-contabilizado/{id}', [PedidoAdministradorController::class,'agregarProductoPedidoContabilizado'])->name('pedidos.administrador.agregarProducto.contabilizado');
@@ -205,8 +207,10 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //pedido administrador Controller--producto despachado
         Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
+        Route::get('pedidos/administrador/despachados/producto/{id_producto}', [PedidoAdministradorController::class,'pedidosDespachadosPorProducto'])->name('pedidos.administrador.despachadosPorProducto');
 
         Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
+        Route::get('pedidos/administrador/pendientes/producto/{id_producto}', [PedidoAdministradorController::class,'pedidosPendientesPorProducto'])->name('pedidos.administrador.pendientesPorProducto');
 
         Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
         Route::post('pedidos/administrador/despachar-pedidos', [PedidoAdministradorController::class,'despacharPedido'])->name('pedidos.administrador.despacharPedido');
@@ -217,8 +221,11 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
 
         Route::get('pedidos/administrador/devolucion-pedidos-numero-pedido/{pedido}', [PedidoAdministradorController::class,'devolucionPedidoDevolucion'])->name('pedidos.administrador.devolucionPedidoDevolucion');
+        Route::delete('pedidos/administrador/devolucion-pedidos-numero-pedido/anular/{pedido}', [PedidoAdministradorController::class,'anularPedidoDespachado'])->name('pedidos.administrador.devolucionPedido.anular');
 
         Route::put('pedidos/administrador/devolucion-pedidos-numero-pedido/cantidad/{id}', [PedidoAdministradorController::class,'devolucionPedidoDevolucionCantidad'])->name('pedidos.administrador.devolucionPedidoDevolucion.cantidad');
+        Route::get('pedidos/administrador/devolucion-pedidos/productos/buscar', [PedidoAdministradorController::class,'buscarProductosParaDevolucion'])->name('pedidos.administrador.devolucionPedido.productos.buscar');
+        Route::post('pedidos/administrador/devolucion-pedidos-numero-pedido/{pedido}/agregar-producto', [PedidoAdministradorController::class,'agregarProductoADevolucion'])->name('pedidos.administrador.devolucionPedido.producto.agregar');
         Route::get('pedidos/administrador/producto/select/{id}', [PedidoAdministradorController::class,'productoSelectFormasVentas'])->name('pedidos.administrador.producto.select.cantidad');
         Route::put('pedidos/administrador/producto/select/actualizar/{id}', [PedidoAdministradorController::class,'productoSelectActualizar'])->name('pedidos.administrador.producto.select.actualizar');
         Route::delete('pedidos/administrador/producto/eliminar-promocion/{id}', [PedidoAdministradorController::class,'productoEliminarPromocion'])->name('pedidos.administrador.producto.eliminar.promocion');

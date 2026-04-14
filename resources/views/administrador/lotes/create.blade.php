@@ -410,10 +410,12 @@
                     });
                 },
                 error: function(xhr) {
-                    let errors = xhr.responseJSON.errors;
-                    let errorMessages = Object.values(errors).map(function(errorArray) {
-                        return errorArray.join(' ');
-                    }).join(' ');
+                    let errors = xhr.responseJSON?.errors || {};
+                    let errorMessages = Object.keys(errors).length
+                        ? Object.values(errors).map(function(errorArray) {
+                            return errorArray.join(' ');
+                        }).join(' ')
+                        : (xhr.responseJSON?.message || 'No se pudo registrar el lote. Revisa el log del sistema.');
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
