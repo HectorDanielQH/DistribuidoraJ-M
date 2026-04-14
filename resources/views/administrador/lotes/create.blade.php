@@ -1,9 +1,19 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Nuevo lote')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
+    <div class="inventory-simple-header">
+        <div>
+            <span>Inventario</span>
+            <h1>Nuevo lote</h1>
+            <p>Registra productos que ingresan al almacen de forma clara.</p>
+        </div>
+        <button class="btn btn-success inventory-simple-btn" data-toggle="modal" data-target="#agregar-lote" id="agregar-nuevo-lote">
+            <i class="fas fa-plus"></i> Agregar producto
+        </button>
+    </div>
+    <div class="container py-4 inventory-legacy-header" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
         <div class="d-flex flex-column justify-content-center align-items-center text-center">
             <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
@@ -18,7 +28,7 @@
                 class="btn btn-success mt-3 mb-2 px-4 py-2"
                 data-toggle="modal"
                 data-target="#agregar-lote"
-                id="agregar-nuevo-lote"
+                id="agregar-nuevo-lote-legacy"
                 style="border-radius: 8px;"
             >
                 <i class="fas fa-plus"></i> Agregar producto al lote
@@ -126,13 +136,14 @@
                 <tr>
                     <th>Lote</th>
                     <th>Producto</th>
-                    <th>Fecha de creación</th>
+                    <th>Precio ingreso</th>
+                    <th>Fecha de ingreso</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="3" class="text-center">Cargando productos...</td>
+                    <td colspan="5" class="text-center">Cargando ingresos...</td>
                 </tr>
             </tbody>
         </table>
@@ -143,7 +154,7 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet">
 
 
     <style>
@@ -176,15 +187,68 @@
             z-index: 1050;
         }
 
+        .content-wrapper {
+            background: #eef3f1;
+        }
+
+        .inventory-legacy-header {
+            display: none;
+        }
+
+        .inventory-simple-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+            background: #ffffff;
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
+        }
+
+        .inventory-simple-header span {
+            color: #15803d;
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .inventory-simple-header h1 {
+            margin: 0;
+            color: #17211d;
+            font-size: 1.65rem;
+            font-weight: 900;
+        }
+
+        .inventory-simple-header p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .inventory-simple-btn {
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        @media (max-width: 767.98px) {
+            .inventory-simple-header {
+                flex-direction: column;
+            }
+
+            .inventory-simple-btn {
+                width: 100%;
+            }
+        }
+
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js"></script>
 
     <script>
         $(document).ready(function(){
@@ -204,7 +268,8 @@
                 columns:[
                     {data: 'codigo_lote', name: 'codigo_lote'},
                     {data: 'producto', name: 'producto', searchable: true},
-                    {data: 'created_at', name: 'created_at'},
+                    {data: 'precio_ingreso', name: 'precio_ingreso'},
+                    {data: 'ingreso_lote', name: 'ingreso_lote'},
                     {data: 'acciones', name: 'acciones', orderable: false, searchable: false},
                 ],
                 
@@ -357,5 +422,41 @@
                 }
             });
         });
+
+        function verLote(e) {
+            window.location.href = "{{ route('administrador.lote.productos.obtenerLotesProducto', ':id') }}".replace(':id', e.getAttribute('codigo-lote'));
+        }
+
+        function editarLote(e) {
+            window.location.href = "{{ route('administrador.lote.productos.obtenerLotesProducto', ':id') }}".replace(':id', e.getAttribute('codigo-lote'));
+        }
+
+        function eliminarLote(e) {
+            Swal.fire({
+                title: 'Anular ingreso?',
+                text: 'Se descontara del inventario, pero el historial quedara guardado.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si, anular',
+                cancelButtonText: 'Cancelar',
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('administrador.lote.productos.eliminarLote', ':id') }}".replace(':id', e.getAttribute('id-lote')),
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function(response) {
+                        $('#tabla-lotes').DataTable().ajax.reload(null, false);
+                        Swal.fire('Listo', response.message, 'success');
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo anular el ingreso.', 'error');
+                    }
+                });
+            });
+        }
     </script>
 @stop

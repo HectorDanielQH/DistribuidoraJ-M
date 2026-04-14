@@ -1,6 +1,5 @@
 <?php
 
-namespace App\Http\Controllers;
 namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
@@ -42,8 +41,17 @@ class MarcaController extends Controller
             'proveedor_id.exists' => 'El proveedor seleccionado no existe.'
         ]);
 
+        $descripcion = $this->normalizarTexto($request->descripcion);
+        $existe = Marca::where('id_proveedor', $request->proveedor_id)
+            ->whereRaw('UPPER(descripcion) = ?', [$descripcion])
+            ->exists();
+
+        if ($existe) {
+            return response()->json(['message' => 'La marca ya existe para este proveedor.'], 422);
+        }
+
         Marca::create([
-            'descripcion' => trim(strtoupper($request->descripcion)),
+            'descripcion' => $descripcion,
             'id_proveedor' => $request->proveedor_id,
         ]);
 
@@ -83,8 +91,18 @@ class MarcaController extends Controller
         ]);
 
         $marca = Marca::findOrFail($linea);
+        $descripcion = $this->normalizarTexto($request->descripcion);
+        $existe = Marca::where('id_proveedor', $marca->id_proveedor)
+            ->whereRaw('UPPER(descripcion) = ?', [$descripcion])
+            ->where('id', '!=', $marca->id)
+            ->exists();
+
+        if ($existe) {
+            return response()->json(['message' => 'La marca ya existe para este proveedor.'], 422);
+        }
+
         $marca->update([
-            'descripcion' => trim(strtoupper($request->descripcion)),
+            'descripcion' => $descripcion,
         ]);
 
         return response()->json([
@@ -116,11 +134,25 @@ class MarcaController extends Controller
         ]);
 
         $marca = Marca::findOrFail($marca);
+        $existe = Marca::where('id_proveedor', $request->proveedor_id)
+            ->whereRaw('UPPER(descripcion) = ?', [$marca->descripcion])
+            ->where('id', '!=', $marca->id)
+            ->exists();
+
+        if ($existe) {
+            return response()->json(['message' => 'Ese proveedor ya tiene una marca con el mismo nombre.'], 422);
+        }
+
         $marca->update(['id_proveedor' => $request->proveedor_id]);
 
         return response()->json([
             'success' => true,
         ], 200);
 
+    }
+
+    private function normalizarTexto(string $texto): string
+    {
+        return trim(strtoupper(preg_replace('/\s+/', ' ', $texto)));
     }
 }

@@ -1,107 +1,345 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Detalle de ventas')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
-        <div class="d-flex flex-column justify-content-center align-items-center text-center">
-            <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
-                <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
-            </h1>
-            <span class="text-white" style="font-size: 1.2rem; font-weight: 500;">
-                Panel de Ventas Realizadas
-            </span>
+    <div class="sales-header">
+        <div>
+            <span>Detalle del dia</span>
+            <h1>Pedidos vendidos</h1>
+            <p>{{ \Carbon\Carbon::parse($fecha_contabilizacion)->format('d/m/Y') }}</p>
         </div>
-        <div class="mt-4 text-center">
-            <h3 class="text-lg text-white">
-                <i class="fas fa-shopping-cart mr-2"></i> Ventas Realizadas
-                <small class="text-white d-block mt-1">Seleccione un rango de fechas para ver las ventas realizadas.</small>
-            </h3>
-        </div>
+        <a href="{{ route('preventistas.ventas.vendedor.misVentas') }}" class="btn btn-outline-secondary btn-back">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
     </div>
 @stop
 
 @section('content')
-    {{-- DETALLE AGRUPADO POR USUARIO → PEDIDOS --}}
-    <div class="container mt-4">
-        <div class="table-responsive">
-            <table id="tabla-ventas" class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Ruta</th>
-                        <th>Nro. Pedido</th>
-                        <th>Monto Total</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-            </table>
-        </div>
+    <div class="sales-page">
+        <section class="help-box">
+            <i class="fas fa-receipt"></i>
+            <div>
+                <strong>Toca “Ver productos”.</strong>
+                <span>Asi veras lo que compro cada cliente.</span>
+            </div>
+        </section>
+
+        <section class="sales-list">
+            <div class="section-title">
+                <h2>Pedidos del dia</h2>
+                <p>Clientes y montos contabilizados.</p>
+            </div>
+            <div class="table-responsive">
+                <table id="tabla-ventas" class="table table-hover w-100">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Ruta</th>
+                            <th>Pedido</th>
+                            <th>Total</th>
+                            <th>Accion</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </section>
     </div>
 @stop
 
 @section('css')
-    <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
-  
-
+    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/r-3.0.6/datatables.min.css" rel="stylesheet">
     <style>
-        input.form-control:focus, select.form-control:focus {
-            border-color: #1abc9c;
-            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+        :root {
+            --surface: #ffffff;
+            --soft: #eef3f1;
+            --line: #dbe7e2;
+            --text: #17211d;
+            --muted: #64748b;
+            --green: #15803d;
+            --green-soft: #e7f6ec;
         }
-        .card {
-            transition: all 0.3s ease;
+
+        .content-wrapper {
+            background: var(--soft);
         }
-        .card:hover {
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+        .sales-header,
+        .help-box,
+        .sales-list {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
         }
-        .btn:hover {
-            opacity: 0.9;
+
+        .sales-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
         }
-        .select2-container .select2-selection--single {
-            height: 35px;
-            padding: 6px 12px;
+
+        .sales-header span {
+            color: var(--green);
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
         }
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 24px;
+
+        .sales-header h1,
+        .section-title h2 {
+            margin: 0;
+            color: var(--text);
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        .sales-header h1 {
+            font-size: 1.55rem;
+        }
+
+        .sales-header p,
+        .section-title p,
+        .help-box span {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .btn-back,
+        .btn-action {
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        .sales-page {
+            display: grid;
+            gap: 12px;
+            padding-bottom: 20px;
+        }
+
+        .help-box {
+            display: grid;
+            grid-template-columns: 42px 1fr;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+        }
+
+        .help-box i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-size: 1.25rem;
+        }
+
+        .help-box strong {
+            display: block;
+            color: var(--text);
+            font-weight: 900;
+        }
+
+        .sales-list {
+            padding: 14px;
+        }
+
+        .section-title {
+            margin-bottom: 12px;
+        }
+
+        #tabla-ventas {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        #tabla-ventas thead th {
+            border: 0;
+            color: var(--muted);
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        #tabla-ventas tbody tr {
+            background: #fbfdfc;
+        }
+
+        #tabla-ventas tbody td {
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            vertical-align: middle;
+            font-weight: 800;
+        }
+
+        #tabla-ventas tbody td:first-child {
+            border-left: 1px solid var(--line);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        #tabla-ventas tbody td:last-child {
+            border-right: 1px solid var(--line);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .sale-product-list {
+            display: grid;
+            gap: 8px;
+            text-align: left;
+        }
+
+        .sale-product-card {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 10px;
+            background: #fbfdfc;
+        }
+
+        .sale-product-card strong {
+            display: block;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .sale-product-card span {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .sale-product-total {
+            color: var(--green) !important;
+            font-size: 1.05rem;
+            font-weight: 900 !important;
+        }
+
+        @media (max-width: 575.98px) {
+            .content-header,
+            .content {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .sales-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .btn-back {
+                width: 100%;
+            }
+
+            .table-responsive {
+                overflow-x: visible;
+            }
+
+            div.dataTables_wrapper div.dataTables_filter {
+                display: none;
+            }
+
+            #tabla-ventas,
+            #tabla-ventas tbody,
+            #tabla-ventas tr,
+            #tabla-ventas td {
+                display: block;
+                width: 100%;
+            }
+
+            #tabla-ventas thead {
+                display: none;
+            }
+
+            #tabla-ventas {
+                border-collapse: collapse;
+                border-spacing: 0;
+            }
+
+            #tabla-ventas tbody tr {
+                margin-bottom: 10px;
+                padding: 12px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+            }
+
+            #tabla-ventas tbody td,
+            #tabla-ventas tbody td:first-child,
+            #tabla-ventas tbody td:last-child {
+                border: 0;
+                border-radius: 0;
+                padding: 7px 0;
+                text-align: left !important;
+            }
+
+            #tabla-ventas tbody td::before {
+                content: attr(data-mobile-label);
+                display: block;
+                margin-bottom: 3px;
+                color: var(--muted);
+                font-size: .78rem;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            .btn-action {
+                width: 100%;
+            }
         }
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/r-3.0.6/datatables.min.js"></script>
     <script>
         $(document).ready(function () {
             $('#tabla-ventas').DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
+                responsive: false,
+                searching: false,
                 language: { url: '/i18n/es-ES.json' },
                 ajax: "{{ route('preventistas.ventas.vendedor.detalleVentasPorFechaContabilizacion', ['fecha_contabilizacion' => request()->route('fecha_contabilizacion')]) }}",
                 columns: [
-                    { data: 'cliente' },
-                    { data: 'ruta' },
-                    { data: 'numero_pedido' },
-                    { data: 'sub_total' },
+                    { data: 'cliente', orderable: false, searchable: false },
+                    { data: 'ruta', orderable: false, searchable: false },
+                    { data: 'numero_pedido', orderable: false, searchable: false },
+                    { data: 'sub_total', orderable: false, searchable: false },
                     { data: 'acciones', orderable: false, searchable: false }
                 ],
-            })
+                order: [],
+                createdRow: function (row) {
+                    const labels = ['Cliente', 'Ruta', 'Pedido', 'Total', 'Accion'];
+                    $('td', row).each(function (index) {
+                        $(this).attr('data-mobile-label', labels[index]);
+                    });
+                }
+            });
         });
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function verDetalleVenta(e){
-            let idCliente = e.getAttribute('data-id-cliente');
             let numeroPedido = e.getAttribute('data-numero-pedido');
             Swal.fire({
-                title: 'Cargando detalle...',
-                html: 'Por favor, espere mientras se carga el detalle de la venta.',
+                title: 'Cargando productos...',
+                html: 'Espera un momento.',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -109,19 +347,26 @@
                         url: "{{ route('preventistas.ventas.vendedor.miNumeroDePedido', ':numero_pedido') }}".replace(':numero_pedido', numeroPedido),
                         method: 'GET',
                         success: function(response) {
-                            let detalleHtml = '<table class="table table-bordered"><thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr></thead><tbody>';
+                            let total = 0;
+                            let detalleHtml = '<div class="sale-product-list">';
                             response.forEach(item => {
-                                detalleHtml += `<tr>
-                                    <td>${item.nombre_producto}</td>
-                                    <td>${item.cantidad} ${item.detalle_cantidad}</td>
-                                    <td>${(item.cantidad * item.precio_venta).toFixed(2)} Bs.-</td>
-                                </tr>`;
+                                const itemTotal = Number(item.cantidad || 0) * Number(item.precio_venta || 0);
+                                total += itemTotal;
+                                detalleHtml += `
+                                    <div class="sale-product-card">
+                                        <strong>${escapeHtml(item.nombre_producto)}</strong>
+                                        <span>Cantidad: ${escapeHtml(item.cantidad)} ${escapeHtml(item.detalle_cantidad)}</span>
+                                        <span>Precio: Bs ${Number(item.precio_venta || 0).toFixed(2)}</span>
+                                        <span class="sale-product-total">Total: Bs ${itemTotal.toFixed(2)}</span>
+                                    </div>
+                                `;
                             });
-                            detalleHtml += '</tbody></table>';
+                            detalleHtml += `<div class="sale-product-card"><strong>Total del pedido</strong><span class="sale-product-total">Bs ${total.toFixed(2)}</span></div></div>`;
+
                             Swal.fire({
-                                title: `Detalle de la Venta - Pedido Nro. ${numeroPedido}`,
-                                html: detalleHtml,
-                                width: '800px',
+                                title: `Pedido #${numeroPedido}`,
+                                html: detalleHtml || '<div class="alert alert-info mb-0">Sin productos.</div>',
+                                width: '520px',
                                 confirmButtonText: 'Cerrar'
                             });
                         },

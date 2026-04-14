@@ -2,217 +2,360 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Catálogo de Productos</title>
+    <title>Catalogo de Ofertas</title>
     <style>
-        /* Fuente estándar PDF-friendly */
+        @page {
+            margin: 14px 16px;
+        }
+
         body {
-            font-family: DejaVu Sans, Arial, sans-serif; /* DejaVu Sans asegura compatibilidad UTF-8 */
-            font-size: 11px;
-            color: #222;
-            background-color: #ffffff; /* Evita fondos grises que Dompdf a veces imprime feos */
+            background: #ffffff;
+            color: #111111;
+            font-family: DejaVu Sans, Arial, sans-serif;
+            font-size: 10px;
             margin: 0;
-            padding: 0;
         }
 
-        .logo {
-            width: 80px;
-            margin-bottom: 6px;
-            display: block;
+        .page {
+            page-break-after: always;
         }
 
-        .catalogo-title {
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        .hero {
+            border-bottom: 10px solid #058b3a;
+            height: 88px;
+            margin-bottom: 12px;
+            position: relative;
+            width: 100%;
+        }
+
+        .hero-bg {
+            height: 88px;
+            left: 0;
+            object-fit: cover;
+            opacity: .5;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .logo-box {
+            background: #ffffff;
+            border-radius: 50%;
+            height: 64px;
+            left: 12px;
+            padding: 5px;
+            position: absolute;
+            top: 10px;
+            width: 64px;
+            z-index: 3;
+        }
+
+        .logo-box img {
+            height: 64px;
+            object-fit: contain;
+            width: 64px;
+        }
+
+        .hero-title {
+            background: #ffffff;
+            color: #000000;
+            font-size: 34px;
             font-weight: bold;
-            font-size: 14px; /* valor fijo mejor que rem */
-            color: #234e70;
-            margin: 0 0 5px 0;
+            left: 95px;
+            letter-spacing: 1px;
+            line-height: 1;
+            padding: 12px 18px;
+            position: absolute;
+            right: 10px;
+            text-align: center;
+            top: 9px;
+            z-index: 2;
+        }
+
+        .meta-strip {
+            background: #f3f3f3;
+            border: 1px solid #d7d7d7;
+            color: #333333;
+            font-size: 9px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding: 5px 8px;
             text-align: center;
         }
 
-        .marca-title {
-            background-color: #e3e9f9;
-            padding: 5px 10px;
-            border-left: 4px solid #234e70;
+        .brand-title {
+            background: #058b3a;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: .5px;
+            margin: 10px 0 6px;
+            padding: 7px 10px;
+            text-transform: uppercase;
+        }
+
+        .line-title {
+            background: #ffd900;
+            color: #111111;
             font-size: 12px;
             font-weight: bold;
-            color: #234e70;
-            margin: 18px 0 7px 0;
+            margin: 6px 0 4px;
+            padding: 5px 9px;
         }
 
-        .linea-title {
-            font-size: 11px;
-            font-weight: bold;
-            color: #205072;
-            margin: 8px 0 6px 4px;
-            border-left: 3px solid #2f80ed;
-            padding-left: 5px;
-        }
-
-        .producto-table {
-            width: 100%;
-            border: 1px solid #e3e9f9;
-            background-color: #fff;
+        .grid {
+            border-collapse: collapse;
             margin-bottom: 8px;
-            border-radius: 4px; /* menos costoso de renderizar que 7px */
-            border-collapse: collapse;
-        }
-
-        .producto-table td {
-            vertical-align: top;
-            padding: 4px 6px;
-        }
-
-        .producto-img {
-            width: 54px;
-            height: 54px;
-            object-fit: cover;
-            border-radius: 3px;
-            border: 1px solid #d1d9e6;
-            background-color: #f3f6fa;
-            display: block;
-        }
-
-        .producto-nombre {
-            font-size: 11px;
-            font-weight: bold;
-            color: #205072;
-            margin-bottom: 1px;
-        }
-
-        .promo-badge {
-            font-size: 10px;
-            background-color: #e5fae5;
-            color: #27ae60;
-            font-weight: bold;
-            padding: 1px 4px;
-            border-radius: 4px;
-            margin-left: 4px;
-            display: inline-block;
-        }
-
-        .precios-table {
             width: 100%;
-            border-radius: 3px;
-            border: 1px solid #e9e9ef;
-            margin-top: 4px;
+        }
+
+        .grid td {
+            padding: 5px 7px 8px;
+            vertical-align: top;
+            width: 33.333%;
+        }
+
+        .item {
+            height: 108px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .item-table {
             border-collapse: collapse;
+            width: 100%;
         }
 
-        .precios-table th {
-            background-color: #f7fbfc;
-            color: #205072;
+        .item-table td {
+            padding: 0;
+            vertical-align: top;
+        }
+
+        .photo-cell {
+            text-align: center;
+            width: 76px;
+        }
+
+        .product-img {
+            height: 74px;
+            object-fit: contain;
+            width: 74px;
+        }
+
+        .info-cell {
+            padding-left: 7px !important;
+        }
+
+        .name {
+            color: #111111;
+            font-size: 11.5px;
             font-weight: bold;
-            padding: 3px;
-            font-size: 10px;
-            border-bottom: 1px solid #e4e7ee;
-            text-align: left;
-        }
-
-        .precios-table td {
-            padding: 3px;
-            font-size: 10px;
-            color: #333;
-            background-color: #fff;
-        }
-
-        .promo-info {
-            font-size: 10px;
-            color: #25b352;
+            line-height: 1.05;
             margin-bottom: 2px;
         }
-    </style>
 
+        .detail {
+            color: #333333;
+            font-size: 8.6px;
+            font-weight: bold;
+            line-height: 1.1;
+            margin-bottom: 3px;
+        }
+
+        .limit {
+            color: #058b3a;
+            font-size: 8.5px;
+            font-weight: bold;
+            line-height: 1.15;
+            margin-bottom: 3px;
+        }
+
+        .price {
+            background: #ffd900;
+            border-radius: 5px;
+            color: #f00000;
+            display: inline-block;
+            font-size: 19px;
+            font-weight: bold;
+            line-height: 1;
+            min-width: 76px;
+            padding: 8px 9px 7px;
+        }
+
+        .price small {
+            font-size: 13px;
+        }
+
+        .sale-type {
+            color: #333333;
+            display: block;
+            font-size: 7.8px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .promo {
+            background: #058b3a;
+            color: #ffffff;
+            display: inline-block;
+            font-size: 7.8px;
+            font-weight: bold;
+            margin-top: 3px;
+            padding: 2px 5px;
+        }
+
+        .footer {
+            border-top: 2px solid #d71920;
+            bottom: 0;
+            display: table;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .qr-box {
+            background: #058b3a;
+            color: #ffffff;
+            display: table-cell;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 8px;
+            vertical-align: middle;
+            width: 130px;
+        }
+
+        .valid-box {
+            color: #222222;
+            display: table-cell;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: .5px;
+            padding: 9px 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .brand-box {
+            background: #d71920;
+            color: #ffffff;
+            display: table-cell;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+            width: 210px;
+        }
+
+        .no-products {
+            color: #555555;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 40px 0;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <div class="container text-center my-2">
-        <img src="{{ public_path('images/logo_distribuidora.jpg') }}" alt="Logo" class="logo">
-        <div class="catalogo-title">Catálogo de Productos</div>
-    </div>
-    <div class="container">
+@php
+    $productosPorMarca = $productos->groupBy('id_marca');
+    $paginas = [];
 
-        @forelse($marcas as $marca)
-            @php
-                // Filtra las líneas que tienen productos activos
-                $lineas_con_productos = $marca->linea->filter(function($linea) {
-                    return $linea->productos->where('estado_de_baja', false)->where('cantidad','>',0)->count() > 0;
-                });
-            @endphp
-            @if($lineas_con_productos->count() > 0)
-            <div>
-                <div class="marca-title">{{ $marca->descripcion }}</div>
+    foreach ($productosPorMarca as $productosMarca) {
+        $marca = optional($productosMarca->first()->marca)->descripcion ?: 'Sin marca';
+        $productosPorLinea = $productosMarca->groupBy('id_linea');
 
-                @foreach($lineas_con_productos as $linea)
-                    @php
-                        $productosActivos = $linea->productos->where('estado_de_baja', false)->where('cantidad','>',0);
-                    @endphp
-                    @if($productosActivos->count() > 0)
-                    <div class="linea-title">
-                        Línea: {{ $linea->descripcion_linea }}
-                    </div>
-                    @foreach($productosActivos as $producto)
-                    <table class="producto-table">
-                        <tr>
-                            <td style="width: 58px;">
-                                <img src="{{ storage_path('app/private/' . $producto->foto_producto) }}"
-                                    alt="{{ $producto->nombre_producto }}"
-                                    class="producto-img">
-                            </td>
-                            <td>
-                                <div class="producto-nombre">
-                                    {{ $producto->nombre_producto }}
-                                    @if($producto->promocion)
-                                        <span class="promo-badge">Promoción</span>
-                                    @endif
-                                </div>
-                                <div style="font-size:.81rem; color:#666;">
-                                    Código: <b>{{ $producto->codigo }}</b>
-                                </div>
-                                <div style="font-size:.85rem; color:#222; margin:2px 0 3px 0;">
-                                    {{ $producto->descripcion_producto }}
-                                </div>
-                                <div style="font-size:.85rem; color:#234e70;">
-                                    Cantidad: <b>{{ $producto->cantidad }}</b> {{ $producto->detalle_cantidad }}
-                                </div>
-                                @if($producto->promocion)
-                                <div class="promo-info">
-                                    @if($producto->descripcion_descuento_porcentaje)
-                                        <span>Desc: <b>{{ $producto->descripcion_descuento_porcentaje }}%</b></span>
-                                    @endif
-                                    @if($producto->descripcion_regalo)
-                                        <span style="margin-left:6px;">Regalo: <b>{{ $producto->descripcion_regalo }}</b></span>
-                                    @endif
-                                </div>
-                                @endif
+        foreach ($productosPorLinea as $productosLinea) {
+            $linea = optional($productosLinea->first()->linea)->descripcion_linea ?: 'Sin linea';
 
-                                @php $ventasActivas = $producto->formaVentas->where('activo', true); @endphp
-                                @if($ventasActivas->count() > 0)
-                                <table class="precios-table">
-                                    <thead>
-                                    <tr>
-                                        <th>Venta</th>
-                                        <th>Precio (Bs)</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    @foreach($ventasActivas as $venta)
-                                    <tr>
-                                        <td>{{ $venta->tipo_venta }}</td>
-                                        <td>{{ number_format($venta->precio_venta, 2, ',', '.') }}</td>
-                                    </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
-                    @endforeach
-                    @endif
-                @endforeach
+            foreach ($productosLinea->values()->chunk(18) as $chunk) {
+                $paginas[] = [
+                    'marca' => $marca,
+                    'linea' => $linea,
+                    'productos' => $chunk,
+                ];
+            }
+        }
+    }
+@endphp
+
+@forelse($paginas as $pagina)
+    <div class="page">
+        <div class="hero">
+            <img src="{{ public_path('images/background.webp') }}" class="hero-bg" alt="Fondo">
+            <div class="logo-box">
+                <img src="{{ public_path('images/logo_color.webp') }}" alt="Logo">
             </div>
-            @endif
-        @empty
-            <p class="text-muted">No se encontraron marcas registradas.</p>
-        @endforelse
+            <div class="hero-title">Distribuidora H&J</div>
+        </div>
+
+        <div class="meta-strip">
+            Catalogo H&J | {{ $resumen['total_productos'] }} productos disponibles | {{ $resumen['total_promociones'] }} promociones | Generado: {{ $resumen['fecha'] }}
+        </div>
+
+        <div class="brand-title">Marca: {{ $pagina['marca'] }}</div>
+        <div class="line-title">Linea: {{ $pagina['linea'] }}</div>
+
+        <table class="grid">
+            @foreach($pagina['productos']->chunk(3) as $fila)
+                <tr>
+                    @foreach($fila as $producto)
+                        @php
+                            $foto = $producto->foto_producto && file_exists(storage_path('app/private/' . $producto->foto_producto))
+                                ? storage_path('app/private/' . $producto->foto_producto)
+                                : public_path('images/logo_color.webp');
+                            $ventaPrincipal = $producto->formaVentas->sortBy('precio_venta')->first();
+                            $precio = $ventaPrincipal ? $ventaPrincipal->precio_venta : 0;
+                            $tipoVenta = $ventaPrincipal ? $ventaPrincipal->tipo_venta : 'Sin forma de venta';
+                            $detalle = $producto->presentacion ?: $producto->detalle_cantidad;
+                        @endphp
+                        <td>
+                            <div class="item">
+                                <table class="item-table">
+                                    <tr>
+                                        <td class="photo-cell">
+                                            <img src="{{ $foto }}" alt="{{ $producto->nombre_producto }}" class="product-img">
+                                        </td>
+                                        <td class="info-cell">
+                                            <div class="name">{{ $producto->nombre_producto }}</div>
+                                            <div class="detail">{{ $detalle }}</div>
+                                            <div class="limit">Max. {{ max(1, min((int) $producto->cantidad, 6)) }} {{ $producto->detalle_cantidad }} por boleta</div>
+                                            <div class="price">
+                                                <small>Bs.</small>{{ number_format($precio, 2, '.', '') }}
+                                            </div>
+                                            <span class="sale-type">{{ $tipoVenta }}</span>
+                                            @if($producto->promocion)
+                                                <span class="promo">
+                                                    @if($producto->descripcion_descuento_porcentaje)
+                                                        Desc. {{ $producto->descripcion_descuento_porcentaje }}%
+                                                    @else
+                                                        Promo
+                                                    @endif
+                                                    @if($producto->descripcion_regalo)
+                                                        + {{ $producto->descripcion_regalo }}
+                                                    @endif
+                                                </span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </td>
+                    @endforeach
+
+                    @for($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
     </div>
+@empty
+    <div class="no-products">No hay productos disponibles para generar el catalogo.</div>
+@endforelse
 </body>
 </html>

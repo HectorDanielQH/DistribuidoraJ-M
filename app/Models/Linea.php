@@ -11,10 +11,10 @@ class Linea extends Model
         'id_marca'
     ];
 
-    protected function marca(){
+    public function marca(){
         return $this->belongsTo(Marca::class,'id_marca');
     }
-    protected function productos(){
+    public function productos(){
         return $this->hasMany(Producto::class,'id_linea');
     }
     

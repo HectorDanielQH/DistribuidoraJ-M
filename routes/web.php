@@ -40,13 +40,13 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('usuarios/imagenperfil/{id}', [UsuarioController::class, 'imagenPerfil'])->name('usuarios.imagenperfil');
     //--Rutas Productos para todos los usuarios autenticados---
-    Route::get('productos/imagenproducto/{id}', [ProductoController::class, 'imagenProducto'])->name('productos.imagen');
-    Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->name('productos.imagen.codigo');
+    Route::get('productos/imagenproducto/{id}', [ProductoController::class, 'imagenProducto'])->middleware('can:productos.imagenes')->name('productos.imagen');
+    Route::get('productos/imagenproductocodigo/{codigo}', [ProductoController::class, 'imagenProductoCodigo'])->middleware('can:productos.imagenes')->name('productos.imagen.codigo');
     //pdf descargar catalogo --VENDEDOR --ADMINISTRADOR
-    Route::get('productos/vendedor/descargar-catalogo', [ProductoVendedorController::class, 'descargarCatalogo'])->name('productos.vendedor.descargarCatalogo');
+    Route::get('productos/vendedor/descargar-catalogo', [ProductoVendedorController::class, 'descargarCatalogo'])->middleware('can:productos.catalogo')->name('productos.vendedor.descargarCatalogo');
 
 
-    Route::prefix('administrador')->name('administrador.')->group(function () {
+    Route::prefix('administrador')->name('administrador.')->middleware('can:administrador.permisos')->group(function () {
         //Rutas de permisos
         Route::get('/permisos', [PermisosController::class, 'index'])->name('permisos.index');
         Route::post('/permisos/store', [PermisosController::class, 'store'])->name('permisos.store');
@@ -179,7 +179,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
     });
     //---------------------------------------
 
-    Route::prefix('preventistas')->name('preventistas.')->group(function () {
+    Route::prefix('preventistas')->name('preventistas.')->middleware('can:vendedor.permisos')->group(function () {
         //Producto vendedor Controller
         Route::get('productos/vendedor/obtener-productos', [ProductoVendedorController::class, 'obtenerProductos'])->name('productos.vendedor.obtenerProductos');
 
@@ -197,68 +197,75 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('pedidos/vendedor/mi-numero-de-pedido/{numero_pedido}', [PedidoController::class, 'obtenerPedidosPorNumero'])->name('ventas.vendedor.miNumeroDePedido');
         //------------------------------------
     });
-    Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
+    Route::middleware('can:administrador.permisos')->group(function () {
+        Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
 
-    Route::get('asignacionclientes/obtener-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'obtenerVendedoresRuta'])->name('vendedores.obtenerRuta');
-    Route::put('asignacionclientes/resetear-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'resetearVendedoresRuta'])->name('vendedores.resetearRuta');
+        Route::get('asignacionclientes/obtener-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'obtenerVendedoresRuta'])->name('vendedores.obtenerRuta');
+        Route::put('asignacionclientes/resetear-vendedores-ruta/{id_vendedor}', [AsignacionController::class, 'resetearVendedoresRuta'])->name('vendedores.resetearRuta');
 
-    //asignacion de vendedores
-    Route::get('asignacionVendedores/actualizar', [AsignacionVendedorController::class, 'index'])->name('asignacionvendedor.index');
+        //pedido administrador Controller--producto despachado
+        Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
 
-    Route::put('asignacionVendedores/registrar-atencion/{id}', [AsignacionVendedorController::class, 'registrarAtencion'])->name('registrarAtencion.sinpedido');
+        Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
 
-    //Crear pedidos desdee vendedor
-    Route::get('pedidos/vendedor/obtenerproducto/{id}', [PedidoController::class, 'ObtenerProductoParaPedido'])->name('pedidos.vendedor.obtenerProducto');
-    Route::get('pedidos/vendedor/obtenerformaventa/{id}', [PedidoController::class, 'ObtenerFormaVenta'])->name('pedidos.vendedor.obtenerformaventa');
-    Route::post('pedidos/vendedor/registrarpedido', [PedidoController::class, 'registrarPedido'])->name('pedidos.vendedor.registrarPedido');
+        Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
+        Route::post('pedidos/administrador/despachar-pedidos', [PedidoAdministradorController::class,'despacharPedido'])->name('pedidos.administrador.despacharPedido');
 
-    //ver pedidos desde vendedor
-    Route::get('pedidos/vendedor/obtener-pedidos-realizados/{id_cliente}', [AsignacionVendedorController::class, 'obtenerPedidosProceso'])->name('pedidos.vendedor.obtenerPedidosProceso');
-    Route::get('pedidos/vendedor/obtener-pedidos-realizados-pendientes/{id_cliente}', [AsignacionVendedorController::class, 'obtenerPedidosPendientes'])->name('pedidos.vendedor.obtenerPedidosPendientes');
-
-    //pdf vendedor
-    Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
-
-    //pedido administrador Controller--producto despachado
-    Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
-   
-    
-
-    Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
-    
-    Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
-    Route::post('pedidos/administrador/despachar-pedidos', [PedidoAdministradorController::class,'despacharPedido'])->name('pedidos.administrador.despacharPedido');
-    
-    //--------------------------------DEVOLUCION DE PEDIDOS DESPACHADOS-----------------------------
-    Route::get('pedidos/administrador/devolucion-pedidos', [PedidoAdministradorController::class,'devolucionPedido'])->name('pedidos.administrador.devolucionPedido');
+        //--------------------------------DEVOLUCION DE PEDIDOS DESPACHADOS-----------------------------
+        Route::get('pedidos/administrador/devolucion-pedidos', [PedidoAdministradorController::class,'devolucionPedido'])->name('pedidos.administrador.devolucionPedido');
 
 
 
-    Route::get('pedidos/administrador/devolucion-pedidos-numero-pedido/{pedido}', [PedidoAdministradorController::class,'devolucionPedidoDevolucion'])->name('pedidos.administrador.devolucionPedidoDevolucion');
+        Route::get('pedidos/administrador/devolucion-pedidos-numero-pedido/{pedido}', [PedidoAdministradorController::class,'devolucionPedidoDevolucion'])->name('pedidos.administrador.devolucionPedidoDevolucion');
 
-    Route::put('pedidos/administrador/devolucion-pedidos-numero-pedido/cantidad/{id}', [PedidoAdministradorController::class,'devolucionPedidoDevolucionCantidad'])->name('pedidos.administrador.devolucionPedidoDevolucion.cantidad');
-    Route::get('pedidos/administrador/producto/select/{id}', [PedidoAdministradorController::class,'productoSelectFormasVentas'])->name('pedidos.administrador.producto.select.cantidad');
-    Route::put('pedidos/administrador/producto/select/actualizar/{id}', [PedidoAdministradorController::class,'productoSelectActualizar'])->name('pedidos.administrador.producto.select.actualizar');
-    Route::delete('pedidos/administrador/producto/eliminar-promocion/{id}', [PedidoAdministradorController::class,'productoEliminarPromocion'])->name('pedidos.administrador.producto.eliminar.promocion');
-    Route::delete('pedidos/administrador/producto/eliminar-promocion/total/{id}', [PedidoAdministradorController::class,'productoEliminarPromocionTotal'])->name('pedidos.administrador.producto.eliminar.promocion.total');
-    Route::post('pedidos/administrador/producto/contabilizar-pedidos-pendientes',[PedidoAdministradorController::class,'contabilizarPedidosPendientes'])->name('pedidos.administrador.contabilizarTodosLosPendientes');
-    //pedido administrador pdf
-    
-    Route::get('pedidos/administrador/visualizacion-pdf-despachar', [PedidoAdministradorController::class,'visualizacionPdfDespachar'])->name('pedidos.administrador.visualizacionPdfDespachar');
+        Route::put('pedidos/administrador/devolucion-pedidos-numero-pedido/cantidad/{id}', [PedidoAdministradorController::class,'devolucionPedidoDevolucionCantidad'])->name('pedidos.administrador.devolucionPedidoDevolucion.cantidad');
+        Route::get('pedidos/administrador/producto/select/{id}', [PedidoAdministradorController::class,'productoSelectFormasVentas'])->name('pedidos.administrador.producto.select.cantidad');
+        Route::put('pedidos/administrador/producto/select/actualizar/{id}', [PedidoAdministradorController::class,'productoSelectActualizar'])->name('pedidos.administrador.producto.select.actualizar');
+        Route::delete('pedidos/administrador/producto/eliminar-promocion/{id}', [PedidoAdministradorController::class,'productoEliminarPromocion'])->name('pedidos.administrador.producto.eliminar.promocion');
+        Route::delete('pedidos/administrador/producto/eliminar-promocion/total/{id}', [PedidoAdministradorController::class,'productoEliminarPromocionTotal'])->name('pedidos.administrador.producto.eliminar.promocion.total');
+        Route::post('pedidos/administrador/producto/contabilizar-pedidos-pendientes',[PedidoAdministradorController::class,'contabilizarPedidosPendientes'])->name('pedidos.administrador.contabilizarTodosLosPendientes');
+        //pedido administrador pdf
 
-    Route::get('pedidos/administrador/visualizacion-pdf-despachar-pendientes', [PedidoAdministradorController::class,'visualizacionPdfDespacharPendientes'])->name('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes');
+        Route::get('pedidos/administrador/visualizacion-pdf-despachar', [PedidoAdministradorController::class,'visualizacionPdfDespachar'])->name('pedidos.administrador.visualizacionPdfDespachar');
 
-    //rendimiento personal Controller
-    Route::get('rendimientopersonal/obtener-rendimiento-personal/{id}', [RendimientoPersonalController::class, 'rendimientoPersonal'])->name('rendimientopersonal.obtenerRendimientoPersonal');
-    //VENTAS----------------------------
-    Route::get('ventas/obtener-ventas/fechas', [VentaController::class, 'obtenerVentas'])->name('ventas.obtenerVentas.porfechas');
-    Route::get('ventas/administrador/visualizacion-pedido/{id}', [VentaController::class,'visualizacionPedido'])->name('ventas.administrador.visualizacionPedido');
-    Route::get('ventas/administrador/ventas-producto', [VentaController::class,'resporteVentasProducto'])->name('ventas.administrador.ventasProductos');
-    Route::get('ventas/obtener-rendimiento-producto/{id}', [VentaController::class, 'reporteVentaProductosId'])->name('rendimientopersonal.obtenerVentasProductos');
+        Route::get('pedidos/administrador/visualizacion-pdf-despachar-pendientes', [PedidoAdministradorController::class,'visualizacionPdfDespacharPendientes'])->name('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes');
 
+        //rendimiento personal Controller
+        Route::get('rendimientopersonal/obtener-rendimiento-personal/{id}', [RendimientoPersonalController::class, 'rendimientoPersonal'])->name('rendimientopersonal.obtenerRendimientoPersonal');
+        //VENTAS----------------------------
+        Route::get('ventas/obtener-ventas/fechas', [VentaController::class, 'obtenerVentas'])->name('ventas.obtenerVentas.porfechas');
+        Route::get('ventas/administrador/visualizacion-pedido/{id}', [VentaController::class,'visualizacionPedido'])->name('ventas.administrador.visualizacionPedido');
+        Route::get('ventas/administrador/ventas-producto', [VentaController::class,'resporteVentasProducto'])->name('ventas.administrador.ventasProductos');
+        Route::get('ventas/obtener-rendimiento-producto/{id}', [VentaController::class, 'reporteVentaProductosId'])->name('rendimientopersonal.obtenerVentasProductos');
+
+        Route::resource('pedidos', PedidoController::class);
+        Route::resource('rendimientopersonal', RendimientoPersonalController::class);
+        Route::resource('ventas', VentaController::class);
+    });
+
+    Route::middleware('can:vendedor.permisos')->group(function () {
+        //asignacion de vendedores
+        Route::get('asignacionVendedores/actualizar', [AsignacionVendedorController::class, 'index'])->name('asignacionvendedor.index');
+
+        Route::put('asignacionVendedores/registrar-atencion/{id}', [AsignacionVendedorController::class, 'registrarAtencion'])->name('registrarAtencion.sinpedido');
+
+        //Crear pedidos desdee vendedor
+        Route::get('pedidos/vendedor/buscar-productos', [PedidoController::class, 'buscarProductosPedido'])->name('pedidos.vendedor.buscarProductos');
+        Route::get('pedidos/vendedor/obtenerproducto/{id}', [PedidoController::class, 'ObtenerProductoParaPedido'])->name('pedidos.vendedor.obtenerProducto');
+        Route::get('pedidos/vendedor/obtenerformaventa/{id}', [PedidoController::class, 'ObtenerFormaVenta'])->name('pedidos.vendedor.obtenerformaventa');
+        Route::get('pedidos/vendedor/stock-productos', [PedidoController::class, 'obtenerStockProductos'])->name('pedidos.vendedor.stockProductos');
+        Route::post('pedidos/vendedor/registrarpedido', [PedidoController::class, 'registrarPedido'])->name('pedidos.vendedor.registrarPedido');
+
+        //ver pedidos desde vendedor
+        Route::get('pedidos/vendedor/obtener-pedidos-realizados/{id_cliente}', [AsignacionVendedorController::class, 'obtenerPedidosProceso'])->name('pedidos.vendedor.obtenerPedidosProceso');
+        Route::get('pedidos/vendedor/obtener-pedidos-realizados-pendientes/{id_cliente}', [AsignacionVendedorController::class, 'obtenerPedidosPendientes'])->name('pedidos.vendedor.obtenerPedidosPendientes');
+
+        //pdf vendedor
+        Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
+    });
 
     //----AREA DE CONTABILIDAD--
-    Route::prefix('contabilidad')->name('contabilidad.')->group(function () {
+    Route::prefix('contabilidad')->name('contabilidad.')->middleware('can:contador.permisos')->group(function () {
         //ventas por día
         Route::get('ventas/dia', [ContabilidadVentaController::class,'ventasPorDia'])->name('ventas.porDia');
         Route::get('ventas/dia/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventista'])->name('ventas.porDia.preventista');
@@ -269,9 +276,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //--opciones de ventas por preventista
         Route::get('ventas/porpreventista/{fechainicio}/{fechafin}', [ContabilidadVentaController::class,'ventasPorPreventistaOpciones'])->name('ventas.porPreventista.opciones');
         Route::get('ventas/porpreventista/detalle/pedidos/{fechainicio}/{fechafin}/{idpreventista}', [ContabilidadVentaController::class,'ventasPorPreventistaDetallePedidos'])->name('ventas.porPreventista.detallepedidos');
+
+        //--comparacion ganancial
+        Route::get('ventas/comparacionganancial', [ContabilidadVentaController::class,'comparacionGanancial'])->name('ventas.comparacionGanancial');
     });
     //----------------------------
-    Route::resource('pedidos', PedidoController::class);
-    Route::resource('rendimientopersonal', RendimientoPersonalController::class);
-    Route::resource('ventas', VentaController::class);
 });

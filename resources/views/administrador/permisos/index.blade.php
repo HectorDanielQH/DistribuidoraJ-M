@@ -1,36 +1,32 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Permisos')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
-        <div class="d-flex flex-column justify-content-center align-items-center text-center">
-            <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
-                <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
-            </h1>
-            <span class="text-white" style="font-size: 1.4rem; font-weight: 500; color: #ecf0f1;">
-                Panel de administración de permisos
-            </span>
+    <div class="admin-header">
+        <div>
+            <span>Administracion</span>
+            <h1>Roles y permisos</h1>
+            <p>Define que puede hacer cada tipo de usuario.</p>
         </div>
-    </div>
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="text-dark" style="font-size: 1.75rem; font-weight: 600;">
-                <i class="fas fa-user-shield me-2"></i> Permisos
-            </h2>
-            <button class="btn btn-success" onclick="crearPermiso()">
-                <i class="fas fa-plus me-2"></i> Crear nuevo rol
-            </button>
-        </div>
-        <p class="text-muted" style="font-size: 1.2rem; font-weight: 400;">
-            Aquí puedes gestionar los roles de los usuarios.
-        </p>
+        <button class="btn btn-success admin-main-btn" onclick="crearPermiso()">
+            <i class="fas fa-plus"></i> Crear rol
+        </button>
     </div>
 @stop
 
 @section('content')
-    <div class="container">
-        <table id="tablaPersmisos" class="table table-bordered" style="width:100%">
+    <div class="admin-page">
+        <section class="admin-help">
+            <i class="fas fa-user-shield"></i>
+            <div>
+                <strong>Un rol agrupa permisos.</strong>
+                <span>Ejemplo: administrador, vendedor o contador.</span>
+            </div>
+        </section>
+
+        <section class="admin-table-box">
+            <table id="tablaPersmisos" class="table table-hover w-100">
             <thead>
                 <tr>
                     <th>#</th>
@@ -47,34 +43,215 @@
             </thead>
             <tbody></tbody>
         </table>
+        </section>
     </div>
 @stop
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
-    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet">
     <style>
+        :root {
+            --surface: #ffffff;
+            --soft: #eef3f1;
+            --line: #dbe7e2;
+            --text: #17211d;
+            --muted: #64748b;
+            --green: #15803d;
+            --green-soft: #e7f6ec;
+        }
+
+        .content-wrapper {
+            background: var(--soft);
+        }
+
         input.form-control:focus, select.form-control:focus {
-            border-color: #1abc9c;
-            box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25);
+            border-color: var(--green);
+            box-shadow: 0 0 0 .2rem rgba(21, 128, 61, .18);
         }
-        .card {
-            transition: all 0.3s ease;
+
+        .admin-header,
+        .admin-help,
+        .admin-table-box {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
         }
-        .card:hover {
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
         }
-        .btn:hover {
-            opacity: 0.9;
+
+        .admin-header span {
+            color: var(--green);
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            color: var(--text);
+            font-size: 1.65rem;
+            font-weight: 900;
+        }
+
+        .admin-header p,
+        .admin-help span {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .admin-main-btn,
+        .btn-action {
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        .admin-page {
+            display: grid;
+            gap: 12px;
+        }
+
+        .admin-help {
+            display: grid;
+            grid-template-columns: 42px 1fr;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+        }
+
+        .admin-help i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-size: 1.2rem;
+        }
+
+        .admin-help strong {
+            display: block;
+            color: var(--text);
+            font-weight: 900;
+        }
+
+        .admin-table-box {
+            padding: 14px;
+        }
+
+        #tablaPersmisos {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        #tablaPersmisos thead th {
+            border: 0;
+            color: var(--muted);
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        #tablaPersmisos tbody td {
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            vertical-align: middle;
+            font-weight: 800;
+        }
+
+        #tablaPersmisos tbody td:first-child {
+            border-left: 1px solid var(--line);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        #tablaPersmisos tbody td:last-child {
+            border-right: 1px solid var(--line);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .admin-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(110px, 1fr));
+            gap: 8px;
+        }
+
+        @media (max-width: 575.98px) {
+            .content-header,
+            .content {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .admin-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .admin-main-btn {
+                width: 100%;
+            }
+
+            #tablaPersmisos,
+            #tablaPersmisos tbody,
+            #tablaPersmisos tr,
+            #tablaPersmisos td {
+                display: block;
+                width: 100%;
+            }
+
+            #tablaPersmisos thead {
+                display: none;
+            }
+
+            #tablaPersmisos tbody tr {
+                margin-bottom: 10px;
+                padding: 12px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+            }
+
+            #tablaPersmisos tbody td,
+            #tablaPersmisos tbody td:first-child,
+            #tablaPersmisos tbody td:last-child {
+                border: 0;
+                border-radius: 0;
+                padding: 7px 0;
+            }
+
+            #tablaPersmisos tbody td::before {
+                content: attr(data-mobile-label);
+                display: block;
+                margin-bottom: 3px;
+                color: var(--muted);
+                font-size: .78rem;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            .admin-actions {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js"></script>
 
     <script>
         $(document).ready(function(){
@@ -94,7 +271,12 @@
                     { data: 'permissions', width: '40%' },
                     { data: 'actions', orderable: false, searchable: false, width: '20%' }
                 ],
-                
+                createdRow: function (row) {
+                    const labels = ['ID', 'Rol', 'Permisos', 'Acciones'];
+                    $('td', row).each(function (index) {
+                        $(this).attr('data-mobile-label', labels[index]);
+                    });
+                }
             });
         });
     </script>

@@ -27,20 +27,33 @@ class VentasVendedorController extends Controller
 
             return $dataTable->of($ventas)
                 ->addColumn('fecha_contabilizacion', function($venta){
-                    return 'Tu venta contabilizada en: '. date('d-m-Y', strtotime($venta->fecha_contabilizacion));
+                    return Carbon::parse($venta->fecha_contabilizacion)->format('d/m/Y');
                 })
                 ->editColumn('monto_contabilizado', function($venta){
-                    return number_format($venta->total, 2, '.', ',').' Bs.-';
+                    return 'Bs '.number_format($venta->total, 2, '.', ',');
                 })
                 ->addColumn('acciones', function($venta){
-                    return '<a class="btn btn-info btn-sm ver-detalle" href="'.route('preventistas.ventas.vendedor.detalleVentasPorFechaContabilizacion',['fecha_contabilizacion' => $venta->fecha_contabilizacion]).'">
-                                <i class="fas fa-eye"></i> Ver Detalle
+                    return '<a class="btn btn-success btn-action" href="'.route('preventistas.ventas.vendedor.detalleVentasPorFechaContabilizacion',['fecha_contabilizacion' => $venta->fecha_contabilizacion]).'">
+                                <i class="fas fa-eye"></i> Ver pedidos
                             </a>';
                 })
                 ->rawColumns(['acciones'])
                 ->make(true);
         }
-        return view('vendedor.ventas.index_ventas_vendedor');
+
+        $user = auth()->user();
+        $resumen = Venta::query()
+            ->where('id_usuario', $user->id)
+            ->whereNot(function($query){
+                $query->whereBetween('fecha_contabilizacion', ['2025-09-16 00:00:00', '2025-09-16 23:59:59']);
+            })
+            ->selectRaw('COUNT(DISTINCT DATE(fecha_contabilizacion)) as dias')
+            ->selectRaw('COUNT(DISTINCT numero_pedido) as pedidos')
+            ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
+            ->selectRaw('MAX(fecha_contabilizacion) as ultima_fecha')
+            ->first();
+
+        return view('vendedor.ventas.index_ventas_vendedor', compact('resumen'));
     }
 
     public function detalleVentasPorFechaContabilizacion(Request $request, string $fecha_contabilizacion)
@@ -78,14 +91,14 @@ class VentasVendedorController extends Controller
                 ->editColumn('sub_total', fn($r) => number_format((float)$r->sub_total, 2, '.', ',') . ' Bs.-')
                 ->editColumn('fecha_pedido', fn($r) => Carbon::parse($r->fecha_pedido)->format('Y-m-d H:i'))
                 ->addColumn('acciones', function ($r) {
-                    return '<button class="btn btn-info btn-sm ver-detalle" data-id-cliente="' . $r->id_cliente . '" data-numero-pedido="' . $r->numero_pedido . '" onclick="verDetalleVenta(this)">
-                                <i class="fas fa-eye"></i> Ver Detalle
+                    return '<button class="btn btn-success btn-action" data-id-cliente="' . $r->id_cliente . '" data-numero-pedido="' . $r->numero_pedido . '" onclick="verDetalleVenta(this)">
+                                <i class="fas fa-eye"></i> Ver productos
                             </button>';
                 })
                 ->rawColumns(['acciones'])
                 ->make(true);
         }
 
-        return view('vendedor.ventas.show_ventas_contabilizadas');
+        return view('vendedor.ventas.show_ventas_contabilizadas', compact('fecha_contabilizacion'));
     }
 }

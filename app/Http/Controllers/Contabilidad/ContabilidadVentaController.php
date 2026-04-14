@@ -235,4 +235,8 @@ class ContabilidadVentaController extends Controller
             ->rawColumns(['acciones'])
             ->make(true);
     }
+
+    public function comparacionGanancial(){
+        return view('Contabilidad.ComparacionGanancial.index');
+    }
 }

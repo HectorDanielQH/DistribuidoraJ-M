@@ -9,6 +9,7 @@ use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\DataTables;
 
@@ -21,9 +22,68 @@ class ProductoController extends Controller
     {
         if($request->ajax())
         {
-            $query = Producto::query();
+            $query = Producto::query()->with(['proveedor', 'marca', 'linea']);
+
+            if ($request->filled('proveedor_id')) {
+                $query->where('id_proveedor', $request->proveedor_id);
+            }
+
+            if ($request->filled('marca_id')) {
+                $query->where('id_marca', $request->marca_id);
+            }
+
+            if ($request->filled('linea_id')) {
+                $query->where('id_linea', $request->linea_id);
+            }
+
+            if ($request->filled('stock_estado')) {
+                match ($request->stock_estado) {
+                    'sin_stock' => $query->where('cantidad', '<=', 0),
+                    'bajo' => $query->where('cantidad', '>', 0)->where('cantidad', '<=', 15),
+                    'disponible' => $query->where('cantidad', '>', 15),
+                    default => null,
+                };
+            }
+
+            if ($request->filled('estado_producto')) {
+                match ($request->estado_producto) {
+                    'activo' => $query->where('estado_de_baja', false),
+                    'baja' => $query->where('estado_de_baja', true),
+                    default => null,
+                };
+            }
+
+            if ($request->filled('promocion')) {
+                match ($request->promocion) {
+                    'con' => $query->where('promocion', true),
+                    'sin' => $query->where(function ($query) {
+                        $query->where('promocion', false)->orWhereNull('promocion');
+                    }),
+                    default => null,
+                };
+            }
 
             return $dataTables->eloquent($query)
+                ->filter(function ($query) use ($request) {
+                    $keyword = $request->input('search.value');
+
+                    if (! $keyword) {
+                        return;
+                    }
+
+                    $keyword = trim(strtoupper($keyword));
+
+                    $query->where(function ($query) use ($keyword) {
+                        $query->where('codigo', 'like', "%{$keyword}%")
+                            ->orWhere('nombre_producto', 'like', "%{$keyword}%")
+                            ->orWhereHas('marca', function ($query) use ($keyword) {
+                                $query->where('descripcion', 'like', "%{$keyword}%");
+                            })
+                            ->orWhereHas('proveedor', function ($query) use ($keyword) {
+                                $query->where('nombre_proveedor', 'like', "%{$keyword}%");
+                            });
+                    });
+                })
                 ->filterColumn('codigo', function ($query, $keyword) {
                     $query->where('codigo', 'like', "%{$keyword}%");
                 })
@@ -41,12 +101,14 @@ class ProductoController extends Controller
                     return $producto->marca ? $producto->marca->descripcion : 'Sin Marca';
                 })
                 ->addColumn('stock', function ($producto) {
-                    $claseCantidad = $producto->cantidad <= 15 ? 'badge bg-danger' : 'badge bg-success';
-                    $cantidadHtml = '<span class="' . $claseCantidad . ' fs-6">' . $producto->cantidad . ' ' . $producto->detalle_cantidad . '</span>';
+                    $stockBajo = $producto->cantidad <= 15;
+                    $claseCantidad = $stockBajo ? 'inventory-stock is-low' : 'inventory-stock is-ok';
+                    $textoEstado = $stockBajo ? 'Stock bajo' : 'Disponible';
+                    $cantidadHtml = '<span class="' . $claseCantidad . '">' . $producto->cantidad . ' ' . $producto->detalle_cantidad . '</span><small class="inventory-stock-label">' . $textoEstado . '</small>';
 
                     $boton = '
                         <div class="mt-2 d-flex justify-content-center">
-                            <button class="btn btn-sm btn-outline-primary" type="button"
+                            <button class="btn btn-sm btn-outline-primary inventory-mini-btn" type="button"
                                 onclick="editarCantidadProductoStock(this)"
                                 id-cantidad-stock="' . $producto->id . '" 
                                 cantidad-stock="' . $producto->cantidad . '" 
@@ -57,7 +119,7 @@ class ProductoController extends Controller
                         </div>
                     ';
 
-                    return '<div class="w-full d-flex flex-column justify-content-center align-items-center">' . $cantidadHtml . $boton . '</div>';
+                    return '<div class="inventory-stock-box">' . $cantidadHtml . $boton . '</div>';
                 })
                 ->addColumn('formas_venta', function ($producto) {
                     $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
@@ -65,7 +127,7 @@ class ProductoController extends Controller
                     if ($formasVenta->isEmpty()) {
                         $output = '<div class="d-flex flex-column">';
                         $output.='
-                            <button class="btn btn-sm btn-success mb-2" type="button" id-producto="' . $producto->id . '" onclick="agregarFormasVenta(this)">
+                            <button class="btn btn-sm btn-success mb-2 inventory-mini-btn" type="button" id-producto="' . $producto->id . '" onclick="agregarFormasVenta(this)">
                                 <i class="fas fa-plus"></i> Agregar Forma de Venta
                             </button>';
                         $output .= '</div>';
@@ -75,12 +137,12 @@ class ProductoController extends Controller
 
                     $output = '<div class="d-flex flex-column">';
                     $output.='
-                        <button class="btn btn-sm btn-success mb-2" type="button" id-producto="' . $producto->id . '" onclick="agregarFormasVenta(this)">
+                        <button class="btn btn-sm btn-success mb-2 inventory-mini-btn" type="button" id-producto="' . $producto->id . '" onclick="agregarFormasVenta(this)">
                             <i class="fas fa-plus"></i> Agregar Forma de Venta
                         </button>
                     ';
                     $output .= '
-                        <button class="btn btn-sm btn-warning mb-2" type="button" data-toggle="modal" data-target="#formas-venta-producto" id-producto="' . $producto->id . '" onclick="verFormasVenta(this)">
+                        <button class="btn btn-sm btn-warning mb-2 inventory-mini-btn" type="button" data-toggle="modal" data-target="#formas-venta-producto" id-producto="' . $producto->id . '" onclick="verFormasVenta(this)">
                             <i class="fas fa-edit"></i> Editar Formas de Venta
                         </button>
                     ';
@@ -159,22 +221,21 @@ class ProductoController extends Controller
                     ' . $boxClose;
                 })
                 ->addColumn('acciones', function ($producto) {
-                    $route=route('administrador.productos.edit', ['producto' => $producto->id]);
-                    $acciones = '<div class="btn-group" role="group">';
-                    $acciones .= "<a href='". $route ."' class='btn btn-warning' title='Editar Producto'>
-                        <i class='fas fa-edit'></i>
-                    </a>";
+                    $acciones = '<div class="inventory-actions">';
+                    $acciones .= "<button type='button' class='btn btn-warning inventory-action-btn' title='Editar Producto' id-producto='{$producto->id}' onclick='abrirEditarProducto(this)'>
+                        <i class='fas fa-edit'></i> Editar
+                    </button>";
                     if($producto->estado_de_baja) {
-                        $acciones .= '<button type="button" class="btn btn-secondary" onclick="ProductoDeAlta(this)" id-producto="' . $producto->id . '">
-                            <i class="fas fa-eye-slash"></i>
+                        $acciones .= '<button type="button" class="btn btn-secondary inventory-action-btn" onclick="ProductoDeAlta(this)" id-producto="' . $producto->id . '">
+                            <i class="fas fa-eye-slash"></i> Dar alta
                         </button>';
                     } else {
-                        $acciones .= '<button type="button" class="btn btn-info" onclick="ProductoDeBaja(this)" id-producto="' . $producto->id . '">
-                            <i class="fas fa-eye"></i>
+                        $acciones .= '<button type="button" class="btn btn-info inventory-action-btn" onclick="ProductoDeBaja(this)" id-producto="' . $producto->id . '">
+                            <i class="fas fa-eye"></i> Dar baja
                         </button>';
                     }
-                    $acciones .= '<button type="button" class="btn btn-danger" id-producto="' . $producto->id . '" onclick="eliminarProducto(this)">
-                            <i class="fas fa-trash"></i>
+                    $acciones .= '<button type="button" class="btn btn-danger inventory-action-btn" id-producto="' . $producto->id . '" onclick="eliminarProducto(this)">
+                            <i class="fas fa-trash"></i> Eliminar
                         </button>';
                     $acciones .= '</div>';
                     return $acciones;
@@ -183,10 +244,18 @@ class ProductoController extends Controller
                 ->make(true);
         }
 
-        $proveedores = Proveedor::all();
+        $proveedores = Proveedor::orderBy('nombre_proveedor')->get();
+        $marcas = Marca::orderBy('descripcion')->get();
+        $lineas = Linea::with('marca')->orderBy('descripcion_linea')->get();
         $contar_productos_menores = Producto::where('cantidad', '<=', 15)->where('estado_de_baja',false)->count();
+        $resumenInventario = [
+            'total' => Producto::count(),
+            'activos' => Producto::where('estado_de_baja', false)->count(),
+            'bajo_stock' => $contar_productos_menores,
+            'de_baja' => Producto::where('estado_de_baja', true)->count(),
+        ];
 
-        return view('administrador.productos.index_productos',compact('proveedores', 'contar_productos_menores'));
+        return view('administrador.productos.index_productos',compact('proveedores', 'marcas', 'lineas', 'contar_productos_menores', 'resumenInventario'));
     }
 
     function obtenerProductosBajoStock(Request $request,DataTables $datatables)
@@ -284,9 +353,14 @@ class ProductoController extends Controller
             'equivalencia.min' => 'Debe haber al menos una equivalencia de stock.',
         ]);
 
-        if($request->hasFile('imagen_producto')) {
-            $file = $request->file('imagen_producto');
-            $path=$file->store('foto_producto','local');
+        $producto = DB::transaction(function () use ($request) {
+            $path = null;
+
+            if ($request->hasFile('imagen_producto')) {
+                $file = $request->file('imagen_producto');
+                $path = $file->store('foto_producto','local');
+            }
+
             $producto = Producto::create([
                 'id_proveedor' => $request->proveedor,
                 'id_marca' => $request->marca_producto,
@@ -299,39 +373,30 @@ class ProductoController extends Controller
                 'precio_compra' => str_replace(',', '.', $request->precio_compra),
                 'detalle_precio_compra' => trim(strtoupper($request->detalle_precio_compra)),
                 'fecha_vencimiento' => $request->fecha_vencimiento ?? null,
-                'presentacion' => trim(strtoupper($request->presentacion)) ?? null,
-                'promocion' => $request->promocion ? true : false,
-                'descripcion_descuento_porcentaje' => $request->descripcion_descuento_porcentaje ?? 0,
-                'descuento_promocion' => trim(strtoupper($request->descuento_promocion)) ?? null,
-                'foto_producto' => $path
-            ]);   
-        }
-        else {
-            $producto = Producto::create([
-                'id_proveedor' => $request->proveedor,
-                'id_marca' => $request->marca_producto,
-                'id_linea' => $request->linea_producto,
-                'codigo' => $request->codigo_producto,
-                'nombre_producto' => trim(strtoupper($request->nombre_producto)),
-                'descripcion_producto' => trim(strtoupper($request->descripcion_producto)),
-                'cantidad' => $request->cantidad,
-                'detalle_cantidad' => trim(strtoupper($request->detalle_cantidad)),
-                'precio_compra' => str_replace(',', '.', $request->precio_compra),
-                'detalle_precio_compra' => trim(strtoupper($request->detalle_precio_compra)),
-                'fecha_vencimiento' => $request->fecha_vencimiento ?? null,
-                'presentacion' => trim(strtoupper($request->presentacion)) ?? null,
+                'presentacion' => $request->presentacion ? trim(strtoupper($request->presentacion)) : null,
                 'promocion' => $request->promocion ? true : false,
                 'descripcion_descuento_porcentaje' => $request->descuento_porcentaje ?? 0,
-                'descuento_promocion' => trim(strtoupper($request->descuento_promocion)) ?? null,
+                'descripcion_regalo' => $request->descuento_promocion ? trim(strtoupper($request->descuento_promocion)) : null,
+                'foto_producto' => $path,
             ]);
-        }
 
-        foreach ($request->nombre_forma_venta as $key => $nombreFormaVenta) {
-            FormaVenta::create([
-                'tipo_venta' => trim(strtoupper($nombreFormaVenta)),
-                'precio_venta' => str_replace(',', '.', $request->precio_forma_venta[$key]),
-                'equivalencia_cantidad' => $request->equivalencia[$key],
-                'id_producto' => $producto->id
+            foreach ($request->nombre_forma_venta as $key => $nombreFormaVenta) {
+                FormaVenta::create([
+                    'tipo_venta' => trim(strtoupper($nombreFormaVenta)),
+                    'precio_venta' => str_replace(',', '.', $request->precio_forma_venta[$key]),
+                    'equivalencia_cantidad' => $request->equivalencia[$key],
+                    'id_producto' => $producto->id
+                ]);
+            }
+
+            return $producto;
+        });
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'producto_id' => $producto->id,
+                'message' => 'Producto creado exitosamente.',
             ]);
         }
 
@@ -341,9 +406,23 @@ class ProductoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id_producto)
+    public function show(Request $request, string $id_producto)
     {
         $producto = Producto::where('id', $id_producto)->with(['proveedor', 'marca', 'linea'])->firstOrFail();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'producto' => $producto,
+                'proveedor' => $producto->proveedor,
+                'marca' => $producto->marca,
+                'linea' => $producto->linea,
+                'formasVenta' => FormaVenta::where('id_producto', $producto->id)->get(),
+                'imagen_url' => $producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)
+                    ? route('productos.imagen', ['id' => $producto->id])
+                    : asset('images/logo_color.webp'),
+            ]);
+        }
+
         return view('administrador.productos.show_producto', compact('producto'));
     }
 
@@ -386,7 +465,7 @@ class ProductoController extends Controller
             'detalle_cantidad' => 'required|string|max:255',
             'precio_compra' => 'required|numeric|min:0',
             'detalle_precio_compra' => 'required|string|max:255',
-            'fecha_vencimiento' => 'nullable|date|after:today',
+            'fecha_vencimiento' => 'nullable|date',
             'presentacion' => 'nullable|string|max:255',
             'promocion' => 'nullable',
             'descuento_porcentaje' => 'nullable|integer|min:0|max:100',
@@ -409,7 +488,6 @@ class ProductoController extends Controller
             'precio_compra.min' => 'El precio de compra no puede ser negativo.',
             'detalle_precio_compra.required' => 'La descripción del precio de compra es obligatoria.',
             'fecha_vencimiento.date' => 'La fecha de vencimiento no es una fecha válida.',
-            'fecha_vencimiento.after' => 'La fecha de vencimiento debe ser una fecha futura.',
             'presentacion.max' => 'La presentación no puede exceder los 255 caracteres.',
             'descuento_porcentaje.integer' => 'El descuento de la promoción debe ser un número entero.',
             'descuento_porcentaje.min' => 'El descuento de la promoción no puede ser negativo.',
@@ -432,10 +510,10 @@ class ProductoController extends Controller
         $producto->precio_compra = str_replace(',', '.', $request->precio_compra);
         $producto->detalle_precio_compra = trim(strtoupper($request->detalle_precio_compra));
         $producto->fecha_vencimiento = $request->fecha_vencimiento ?? null;
-        $producto->presentacion = trim(strtoupper($request->presentacion)) ?? null;
+        $producto->presentacion = $request->presentacion ? trim(strtoupper($request->presentacion)) : null;
         $producto->promocion = $request->promocion ? true : false;
         $producto->descripcion_descuento_porcentaje = $request->descuento_porcentaje ?? 0;
-        $producto->descripcion_regalo = trim(strtoupper($request->descuento_promocion)) ?? null;
+        $producto->descripcion_regalo = $request->descuento_promocion ? trim(strtoupper($request->descuento_promocion)) : null;
         if($request->hasFile('imagen_producto')) {
             if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
                 Storage::disk('local')->delete($producto->foto_producto);
@@ -445,6 +523,13 @@ class ProductoController extends Controller
             $producto->foto_producto = $path;
         }
         $producto->save();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Producto actualizado correctamente.',
+            ]);
+        }
 
         return redirect()->route('administrador.productos.index');
     }

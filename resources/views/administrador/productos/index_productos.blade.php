@@ -1,9 +1,24 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Inventario')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
+    <div class="inventory-header">
+        <div>
+            <span>Inventario</span>
+            <h1>Productos</h1>
+            <p>Controla stock, precios de venta, promociones y estado de cada producto.</p>
+        </div>
+        <div class="inventory-header-actions">
+            <button type="button" class="btn btn-success inventory-main-btn" data-toggle="modal" data-target="#agregar-producto">
+                <i class="fas fa-plus"></i> Nuevo producto
+            </button>
+            <button type="button" class="btn btn-outline-success inventory-main-btn" id="descargar-catalogo-productos">
+                <i class="fas fa-file-pdf"></i> Descargar catalogo
+            </button>
+        </div>
+    </div>
+    <div class="container py-4 inventory-legacy-header" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
         <div class="d-flex flex-column justify-content-center align-items-center text-center">
             <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
@@ -13,7 +28,7 @@
             </span>
             <a
                 class="btn btn-success mt-3"
-                id="descargar-catalogo-productos"
+                id="descargar-catalogo-productos-legacy"
                 style="border-radius: 8px;"
             >
                 <i class="fas fa-file-pdf"></i> Descargar Catalogo de Productos
@@ -77,7 +92,402 @@
         </x-slot>
     </x-adminlte-modal>
 
-    <div class="container my-4">
+    <x-adminlte-modal
+        id="agregar-producto"
+        size="xl"
+        theme="dark"
+        icon="fas fa-box-open"
+        title="Registrar nuevo producto"
+        data-backdrop="static"
+    >
+        <div class="modal-body px-4 product-modal-body">
+            <form id="registro-producto" enctype="multipart/form-data">
+                @csrf
+                <div class="product-modal-flow">
+                    <section class="product-modal-step">
+                        <div class="product-step-number">1</div>
+                        <div>
+                            <strong>Clasificacion</strong>
+                            <span>Elige proveedor, marca y linea para ubicar el producto dentro del inventario.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-modal-grid">
+                        <label>
+                            Proveedor
+                            <select name="proveedor" id="proveedor_id" class="form-control" required>
+                                <option value="" disabled selected>Seleccione proveedor...</option>
+                                @foreach($proveedores as $proveedor)
+                                    <option value="{{ $proveedor->id }}">{{ $proveedor->nombre_proveedor }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Marca
+                            <select name="marca_producto" id="marca_id" class="form-control" required>
+                                <option value="" disabled selected>Seleccione una marca...</option>
+                            </select>
+                        </label>
+                        <label>
+                            Linea
+                            <select name="linea_producto" id="linea_id" class="form-control" required>
+                                <option value="" disabled selected>Seleccione una linea...</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <section class="product-modal-step">
+                        <div class="product-step-number">2</div>
+                        <div>
+                            <strong>Datos del producto</strong>
+                            <span>Registra nombre, codigo, stock inicial y costo de compra.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-modal-grid">
+                        <label>
+                            Codigo
+                            <div class="product-code-row">
+                                <input type="text" name="codigo_producto" id="codigoProducto" class="form-control" placeholder="Generar codigo" readonly required>
+                                <button type="button" class="btn btn-outline-primary product-inline-btn" id="generar-codigo-producto">
+                                    <i class="fas fa-random"></i> Generar
+                                </button>
+                            </div>
+                        </label>
+                        <label>
+                            Nombre
+                            <input type="text" name="nombre_producto" class="form-control" placeholder="Ej: ARROZ GRANO DE ORO 1KG" required>
+                        </label>
+                        <label>
+                            Descripcion
+                            <input type="text" name="descripcion_producto" class="form-control" placeholder="Detalle para identificar el producto" required>
+                        </label>
+                        <label>
+                            Stock inicial
+                            <input type="number" name="cantidad" class="form-control" min="0" step="1" value="0" required>
+                        </label>
+                        <label>
+                            Unidad de stock
+                            <input type="text" name="detalle_cantidad" class="form-control" placeholder="Ej: UNIDADES, CAJAS" required>
+                        </label>
+                        <label>
+                            Precio de compra
+                            <input type="number" name="precio_compra" class="form-control" min="0" step="0.01" value="0.01" required>
+                        </label>
+                        <label>
+                            Detalle de compra
+                            <input type="text" name="detalle_precio_compra" class="form-control" placeholder="Ej: compra por caja" required>
+                        </label>
+                        <label>
+                            Imagen
+                            <input type="file" name="imagen_producto" class="form-control" accept="image/*">
+                        </label>
+                    </div>
+
+                    <section class="product-modal-step">
+                        <div class="product-step-number">3</div>
+                        <div>
+                            <strong>Datos opcionales</strong>
+                            <span>Activa solo lo que corresponde al producto.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-modal-grid">
+                        <label class="product-toggle-field">
+                            <span>Fecha de vencimiento</span>
+                            <div class="product-toggle-row">
+                                <input type="checkbox" id="habilitarVencimiento">
+                                <span>Habilitar vencimiento</span>
+                            </div>
+                            <input type="date" name="fecha_vencimiento" id="vencimientoProducto" class="form-control" disabled>
+                        </label>
+                        <label class="product-toggle-field">
+                            <span>Presentacion</span>
+                            <div class="product-toggle-row">
+                                <input type="checkbox" id="habilitarPresentacion">
+                                <span>Habilitar presentacion</span>
+                            </div>
+                            <input type="text" name="presentacion" id="presentacionProducto" class="form-control" placeholder="Ej: paquete x 12" disabled>
+                        </label>
+                        <label class="product-toggle-field">
+                            <span>Promocion</span>
+                            <div class="product-toggle-row">
+                                <input type="checkbox" name="promocion" id="habilitarPromocion" value="1">
+                                <span>Habilitar promocion</span>
+                            </div>
+                            <input type="number" name="descuento_porcentaje" id="promocionDescuento" class="form-control mb-2" min="0" max="100" value="0" placeholder="Descuento %" disabled>
+                            <input type="text" name="descuento_promocion" id="promocionRegalo" class="form-control" placeholder="Regalo o detalle" disabled>
+                        </label>
+                    </div>
+
+                    <section class="product-modal-step">
+                        <div class="product-step-number">4</div>
+                        <div>
+                            <strong>Formas de venta</strong>
+                            <span>Define como se vendera el producto y como descuenta del stock.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-sales-box">
+                        <div class="product-sales-title">
+                            <strong>Presentaciones de venta</strong>
+                            <button class="btn btn-success product-inline-btn" type="button" id="boton-agregar-forma-venta">
+                                <i class="fas fa-plus"></i> Agregar forma
+                            </button>
+                        </div>
+                        <div class="product-sales-grid product-sales-head">
+                            <span>Forma de venta</span>
+                            <span>Precio venta</span>
+                            <span>Desc. stock</span>
+                            <span>Accion</span>
+                        </div>
+                        <div id="grupodeinputs">
+                            <div class="product-sales-grid">
+                                <input type="text" class="form-control" name="nombre_forma_venta[]" placeholder="Ej: Unidad" required>
+                                <input type="number" class="form-control" name="precio_forma_venta[]" placeholder="Ej: 10.50" min="0.01" value="0.01" step="0.01" required>
+                                <input type="number" class="form-control" name="equivalencia[]" placeholder="Ej: 1" min="1" value="1" step="1" required>
+                                <button class="btn btn-outline-danger product-remove-sale" type="button" onclick="quitarFormaVentaProducto(this)">
+                                    <i class="fas fa-times"></i> Quitar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <x-slot name="footerSlot">
+            <div class="product-modal-footer">
+                <x-adminlte-button theme="danger" id="botonenviar-cerrar" label="Cancelar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2 product-modal-action" />
+                <x-adminlte-button type="submit" id="botonenviarproducto" theme="success" icon="fas fa-save" label="Guardar producto" class="rounded-3 px-4 py-2 product-modal-action" />
+            </div>
+        </x-slot>
+    </x-adminlte-modal>
+
+    <x-adminlte-modal
+        id="editar-producto"
+        size="xl"
+        theme="dark"
+        icon="fas fa-edit"
+        title="Editar producto"
+        data-backdrop="static"
+    >
+        <div class="modal-body px-4 product-modal-body">
+            <form id="editar-producto-form" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <input type="hidden" id="editar_producto_id">
+                <div class="product-modal-flow">
+                    <section class="product-modal-step">
+                        <div class="product-step-number">1</div>
+                        <div>
+                            <strong>Clasificacion</strong>
+                            <span>Cambia proveedor, marca o linea si el producto fue clasificado en otro grupo.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-modal-grid">
+                        <label>
+                            Proveedor
+                            <select name="proveedor" id="editar_proveedor_id" class="form-control" required>
+                                <option value="" disabled>Seleccione proveedor...</option>
+                                @foreach($proveedores as $proveedor)
+                                    <option value="{{ $proveedor->id }}">{{ $proveedor->nombre_proveedor }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Marca
+                            <select name="marca_producto" id="editar_marca_id" class="form-control" required>
+                                <option value="" disabled>Seleccione una marca...</option>
+                            </select>
+                        </label>
+                        <label>
+                            Linea
+                            <select name="linea_producto" id="editar_linea_id" class="form-control" required>
+                                <option value="" disabled>Seleccione una linea...</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <section class="product-modal-step">
+                        <div class="product-step-number">2</div>
+                        <div>
+                            <strong>Datos generales</strong>
+                            <span>Actualiza nombre, codigo, stock, precio e imagen.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-modal-grid">
+                        <label>
+                            Codigo
+                            <input type="text" name="codigo_producto" id="editar_codigo_producto" class="form-control" readonly required>
+                        </label>
+                        <label>
+                            Nombre
+                            <input type="text" name="nombre_producto" id="editar_nombre_producto" class="form-control" required>
+                        </label>
+                        <label>
+                            Descripcion
+                            <input type="text" name="descripcion_producto" id="editar_descripcion_producto" class="form-control" required>
+                        </label>
+                        <label>
+                            Stock actual
+                            <input type="number" name="cantidad" id="editar_cantidad" class="form-control" min="0" step="1" required>
+                        </label>
+                        <label>
+                            Unidad de stock
+                            <input type="text" name="detalle_cantidad" id="editar_detalle_cantidad" class="form-control" required>
+                        </label>
+                        <label>
+                            Precio de compra
+                            <input type="number" name="precio_compra" id="editar_precio_compra" class="form-control" min="0" step="0.01" required>
+                        </label>
+                        <label>
+                            Detalle de compra
+                            <input type="text" name="detalle_precio_compra" id="editar_detalle_precio_compra" class="form-control" required>
+                        </label>
+                        <label>
+                            Fecha vencimiento
+                            <input type="date" name="fecha_vencimiento" id="editar_fecha_vencimiento" class="form-control">
+                        </label>
+                        <label>
+                            Presentacion
+                            <input type="text" name="presentacion" id="editar_presentacion" class="form-control" placeholder="Ej: paquete x 12">
+                        </label>
+                        <label>
+                            Imagen actual
+                            <img id="editar_imagen_actual" src="" alt="Imagen actual del producto" class="product-edit-preview">
+                            <input type="file" name="imagen_producto" class="form-control" accept="image/*">
+                        </label>
+                    </div>
+
+                    <section class="product-modal-step">
+                        <div class="product-step-number">3</div>
+                        <div>
+                            <strong>Promocion</strong>
+                            <span>Activa o corrige el descuento y regalo del producto.</span>
+                        </div>
+                    </section>
+
+                    <div class="product-modal-grid">
+                        <label class="product-toggle-field">
+                            <span>Promocion</span>
+                            <div class="product-toggle-row">
+                                <input type="checkbox" name="promocion" id="editar_promocion" value="1">
+                                <span>Habilitar promocion</span>
+                            </div>
+                            <input type="number" name="descuento_porcentaje" id="editar_descuento_porcentaje" class="form-control mb-2" min="0" max="100" value="0" placeholder="Descuento %">
+                            <input type="text" name="descuento_promocion" id="editar_descuento_promocion" class="form-control" placeholder="Regalo o detalle">
+                        </label>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <x-slot name="footerSlot">
+            <div class="product-modal-footer">
+                <x-adminlte-button theme="danger" id="editar-producto-cerrar" label="Cancelar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2 product-modal-action" />
+                <x-adminlte-button type="submit" id="editar-producto-guardar" theme="success" icon="fas fa-save" label="Guardar cambios" class="rounded-3 px-4 py-2 product-modal-action" />
+            </div>
+        </x-slot>
+    </x-adminlte-modal>
+
+    <div class="inventory-page">
+        <section class="inventory-summary" aria-label="Resumen de inventario">
+            <article class="inventory-summary-card">
+                <span>Productos registrados</span>
+                <strong>{{ $resumenInventario['total'] ?? 0 }}</strong>
+            </article>
+            <article class="inventory-summary-card">
+                <span>Disponibles para vender</span>
+                <strong>{{ $resumenInventario['activos'] ?? 0 }}</strong>
+            </article>
+            <article class="inventory-summary-card inventory-warning-card">
+                <span>Necesitan reposicion</span>
+                <strong>{{ $resumenInventario['bajo_stock'] ?? 0 }}</strong>
+            </article>
+            <article class="inventory-summary-card">
+                <span>Productos de baja</span>
+                <strong>{{ $resumenInventario['de_baja'] ?? 0 }}</strong>
+            </article>
+        </section>
+
+        <section class="inventory-help">
+            <i class="fas fa-clipboard-check"></i>
+            <div>
+                <strong>Usa el buscador para encontrar productos rapido.</strong>
+                <span>En celular cada producto se muestra como una ficha con stock, venta y acciones grandes.</span>
+            </div>
+        </section>
+
+        <section class="inventory-filters" aria-label="Filtros de inventario">
+            <div class="inventory-filter-title">
+                <strong>Filtros profesionales</strong>
+                <span>Combina proveedor, marca, linea, stock, estado y promocion segun la necesidad del inventario.</span>
+            </div>
+            <div class="inventory-filter-grid">
+                <label>
+                    Proveedor
+                    <select id="filtro-proveedor-productos" class="form-control inventory-filter-control">
+                        <option value="">Todos los proveedores</option>
+                        @foreach($proveedores as $proveedor)
+                            <option value="{{ $proveedor->id }}">{{ $proveedor->nombre_proveedor }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    Marca
+                    <select id="filtro-marca-productos" class="form-control inventory-filter-control">
+                        <option value="">Todas las marcas</option>
+                        @foreach($marcas as $marca)
+                            <option value="{{ $marca->id }}" data-proveedor="{{ $marca->id_proveedor }}">{{ $marca->descripcion }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    Linea
+                    <select id="filtro-linea-productos" class="form-control inventory-filter-control">
+                        <option value="">Todas las lineas</option>
+                        @foreach($lineas as $linea)
+                            <option value="{{ $linea->id }}" data-marca="{{ $linea->id_marca }}" data-proveedor="{{ $linea->marca->id_proveedor ?? '' }}">{{ $linea->descripcion_linea }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    Stock
+                    <select id="filtro-stock-productos" class="form-control inventory-filter-control">
+                        <option value="">Todos</option>
+                        <option value="sin_stock">Sin stock</option>
+                        <option value="bajo">Stock bajo</option>
+                        <option value="disponible">Disponible</option>
+                    </select>
+                </label>
+                <label>
+                    Estado
+                    <select id="filtro-estado-productos" class="form-control inventory-filter-control">
+                        <option value="">Todos</option>
+                        <option value="activo">Activos</option>
+                        <option value="baja">De baja</option>
+                    </select>
+                </label>
+                <label>
+                    Promocion
+                    <select id="filtro-promocion-productos" class="form-control inventory-filter-control">
+                        <option value="">Todos</option>
+                        <option value="con">Con promocion</option>
+                        <option value="sin">Sin promocion</option>
+                    </select>
+                </label>
+                <button type="button" id="limpiar-filtros-productos" class="btn btn-outline-secondary inventory-main-btn">
+                    <i class="fas fa-eraser"></i> Limpiar filtros
+                </button>
+            </div>
+            <div id="resumen-filtros-productos" class="inventory-filter-summary" aria-live="polite">
+                <span>Mostrando todos los productos.</span>
+            </div>
+        </section>
+    </div>
+
+    <div class="container my-4 inventory-legacy-intro">
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="text-dark" style="font-size: 1.75rem; font-weight: 600;">
                 <i class="fas fa-fw fa-boxes me-2"></i> Productos
@@ -94,7 +504,7 @@
 
     <!--TABLA DE PRODUCTOS-->
 
-    <div class="container pb-5">
+    <div class="container pb-5 inventory-table-box">
         <table id="tabla-productos" class="table tabla-striped table-bordered table-hover" style="width:100%">
             <thead>
                 <tr>
@@ -116,7 +526,7 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.css" rel="stylesheet" integrity="sha384-CaLdjDnDQsm4dp6FAi+hDGbnmYMabedJHm00x/JJgmTsQ495TW5sVn4B7kcyThok" crossorigin="anonymous">
+    <link href="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/r-3.0.6/datatables.min.css" rel="stylesheet">
   
 
     <style>
@@ -140,30 +550,580 @@
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: 24px;
         }
+
+        :root {
+            --inventory-bg: #eef3f1;
+            --inventory-surface: #ffffff;
+            --inventory-line: #d7e4df;
+            --inventory-text: #17211d;
+            --inventory-muted: #64748b;
+            --inventory-green: #15803d;
+            --inventory-green-soft: #e7f6ec;
+            --inventory-red: #b91c1c;
+            --inventory-red-soft: #fee2e2;
+        }
+
+        .content-wrapper {
+            background: var(--inventory-bg);
+        }
+
+        .inventory-legacy-header,
+        .inventory-legacy-intro {
+            display: none;
+        }
+
+        .inventory-header,
+        .inventory-help,
+        .inventory-filters,
+        .inventory-summary-card,
+        .inventory-table-box {
+            background: var(--inventory-surface);
+            border: 1px solid var(--inventory-line);
+            border-radius: 8px;
+        }
+
+        .inventory-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .inventory-header span {
+            color: var(--inventory-green);
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .inventory-header h1 {
+            margin: 0;
+            color: var(--inventory-text);
+            font-size: 1.65rem;
+            font-weight: 900;
+        }
+
+        .inventory-header p,
+        .inventory-help span,
+        .inventory-summary-card span {
+            margin: 4px 0 0;
+            color: var(--inventory-muted);
+            font-weight: 700;
+        }
+
+        .inventory-header-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(150px, 1fr));
+            gap: 8px;
+            align-content: start;
+        }
+
+        .inventory-main-btn,
+        .inventory-action-btn,
+        .inventory-mini-btn {
+            min-height: 40px;
+            border-radius: 8px;
+            font-weight: 900;
+            white-space: normal;
+        }
+
+        .inventory-page {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .inventory-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .inventory-summary-card {
+            padding: 14px;
+        }
+
+        .inventory-summary-card strong {
+            display: block;
+            margin-top: 4px;
+            color: var(--inventory-text);
+            font-size: 1.75rem;
+            font-weight: 900;
+        }
+
+        .inventory-warning-card {
+            background: var(--inventory-red-soft);
+            border-color: #fecaca;
+        }
+
+        .inventory-warning-card strong,
+        .inventory-warning-card span {
+            color: var(--inventory-red);
+        }
+
+        .inventory-help {
+            display: grid;
+            grid-template-columns: 44px 1fr;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+        }
+
+        .inventory-help i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: var(--inventory-green-soft);
+            color: var(--inventory-green);
+            font-size: 1.2rem;
+        }
+
+        .inventory-help strong {
+            display: block;
+            color: var(--inventory-text);
+            font-weight: 900;
+        }
+
+        .inventory-filters {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+        }
+
+        .inventory-filter-title strong,
+        .inventory-filter-grid label {
+            color: var(--inventory-text);
+            font-weight: 900;
+        }
+
+        .inventory-filter-title span {
+            display: block;
+            color: var(--inventory-muted);
+            font-weight: 700;
+        }
+
+        .inventory-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .inventory-filter-grid .form-control {
+            min-height: 42px;
+            border-radius: 8px;
+        }
+
+        .inventory-filter-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 34px;
+            align-items: center;
+        }
+
+        .inventory-filter-summary span {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid var(--inventory-line);
+            color: var(--inventory-muted);
+            font-weight: 800;
+        }
+
+        .inventory-filter-summary .active-filter {
+            background: var(--inventory-green-soft);
+            border-color: #b7e4c7;
+            color: var(--inventory-green);
+        }
+
+        .product-modal-body {
+            background: #f8fafc;
+            max-height: 76vh;
+            overflow-y: auto;
+        }
+
+        .product-modal-flow {
+            display: grid;
+            gap: 12px;
+        }
+
+        .product-modal-step,
+        .product-modal-grid,
+        .product-sales-box {
+            background: var(--inventory-surface);
+            border: 1px solid var(--inventory-line);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .product-modal-step {
+            display: grid;
+            grid-template-columns: 42px 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .product-step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            background: var(--inventory-green-soft);
+            color: var(--inventory-green);
+            font-weight: 900;
+        }
+
+        .product-modal-step strong,
+        .product-modal-grid label,
+        .product-sales-title strong,
+        .product-sales-head span {
+            color: var(--inventory-text);
+            font-weight: 900;
+        }
+
+        .product-modal-step span {
+            display: block;
+            color: var(--inventory-muted);
+            font-weight: 700;
+        }
+
+        .product-modal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .product-modal-grid label {
+            display: grid;
+            gap: 6px;
+            margin: 0;
+        }
+
+        .product-modal-grid .form-control,
+        .product-sales-grid .form-control {
+            min-height: 42px;
+            border-radius: 8px;
+        }
+
+        .product-code-row,
+        .product-toggle-row,
+        .product-sales-title {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .product-toggle-row {
+            color: var(--inventory-muted);
+            font-weight: 800;
+        }
+
+        .product-inline-btn,
+        .product-remove-sale {
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 900;
+            white-space: normal;
+        }
+
+        .product-sales-box {
+            display: grid;
+            gap: 10px;
+        }
+
+        .product-sales-title {
+            justify-content: space-between;
+        }
+
+        .product-sales-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr 120px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #grupodeinputs {
+            display: grid;
+            gap: 8px;
+        }
+
+        .product-modal-footer {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+        }
+
+        .product-modal-action {
+            width: 100%;
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        .product-edit-preview {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+            border: 1px solid var(--inventory-line);
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .inventory-table-box {
+            padding: 14px;
+        }
+
+        #tabla-productos {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        #tabla-productos thead th {
+            border: 0;
+            color: var(--inventory-muted);
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        #tabla-productos tbody td {
+            border-top: 1px solid var(--inventory-line);
+            border-bottom: 1px solid var(--inventory-line);
+            vertical-align: middle;
+            font-weight: 800;
+        }
+
+        #tabla-productos tbody td:first-child {
+            border-left: 1px solid var(--inventory-line);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        #tabla-productos tbody td:last-child {
+            border-right: 1px solid var(--inventory-line);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .inventory-stock-box {
+            display: grid;
+            justify-items: center;
+            gap: 4px;
+        }
+
+        .inventory-stock {
+            display: inline-flex;
+            justify-content: center;
+            min-width: 92px;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-weight: 900;
+        }
+
+        .inventory-stock.is-ok {
+            background: var(--inventory-green-soft);
+            color: var(--inventory-green);
+        }
+
+        .inventory-stock.is-low {
+            background: var(--inventory-red-soft);
+            color: var(--inventory-red);
+        }
+
+        .inventory-stock-label {
+            color: var(--inventory-muted);
+            font-weight: 800;
+        }
+
+        .inventory-actions {
+            display: grid;
+            gap: 8px;
+        }
+
+        .dt-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .dataTables_filter label {
+            width: 100%;
+            color: var(--inventory-muted);
+            font-weight: 900;
+        }
+
+        .dataTables_filter input {
+            width: 100% !important;
+            margin: 6px 0 0 !important;
+            min-height: 42px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 767.98px) {
+            .content-header,
+            .content {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .inventory-header,
+            .inventory-header-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .inventory-header {
+                flex-direction: column;
+            }
+
+            .inventory-main-btn {
+                width: 100%;
+            }
+
+            .inventory-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .inventory-filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #tabla-productos,
+            #tabla-productos tbody,
+            #tabla-productos tr,
+            #tabla-productos td {
+                display: block;
+                width: 100%;
+            }
+
+            #tabla-productos thead {
+                display: none;
+            }
+
+            #tabla-productos tbody tr {
+                margin-bottom: 12px;
+                padding: 12px;
+                background: var(--inventory-surface);
+                border: 1px solid var(--inventory-line);
+                border-radius: 8px;
+            }
+
+            #tabla-productos tbody td {
+                display: grid;
+                grid-template-columns: 112px 1fr;
+                gap: 8px;
+                align-items: start;
+                border: 0;
+                padding: 8px 0;
+            }
+
+            #tabla-productos tbody td::before {
+                content: attr(data-label);
+                color: var(--inventory-muted);
+                font-size: .75rem;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            #tabla-productos tbody td:first-child,
+            #tabla-productos tbody td:last-child {
+                border: 0;
+            }
+
+            #tabla-productos tbody td:nth-child(2),
+            #tabla-productos tbody td:nth-child(5),
+            #tabla-productos tbody td:nth-child(6),
+            #tabla-productos tbody td:nth-child(7),
+            #tabla-productos tbody td:nth-child(8) {
+                grid-template-columns: 1fr;
+            }
+
+            #tabla-productos tbody td:nth-child(2)::before,
+            #tabla-productos tbody td:nth-child(5)::before,
+            #tabla-productos tbody td:nth-child(6)::before,
+            #tabla-productos tbody td:nth-child(7)::before,
+            #tabla-productos tbody td:nth-child(8)::before {
+                margin-bottom: 2px;
+            }
+
+            .inventory-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .inventory-action-btn,
+            .inventory-mini-btn {
+                width: 100%;
+            }
+
+            .product-modal-grid,
+            .product-sales-grid,
+            .product-modal-footer {
+                grid-template-columns: 1fr;
+            }
+
+            .product-code-row,
+            .product-sales-title {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .product-inline-btn,
+            .product-remove-sale {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .inventory-summary {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/r-3.0.6/datatables.min.js"></script>
     
     <script>
         $(document).ready(function () {
             const tabla = $('#tabla-productos').DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: true,
+                responsive: false,
                 pageLength: 10,
                 lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
-                language: { url: '/i18n/es-ES.json' },
+                language: {
+                    url: '/i18n/es-ES.json',
+                    search: 'Buscar producto',
+                    searchPlaceholder: 'Nombre o codigo',
+                    lengthMenu: 'Ver _MENU_ productos',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ productos'
+                },
                 ajax: {
-                url: "{{ route('administrador.productos.index') }}",
-                type: "GET",
+                    url: "{{ route('administrador.productos.index') }}",
+                    type: "GET",
+                    data: function(d) {
+                        d.proveedor_id = $('#filtro-proveedor-productos').val();
+                        d.marca_id = $('#filtro-marca-productos').val();
+                        d.linea_id = $('#filtro-linea-productos').val();
+                        d.stock_estado = $('#filtro-stock-productos').val();
+                        d.estado_producto = $('#filtro-estado-productos').val();
+                        d.promocion = $('#filtro-promocion-productos').val();
+                    },
                 },
                 columns: [
                     { data: 'codigo', width: '10%' },
@@ -208,7 +1168,76 @@
                         titleAttr: 'Imprimir',
                     }
                 ],
+                createdRow: function(row) {
+                    const labels = ['Codigo', 'Imagen', 'Producto', 'Marca', 'Stock', 'Venta', 'Promocion', 'Acciones'];
+                    $('td', row).each(function(index) {
+                        $(this).attr('data-label', labels[index] || '');
+                    });
+                },
             });
+
+            const actualizarResumenFiltros = function() {
+                const filtros = [];
+
+                $('.inventory-filter-control').each(function() {
+                    const value = $(this).val();
+                    const label = $(this).closest('label').clone().children().remove().end().text().trim();
+                    const text = $(this).find('option:selected').text();
+
+                    if (value) {
+                        filtros.push(`<span class="active-filter">${label}: ${text}</span>`);
+                    }
+                });
+
+                $('#resumen-filtros-productos').html(
+                    filtros.length ? filtros.join('') : '<span>Mostrando todos los productos.</span>'
+                );
+            };
+
+            const actualizarFiltrosDependientes = function() {
+                const proveedorId = $('#filtro-proveedor-productos').val();
+                const marcaId = $('#filtro-marca-productos').val();
+
+                $('#filtro-marca-productos option').each(function() {
+                    const optionProveedor = $(this).data('proveedor');
+                    const habilitado = !$(this).val() || !proveedorId || String(optionProveedor) === String(proveedorId);
+                    $(this).prop('disabled', !habilitado);
+                });
+
+                if ($('#filtro-marca-productos option:selected').prop('disabled')) {
+                    $('#filtro-marca-productos').val('');
+                }
+
+                const marcaActual = $('#filtro-marca-productos').val();
+                $('#filtro-linea-productos option').each(function() {
+                    const optionMarca = $(this).data('marca');
+                    const optionProveedor = $(this).data('proveedor');
+                    const habilitado = !$(this).val()
+                        || (marcaActual && String(optionMarca) === String(marcaActual))
+                        || (!marcaActual && (!proveedorId || String(optionProveedor) === String(proveedorId)));
+                    $(this).prop('disabled', !habilitado);
+                });
+
+                if ($('#filtro-linea-productos option:selected').prop('disabled')) {
+                    $('#filtro-linea-productos').val('');
+                }
+            };
+
+            $('.inventory-filter-control').on('change', function() {
+                actualizarFiltrosDependientes();
+                actualizarResumenFiltros();
+                tabla.ajax.reload();
+            });
+
+            $('#limpiar-filtros-productos').on('click', function() {
+                $('.inventory-filter-control').val('');
+                $('.inventory-filter-control option').prop('disabled', false);
+                actualizarResumenFiltros();
+                tabla.ajax.reload();
+            });
+
+            actualizarFiltrosDependientes();
+            actualizarResumenFiltros();
         });
     </script>
     <script>
@@ -307,6 +1336,121 @@
                 width: 'resolve',
                 dropdownParent: $('#agregar-producto'),
             });
+
+            $('#editar_proveedor_id').select2({
+                placeholder: 'Seleccione un proveedor',
+                width: 'resolve',
+                dropdownParent: $('#editar-producto'),
+            });
+            $('#editar_marca_id').select2({
+                placeholder: 'Seleccione una marca',
+                width: 'resolve',
+                dropdownParent: $('#editar-producto'),
+            });
+            $('#editar_linea_id').select2({
+                placeholder: 'Seleccione una linea',
+                width: 'resolve',
+                dropdownParent: $('#editar-producto'),
+            });
+
+            $('#editar_proveedor_id').on('select2:select', function() {
+                cargarMarcasEditar($(this).val());
+            });
+
+            $('#editar_marca_id').on('select2:select', function() {
+                cargarLineasEditar($(this).val());
+            });
+
+            $('#editar_promocion').on('change', function() {
+                const activo = $(this).is(':checked');
+                $('#editar_descuento_porcentaje, #editar_descuento_promocion').prop('disabled', !activo);
+                if (!activo) {
+                    $('#editar_descuento_porcentaje').val(0);
+                    $('#editar_descuento_promocion').val('');
+                }
+            });
+
+            $('#editar-producto-guardar').on('click', function() {
+                $('#editar-producto-form').submit();
+            });
+
+            $('#editar-producto-form').on('submit', function(event) {
+                event.preventDefault();
+                const idProducto = $('#editar_producto_id').val();
+                const formData = new FormData(this);
+                const botonGuardar = $('#editar-producto-guardar');
+                botonGuardar.prop('disabled', true);
+
+                Swal.fire({
+                    title: 'Guardando cambios...',
+                    html: 'Por favor espera',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: "{{ route('administrador.productos.update', ':id') }}".replace(':id', idProducto),
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function() {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Producto actualizado',
+                            text: 'Los cambios se guardaron correctamente.',
+                            showConfirmButton: false,
+                            timer: 1600,
+                        }).then(() => {
+                            $('#editar-producto-cerrar').click();
+                            $('#editar-producto-form')[0].reset();
+                            $('#tabla-productos').DataTable().ajax.reload(null, false);
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No se pudo actualizar',
+                            text: xhr.responseJSON?.message || 'Revisa los datos e intenta nuevamente.',
+                        });
+                    },
+                    complete: function() {
+                        botonGuardar.prop('disabled', false);
+                    }
+                });
+            });
+
+            $('#generar-codigo-producto').on('click', function() {
+                Swal.fire({
+                    title: 'Generando codigo...',
+                    html: 'Por favor espera',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: "{{ route('administrador.productos.autogenerar_codigo') }}",
+                    type: 'GET',
+                    success: function(data) {
+                        Swal.close();
+                        $('#codigoProducto').val(data.codigo);
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No se pudo generar el codigo',
+                            text: 'Intenta nuevamente.',
+                        });
+                    }
+                });
+            });
         });
 
         $('#habilitarVencimiento').change(function() {
@@ -341,22 +1485,29 @@
 
         $("#boton-agregar-forma-venta").click(function() {
             let nuevoInput = `
-                <tr>
-                    <td>
-                        <input type="text" class="form-control forma-venta" name="forma_venta[]" placeholder="Ej: Unidad, Caja, Bolsa" required>
-                    </td>
-                    <td>
-                        <input type="number" class="form-control cantidad-venta" name="cantidad_venta[]" placeholder="Ej: 1, 12, 24" min="0.01" value="0.01" step="0.01" required>
-                    </td>
-                    <td>
-                        <input type="number" class="form-control cantidad-venta" name="equivalencia_stock[]" placeholder="Ej: 1, 12, 24" min="1" value="1" step="1" required>
-                    </td>
-                    <td>
-                        <button class="btn btn-danger" type="button" onclick="$(this).closest('tr').remove();">X</button>
-                    </td>
-                </tr>`;
+                <div class="product-sales-grid">
+                    <input type="text" class="form-control" name="nombre_forma_venta[]" placeholder="Ej: Caja" required>
+                    <input type="number" class="form-control" name="precio_forma_venta[]" placeholder="Ej: 120.00" min="0.01" value="0.01" step="0.01" required>
+                    <input type="number" class="form-control" name="equivalencia[]" placeholder="Ej: 12" min="1" value="1" step="1" required>
+                    <button class="btn btn-outline-danger product-remove-sale" type="button" onclick="quitarFormaVentaProducto(this)">
+                        <i class="fas fa-times"></i> Quitar
+                    </button>
+                </div>`;
             $("#grupodeinputs").append(nuevoInput);
         });
+
+        function quitarFormaVentaProducto(e) {
+            if ($('#grupodeinputs .product-sales-grid').length <= 1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Debe existir una forma de venta',
+                    text: 'Cada producto necesita al menos una forma de venta.',
+                });
+                return;
+            }
+
+            $(e).closest('.product-sales-grid').remove();
+        }
 
 
         $("#botonenviarproducto").click(function(){
@@ -405,6 +1556,21 @@
                     }).then(() => {
                         $('#tabla-productos').DataTable().ajax.reload(null, false);
                         $('#botonenviar-cerrar').click();
+                        $('#registro-producto')[0].reset();
+                        $('#marca_id').empty().append('<option value="" disabled selected>Seleccione una marca...</option>').trigger('change');
+                        $('#linea_id').empty().append('<option value="" disabled selected>Seleccione una linea...</option>').trigger('change');
+                        $('#proveedor_id').val(null).trigger('change');
+                        $('#vencimientoProducto, #presentacionProducto, #promocionDescuento, #promocionRegalo').prop('disabled', true);
+                        $('#grupodeinputs').html(`
+                            <div class="product-sales-grid">
+                                <input type="text" class="form-control" name="nombre_forma_venta[]" placeholder="Ej: Unidad" required>
+                                <input type="number" class="form-control" name="precio_forma_venta[]" placeholder="Ej: 10.50" min="0.01" value="0.01" step="0.01" required>
+                                <input type="number" class="form-control" name="equivalencia[]" placeholder="Ej: 1" min="1" value="1" step="1" required>
+                                <button class="btn btn-outline-danger product-remove-sale" type="button" onclick="quitarFormaVentaProducto(this)">
+                                    <i class="fas fa-times"></i> Quitar
+                                </button>
+                            </div>
+                        `);
                     });
                 },
                 error: function(xhr) {
@@ -1289,6 +2455,96 @@
                 }
             });
         }
+        function cargarMarcasEditar(proveedorId, marcaSeleccionada = null) {
+            $('#editar_marca_id').empty().append('<option value="" disabled selected>Cargando marcas...</option>');
+            $('#editar_linea_id').empty().append('<option value="" disabled selected>Seleccione una linea...</option>');
+
+            return $.ajax({
+                url: "{{ route('administrador.marcas.show', ':id') }}".replace(':id', proveedorId),
+                type: 'GET',
+                success: function(data) {
+                    $('#editar_marca_id').empty().append('<option value="" disabled selected>Seleccione una marca...</option>');
+                    data.forEach(function(marca) {
+                        const selected = String(marca.id) === String(marcaSeleccionada) ? 'selected' : '';
+                        $('#editar_marca_id').append(`<option value="${marca.id}" ${selected}>${marca.descripcion}</option>`);
+                    });
+                    $('#editar_marca_id').trigger('change');
+                }
+            });
+        }
+
+        function cargarLineasEditar(marcaId, lineaSeleccionada = null) {
+            $('#editar_linea_id').empty().append('<option value="" disabled selected>Cargando lineas...</option>');
+
+            return $.ajax({
+                url: "{{ route('administrador.lineas.show', ':id') }}".replace(':id', marcaId),
+                type: 'GET',
+                success: function(data) {
+                    $('#editar_linea_id').empty().append('<option value="" disabled selected>Seleccione una linea...</option>');
+                    data.forEach(function(linea) {
+                        const selected = String(linea.id) === String(lineaSeleccionada) ? 'selected' : '';
+                        $('#editar_linea_id').append(`<option value="${linea.id}" ${selected}>${linea.descripcion_linea}</option>`);
+                    });
+                    $('#editar_linea_id').trigger('change');
+                }
+            });
+        }
+
+        function abrirEditarProducto(e) {
+            const idProducto = $(e).attr('id-producto');
+
+            Swal.fire({
+                title: 'Cargando producto...',
+                html: 'Por favor espera',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            $.ajax({
+                url: "{{ route('administrador.productos.show', ':id') }}".replace(':id', idProducto),
+                type: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: async function(data) {
+                    const producto = data.producto;
+
+                    $('#editar-producto-form')[0].reset();
+                    $('#editar-producto-form input[name="imagen_producto"]').val('');
+                    $('#editar_producto_id').val(producto.id);
+                    $('#editar_proveedor_id').val(producto.id_proveedor).trigger('change');
+                    await cargarMarcasEditar(producto.id_proveedor, producto.id_marca);
+                    await cargarLineasEditar(producto.id_marca, producto.id_linea);
+
+                    $('#editar_codigo_producto').val(producto.codigo);
+                    $('#editar_nombre_producto').val(producto.nombre_producto);
+                    $('#editar_descripcion_producto').val(producto.descripcion_producto);
+                    $('#editar_cantidad').val(producto.cantidad);
+                    $('#editar_detalle_cantidad').val(producto.detalle_cantidad);
+                    $('#editar_precio_compra').val(producto.precio_compra);
+                    $('#editar_detalle_precio_compra').val(producto.detalle_precio_compra);
+                    $('#editar_fecha_vencimiento').val(producto.fecha_vencimiento || '');
+                    $('#editar_presentacion').val(producto.presentacion || '');
+                    $('#editar_imagen_actual').attr('src', data.imagen_url);
+                    $('#editar_promocion').prop('checked', !!producto.promocion);
+                    $('#editar_descuento_porcentaje').val(producto.descripcion_descuento_porcentaje || 0);
+                    $('#editar_descuento_promocion').val(producto.descripcion_regalo || '');
+                    $('#editar_descuento_porcentaje, #editar_descuento_promocion').prop('disabled', !producto.promocion);
+
+                    Swal.close();
+                    $('#editar-producto').modal('show');
+                },
+                error: function(xhr) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se pudo cargar el producto',
+                        text: xhr.responseJSON?.message || 'Intenta nuevamente.',
+                    });
+                }
+            });
+        }
     </script>
     @if($contar_productos_menores > 0)
         <script>
@@ -1332,8 +2588,8 @@
                         // click "Más tarde"
                         document.getElementById('btn-later').addEventListener('click', () => Swal.close());
                     }
-                });
             });
-        </script>
+        });
+    </script>
     @endif
 @stop

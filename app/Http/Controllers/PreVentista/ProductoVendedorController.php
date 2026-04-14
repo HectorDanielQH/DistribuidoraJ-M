@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\PreVentista;
 
 use App\Http\Controllers\Controller;
-
-use App\Models\FormaVenta;
 use App\Models\Linea;
 use App\Models\Marca;
 use App\Models\Producto;
@@ -17,101 +15,131 @@ class ProductoVendedorController extends Controller
 {
     public function obtenerProductos(Request $request, DataTables $dataTables)
     {
-        if($request->ajax())
-        {
-            $query = Producto::query()->where('estado_de_baja', false)->where('cantidad', '>', 0);
+        if ($request->ajax()) {
+            $query = Producto::query()
+                ->with(['marca', 'formaVentas' => function ($query) {
+                    $query->where('activo', true);
+                }])
+                ->where('estado_de_baja', false)
+                ->where('cantidad', '>', 0);
+
             if ($request->filled('nombre')) {
-                $query->where('nombre_producto', 'like', '%' . strtoupper($request->nombre) . '%');
+                $query->where('nombre_producto', 'ILIKE', '%' . strtoupper($request->nombre) . '%');
             }
 
             if ($request->filled('codigo')) {
-                $query->where('codigo', 'like', '%' . $request->codigo . '%');
+                $query->where('codigo', 'ILIKE', '%' . strtoupper($request->codigo) . '%');
+            }
+
+            if ($request->filled('marca')) {
+                $query->where('id_marca', $request->marca);
+            }
+
+            if ($request->filled('linea')) {
+                $query->where('id_linea', $request->linea);
+            }
+
+            if ($request->filled('promocion')) {
+                $query->where('promocion', $request->promocion === 'si');
+            }
+
+            if ($request->filled('stock')) {
+                if ($request->stock === 'bajo') {
+                    $query->where('cantidad', '<=', 15);
+                }
+
+                if ($request->stock === 'disponible') {
+                    $query->where('cantidad', '>', 15);
+                }
             }
 
             return $dataTables->eloquent($query)
-                ->addColumn('acciones', function ($producto) {
+                ->addColumn('acciones', function () {
                     return '';
                 })
                 ->editColumn('imagen', function ($producto) {
                     if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
-                        return '<img src="' . route('productos.imagen', ['id' => $producto->id]) . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
+                        return '<img src="' . route('productos.imagen', ['id' => $producto->id]) . '" class="seller-product-img" alt="' . e($producto->nombre_producto) . '">';
                     }
-                    return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
-                }) 
+
+                    return '<img src="' . asset('images/logo_color.webp') . '" class="seller-product-img" alt="Producto">';
+                })
+                ->editColumn('codigo', function ($producto) {
+                    return '<span class="seller-code">' . e($producto->codigo) . '</span>';
+                })
+                ->editColumn('nombre_producto', function ($producto) {
+                    return '<div class="seller-product-name">'
+                        . '<strong>' . e($producto->nombre_producto) . '</strong>'
+                        . '<span>' . e($producto->descripcion_producto) . '</span>'
+                        . '</div>';
+                })
                 ->addColumn('marca', function ($producto) {
-                    return $producto->marca ? $producto->marca->descripcion : 'Sin Marca';
+                    return '<span class="seller-brand">' . e($producto->marca ? $producto->marca->descripcion : 'Sin marca') . '</span>';
                 })
                 ->addColumn('stock', function ($producto) {
-                    $claseCantidad = $producto->cantidad <= 15 ? 'badge bg-danger' : 'badge bg-success';
-                    $cantidadHtml = '<span class="' . $claseCantidad . ' fs-6">' . $producto->cantidad . ' ' . $producto->detalle_cantidad . '</span>';
-                    return $cantidadHtml;
+                    $class = $producto->cantidad <= 15 ? 'seller-stock seller-stock-low' : 'seller-stock seller-stock-ok';
+
+                    return '<span class="' . $class . '">' . (int) $producto->cantidad . ' ' . e($producto->detalle_cantidad) . '</span>';
                 })
                 ->addColumn('formas_venta', function ($producto) {
-                    $formasVenta = FormaVenta::where('id_producto', $producto->id)->get();
-                    if ($formasVenta->isEmpty()) {
-                        $output = '<div class="d-flex flex-column">';
+                    $formasVenta = $producto->formaVentas;
+
+                    if ($formasVenta->isNotEmpty()) {
+                        $output = '<div class="seller-sale-list">';
+
                         foreach ($formasVenta as $formaVenta) {
-                            $output .= '
-                                <div class="border rounded p-2 '.
-                                ($formaVenta->activo ? 'bg-white' : ' bg-secondary text-white')
-                                .' shadow-sm">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <div class="d-flex align-items-center">
-                                            <strong>' . ucfirst($formaVenta->tipo_venta) . '</strong>
-                                        </div>
-                                        <span class="badge bg-success fs-6">
-                                            Bs.-' . number_format($formaVenta->precio_venta, 2, ',', '.') . '
-                                        </span>
-                                    </div>
-                                </div>
-                            ';
+                            $output .= '<span><strong>' . e($formaVenta->tipo_venta) . '</strong> Bs. ' . number_format($formaVenta->precio_venta, 2, '.', ',') . '</span>';
                         }
+
                         $output .= '</div>';
-                    return $output;
-                    } else {
-                        return '<span class="badge bg-secondary fs-6">Sin Forma de Venta</span>';
+                        $output .= '<button type="button" class="btn btn-sm seller-detail-btn" id-producto="' . $producto->id . '" onclick="verDetalleFormaVenta(this)">Ver precios</button>';
+
+                        return $output;
                     }
+
+                    return '<span class="seller-empty">Sin forma de venta</span>';
                 })
-                ->addColumn('promocion_vista', function($producto){
+                ->addColumn('promocion_vista', function ($producto) {
                     $descuento = ($producto->descripcion_descuento_porcentaje !== null && $producto->descripcion_descuento_porcentaje !== '')
                         ? $producto->descripcion_descuento_porcentaje . '%'
                         : 'N/A';
 
-                    $regalo = ($producto->descripcion_regalo !== null && $producto->descripcion_regalo !== '' )
+                    $regalo = ($producto->descripcion_regalo !== null && $producto->descripcion_regalo !== '')
                         ? $producto->descripcion_regalo
-                        :'N/A';
-                    $render = '<div class="d-flex flex-column align-items-center justify-content-center mb-2 bg-white">';
+                        : 'N/A';
+
                     if ($producto->promocion) {
-                        $render = '
-                        <span>
-                            Descuento: <strong>' . $descuento . '</strong><br>
-                            Regalo: <strong>' . $regalo . '</strong>
-                        </span>
-                        <br/>
-                        ';
-                    } else {
-                        $render .= '<span class="badge bg-secondary fs-6">Sin Promoción</span>';
+                        return '<div class="seller-promo">'
+                            . '<strong>Promocion</strong>'
+                            . '<span>Desc: ' . e($descuento) . '</span>'
+                            . '<span>Regalo: ' . e($regalo) . '</span>'
+                            . '<button type="button" class="btn btn-sm seller-detail-btn" id-producto="' . $producto->id . '" onclick="verDetallePromocion(this)">Ver promo</button>'
+                            . '</div>';
                     }
-                    $render .= '</div>';
-                    return $render;
+
+                    return '<span class="seller-empty">Sin promocion</span>';
                 })
-                ->rawColumns(['acciones', 'imagen', 'stock', 'formas_venta','promocion_vista'])
+                ->rawColumns(['acciones', 'codigo', 'imagen', 'nombre_producto', 'marca', 'stock', 'formas_venta', 'promocion_vista'])
                 ->make(true);
         }
 
         $contar_productos_promocion = Producto::where('promocion', true)
-                ->where('estado_de_baja', false)
-                ->where('cantidad', '>', 0)
-                ->count();
+            ->where('estado_de_baja', false)
+            ->where('cantidad', '>', 0)
+            ->count();
+        $marcas = Marca::orderBy('descripcion')->get();
+        $lineas = Linea::orderBy('descripcion_linea')->get();
 
-        return view('vendedor.productos.index', compact('contar_productos_promocion'));
+        return view('vendedor.productos.index', compact('contar_productos_promocion', 'marcas', 'lineas'));
     }
 
-    public function verDetalleProductosPromocion(){
+    public function verDetalleProductosPromocion()
+    {
         $contar_productos_promocion = Producto::where('promocion', true)
             ->where('estado_de_baja', false)
             ->where('cantidad', '>', 0)
             ->get();
+
         return response()->json([
             'productos' => $contar_productos_promocion
         ]);
@@ -125,7 +153,7 @@ class ProductoVendedorController extends Controller
             return response()->json(['error' => 'Producto no encontrado'], 404);
         }
 
-        $formas_venta = FormaVenta::where('id_producto', $producto->id)
+        $formas_venta = $producto->formaVentas()
             ->where('activo', true)
             ->get();
 
@@ -143,7 +171,7 @@ class ProductoVendedorController extends Controller
         }
 
         if (!$producto->promocion) {
-            return response()->json(['error' => 'El producto no está en promoción'], 404);
+            return response()->json(['error' => 'El producto no esta en promocion'], 404);
         }
 
         return response()->json([
@@ -151,39 +179,58 @@ class ProductoVendedorController extends Controller
         ]);
     }
 
-    public function descargarCatalogo() {
+    public function descargarCatalogo()
+    {
         $productos = Producto::where('estado_de_baja', false)
             ->where('cantidad', '>', 0)
+            ->with(['marca', 'linea', 'formaVentas' => function ($query) {
+                $query->where('activo', true)->orderBy('precio_venta');
+            }])
+            ->orderBy('id_marca')
+            ->orderBy('id_linea')
+            ->orderBy('nombre_producto')
             ->get();
-        $marcas = Marca::all();
-        $lineas = Linea::all();
 
-        $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos','marcas','lineas'));
+        $marcas = Marca::with(['linea.productos' => function ($query) {
+            $query->where('estado_de_baja', false)
+                ->where('cantidad', '>', 0)
+                ->with(['formaVentas' => function ($query) {
+                    $query->where('activo', true)->orderBy('precio_venta');
+                }])
+                ->orderBy('nombre_producto');
+        }])->orderBy('descripcion')->get();
+
+        $resumen = [
+            'total_productos' => $productos->count(),
+            'total_promociones' => $productos->where('promocion', true)->count(),
+            'total_marcas' => $productos->pluck('id_marca')->unique()->count(),
+            'fecha' => now()->format('d/m/Y H:i'),
+        ];
+
+        $pdf = Pdf::loadView('vendedor.pdf.catalogo_pdf', compact('productos', 'marcas', 'resumen'));
         $pdf->setOptions([
             'dpi' => 96,
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => false,
             'defaultFont' => 'Helvetica',
             'chroot' => base_path(),
-        ])->setPaper('letter', 'horizontal'); // 'landscape' (no 'horizontal')
+        ])->setPaper('letter', 'horizontal');
 
         $dir = storage_path('app/private/catalogos');
         @mkdir($dir, 0775, true);
 
-        $original = $dir.'/catalogo_raw.pdf';
-        $comprimido = $dir.'/catalogo.pdf';
+        $original = $dir . '/catalogo_raw.pdf';
+        $comprimido = $dir . '/catalogo.pdf';
 
         file_put_contents($original, $pdf->output());
 
-        // Comprimir con Ghostscript
-        $in  = escapeshellarg($original);
+        $in = escapeshellarg($original);
         $out = escapeshellarg($comprimido);
-        $cmd = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen ".
-            "-dDownsampleColorImages=true -dColorImageResolution=96 ".
+        $cmd = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen " .
+            "-dDownsampleColorImages=true -dColorImageResolution=96 " .
             "-dNOPAUSE -dQUIET -dBATCH -sOutputFile=$out $in";
         @exec($cmd, $o, $code);
 
-        // Si falla gs, sirve el original; si no, sirve el comprimido
         $fileToServe = (file_exists($comprimido) && filesize($comprimido) > 0) ? $comprimido : $original;
 
         return response()->file($fileToServe, [
@@ -191,5 +238,4 @@ class ProductoVendedorController extends Controller
             'Content-Disposition' => 'inline; filename="catalogo.pdf"',
         ]);
     }
-    
 }

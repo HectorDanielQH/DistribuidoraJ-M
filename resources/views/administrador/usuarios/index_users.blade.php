@@ -1,9 +1,9 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Usuarios')
 
 @section('content_header')
-    <div class="container py-4" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
+    <div class="container py-4 admin-legacy-header" style="background: linear-gradient(135deg, #2c3e50, #34495e); border-radius: 16px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);">
         <div class="d-flex flex-column justify-content-center align-items-center text-center">
             <h1 class="text-white mb-2" style="font-size: 2.75rem; font-weight: 700; letter-spacing: 1px;">
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
@@ -13,12 +13,22 @@
             </span>
         </div>
     </div>
+    <div class="admin-header">
+        <div>
+            <span>Administracion</span>
+            <h1>Usuarios</h1>
+            <p>Crea, busca y actualiza usuarios del sistema.</p>
+        </div>
+        <button class="btn btn-success admin-main-btn" data-toggle="modal" data-target="#modalPurple">
+            <i class="fas fa-user-plus"></i> Nuevo usuario
+        </button>
+    </div>
 @stop
 
 @section('content')
 
-    <div class="d-flex flex-column justify-content-center align-items-center">
-        <div class="card shadow-sm border-0 mb-4" style="background-color: #f9f9fb; border-radius: 16px;">
+    <div class="d-flex flex-column justify-content-center align-items-center admin-filter-wrapper">
+        <div class="card shadow-sm border-0 mb-4 filter-box" style="background-color: #f9f9fb; border-radius: 16px;">
             <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #2c3e50; color: #ffffff; border-radius: 16px 16px 0 0; padding: 1rem 1.5rem;">
                 <h5 class="mb-0">
                     <i class="fas fa-filter me-2"></i> Opciones de búsqueda
@@ -371,7 +381,7 @@
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
-    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet" integrity="sha384-d76uxpdVr9QyCSR9vVSYdOAZeRzNUN8A4JVqUHBVXyGxZ+oOfrZVHC/1Y58mhyNg" crossorigin="anonymous">
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet">
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -384,16 +394,194 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
         .btn:hover {
-            opacity: 0.9;
+            opacity: 0.95;
+        }
+
+        :root {
+            --surface: #ffffff;
+            --soft: #eef3f1;
+            --line: #dbe7e2;
+            --text: #17211d;
+            --muted: #64748b;
+            --green: #15803d;
+            --green-soft: #e7f6ec;
+        }
+
+        .content-wrapper { background: var(--soft); }
+        .admin-legacy-header { display: none; }
+
+        .admin-header,
+        .filter-box,
+        .table-responsive {
+            background: var(--surface) !important;
+            border: 1px solid var(--line);
+            border-radius: 8px !important;
+            box-shadow: none !important;
+        }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .admin-header span {
+            color: var(--green);
+            font-size: .78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            color: var(--text);
+            font-size: 1.65rem;
+            font-weight: 900;
+        }
+
+        .admin-header p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .admin-main-btn,
+        .btn-action {
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        .admin-filter-wrapper {
+            align-items: stretch !important;
+        }
+
+        .filter-box .card-header {
+            display: none !important;
+        }
+
+        .filter-box .card-body {
+            padding: 16px !important;
+        }
+
+        .filter-box input.form-control {
+            min-height: 44px;
+            border: 1px solid var(--line) !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;
+        }
+
+        #tablaUsuarios {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        #tablaUsuarios thead th {
+            border: 0;
+            color: var(--muted);
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: 0;
+            background: transparent !important;
+        }
+
+        #tablaUsuarios tbody td {
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            vertical-align: middle;
+            font-weight: 800;
+        }
+
+        #tablaUsuarios tbody td:first-child {
+            border-left: 1px solid var(--line);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        #tablaUsuarios tbody td:last-child {
+            border-right: 1px solid var(--line);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .admin-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(90px, 1fr));
+            gap: 8px;
+        }
+
+        @media (max-width: 575.98px) {
+            .content-header,
+            .content {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+
+            .admin-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .admin-main-btn {
+                width: 100%;
+            }
+
+            .table-responsive {
+                overflow-x: visible !important;
+                padding: 12px;
+            }
+
+            #tablaUsuarios,
+            #tablaUsuarios tbody,
+            #tablaUsuarios tr,
+            #tablaUsuarios td {
+                display: block;
+                width: 100%;
+            }
+
+            #tablaUsuarios thead {
+                display: none;
+            }
+
+            #tablaUsuarios tbody tr {
+                margin-bottom: 10px;
+                padding: 12px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--surface);
+            }
+
+            #tablaUsuarios tbody td,
+            #tablaUsuarios tbody td:first-child,
+            #tablaUsuarios tbody td:last-child {
+                border: 0;
+                border-radius: 0;
+                padding: 7px 0;
+            }
+
+            #tablaUsuarios tbody td::before {
+                content: attr(data-mobile-label);
+                display: block;
+                margin-bottom: 3px;
+                color: var(--muted);
+                font-size: .78rem;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+
+            .admin-actions {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js" integrity="sha384-JRUjeYWWUGO171YFugrU0ksSC6CaWnl4XzwP6mNjnnDh4hfFGRyYbEXwryGwLsEp" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js"></script>
 
     <script>
         $(document).ready(function(){
@@ -422,7 +610,12 @@
                     { data: 'rol', orderable: false, searchable: false},
                     { data: 'action', orderable: false, searchable: false }
                 ],
-                
+                createdRow: function (row) {
+                    const labels = ['ID', 'C.I.', 'Perfil', 'Nombre', 'Celular', 'Rol', 'Acciones'];
+                    $('td', row).each(function (index) {
+                        $(this).attr('data-mobile-label', labels[index]);
+                    });
+                }
             });
         });
 

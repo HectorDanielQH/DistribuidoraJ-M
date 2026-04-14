@@ -28,9 +28,9 @@ class PermisosController extends Controller
                     return $role->permissions->pluck('name')->implode(', ');
                 })
                 ->addColumn('actions', function ($role) {
-                    $btn = '<div class="btn-group d-flex justify-content-center align-items-center" role="group">';
-                    $btn .= '<button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editRoleModal" data-id="'.$role->id.'" onclick="editRole(this)"><i class="fas fa-edit"></i></button>';
-                    $btn .= '<button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteRoleModal" data-id="'.$role->id.'" onclick="deleteRole(this)"><i class="fas fa-trash"></i></button>';
+                    $btn = '<div class="admin-actions">';
+                    $btn .= '<button class="btn btn-warning btn-action" data-id="'.$role->id.'" onclick="editRole(this)"><i class="fas fa-edit"></i> Editar</button>';
+                    $btn .= '<button class="btn btn-danger btn-action" data-id="'.$role->id.'" onclick="deleteRole(this)"><i class="fas fa-trash"></i> Eliminar</button>';
                     $btn .= '</div>';
                     return $btn;
                 })

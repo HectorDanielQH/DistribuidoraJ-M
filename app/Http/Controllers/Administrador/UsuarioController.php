@@ -64,10 +64,10 @@ class UsuarioController extends Controller
                     return '<span class="badge badge-danger">No asignado</span>';
                 })
                 ->addColumn('action', function ($usuario) {
-                    $editButton = '<button class="btn btn-warning btn-sm edit-user" id-usuario="' . $usuario->id . '" onclick="editarUsuario(this)" data-toggle="modal" data-target="#modalEditarUsuario"><i class="fas fa-edit"></i></button>';
-                    $deleteButton = '<button class="btn btn-danger btn-sm delete-user" id-usuario="' . $usuario->id . '" onclick="eliminarUsuario(this)"><i class="fas fa-trash"></i></button>';
-                    $viewButton = '<button class="btn btn-info btn-sm view-user" id-usuario="' . $usuario->id . '" onclick="visualizarUsuario(this)" data-toggle="modal" data-target="#modalVisualizar"><i class="fas fa-eye"></i></button>';
-                    return $editButton . ' ' . $deleteButton . ' ' . $viewButton;
+                    $viewButton = '<button class="btn btn-info btn-action view-user" id-usuario="' . $usuario->id . '" onclick="visualizarUsuario(this)" data-toggle="modal" data-target="#modalVisualizar"><i class="fas fa-eye"></i> Ver</button>';
+                    $editButton = '<button class="btn btn-warning btn-action edit-user" id-usuario="' . $usuario->id . '" onclick="editarUsuario(this)" data-toggle="modal" data-target="#modalEditarUsuario"><i class="fas fa-edit"></i> Editar</button>';
+                    $deleteButton = '<button class="btn btn-danger btn-action delete-user" id-usuario="' . $usuario->id . '" onclick="eliminarUsuario(this)"><i class="fas fa-trash"></i> Eliminar</button>';
+                    return '<div class="admin-actions">'.$viewButton.$editButton.$deleteButton.'</div>';
                 })
                 ->rawColumns(['foto_perfil','rol','action'])
                 ->make(true);
