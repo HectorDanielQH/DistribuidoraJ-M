@@ -174,9 +174,18 @@
             padding: 14px;
             overflow-x: auto;
         }
+        .orders-table-shell table {
+            width: 100% !important;
+        }
+        table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before {
+            background-color: #0f766e;
+            border-radius: 8px;
+            box-shadow: none;
+        }
         .order-number {
             font-weight: 900;
             color: #0f766e;
+            white-space: nowrap;
         }
         .order-client {
             display: flex;
@@ -237,6 +246,15 @@
             .orders-main-btn, .order-action-btn { width: 100%; }
             .orders-flow, .orders-filters { grid-template-columns: 1fr; }
             .order-actions { flex-direction: column; }
+            .orders-table-shell { padding: 8px; }
+            .orders-table-shell .table td,
+            .orders-table-shell .table th {
+                font-size: .9rem;
+                vertical-align: middle;
+            }
+            .order-client {
+                min-width: 0;
+            }
         }
     </style>
 @stop
@@ -250,7 +268,12 @@
             const tabla = $('#pedidosTabla').DataTable({
                 processing: true,
                 serverSide: true,
-                responsive: false,
+                responsive: {
+                    details: {
+                        type: 'column',
+                        target: 0
+                    }
+                },
                 language: {
                     url: '/i18n/es-ES.json',
                     search: 'Buscar pedido',
@@ -277,6 +300,14 @@
                     { data:'total_estimado', orderable: false, searchable: false },
                     { data:'estado', orderable: false, searchable: false },
                     { data:'acciones', orderable: false, searchable: false }
+                ],
+                columnDefs: [
+                    { className: 'dtr-control', targets: 0 },
+                    { responsivePriority: 1, targets: 0 },
+                    { responsivePriority: 2, targets: 1 },
+                    { responsivePriority: 3, targets: 7 },
+                    { responsivePriority: 4, targets: 9 },
+                    { responsivePriority: 10001, targets: [2, 3, 4, 5, 6, 8] },
                 ],
             });
 

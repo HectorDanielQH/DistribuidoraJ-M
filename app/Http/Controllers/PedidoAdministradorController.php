@@ -420,8 +420,8 @@ class PedidoAdministradorController extends Controller
             ->get();
 
         $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos'));
-        $pdf->setPaper('letter', 'horizontal');
-        return $pdf->stream('productosDespachados.pdf');   
+        $pdf->setPaper('letter', 'portrait');
+        return $pdf->stream('productosDespachados.pdf');  
     }
 
 
@@ -480,8 +480,8 @@ class PedidoAdministradorController extends Controller
             ->get();
 
         $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos'));
-        $pdf->setPaper('letter', 'horizontal');
-        return $pdf->stream('productosDespachados.pdf');   
+        $pdf->setPaper('letter', 'portrait');
+        return $pdf->stream('productosDespachados.pdf');  
     }
 
 
