@@ -211,6 +211,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
         Route::get('pedidos/administrador/pendientes/producto/{id_producto}', [PedidoAdministradorController::class,'pedidosPendientesPorProducto'])->name('pedidos.administrador.pendientesPorProducto');
+        Route::get('pedidos/administrador/consolidado-despacho/{estado}/pdf', [PedidoAdministradorController::class,'visualizacionPdfConsolidadoDespacho'])->name('pedidos.administrador.consolidadoDespacho.pdf');
 
         Route::get('pedidos/administrador/visualizacion-pedido/{id}', [PedidoAdministradorController::class,'visualizacionPedido'])->name('pedidos.administrador.visualizacionPedido');
         Route::post('pedidos/administrador/despachar-pedidos', [PedidoAdministradorController::class,'despacharPedido'])->name('pedidos.administrador.despacharPedido');

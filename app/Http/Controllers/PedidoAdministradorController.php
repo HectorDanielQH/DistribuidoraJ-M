@@ -110,78 +110,10 @@ class PedidoAdministradorController extends Controller
 
     public function visualizacionDespachados(Request $request, DataTables $dataTables){
         if($request->ajax()){
-            $query = $this->basePedidosDespachados()
-                ->with('producto')
-                ->select('pedidos.id_producto')
-                ->selectRaw('COUNT(DISTINCT pedidos.numero_pedido) AS pedidos_involucrados')
-                ->selectRaw('SUM(pedidos.cantidad * forma_ventas.equivalencia_cantidad) AS cantidad_despacho')
-                ->selectRaw('SUM(pedidos.cantidad * forma_ventas.precio_venta) AS ingreso_estimado')
-                ->selectRaw('MIN(pedidos.fecha_entrega) AS primera_entrega')
-                ->groupBy('pedidos.id_producto');
-
-            if ($request->filled('ruta_id')) {
-                $query->whereHas('cliente', function ($query) use ($request) {
-                    $query->where('ruta_id', $request->ruta_id);
-                });
-            }
-
-            if ($request->filled('preventista_id')) {
-                $query->where('pedidos.id_usuario', $request->preventista_id);
-            }
-
-            if ($request->filled('fecha_entrega')) {
-                $query->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
-            }
-
-            return $dataTables->eloquent($query)
-                ->addColumn('imagen', function ($p){
-                    if ($p->producto && $p->producto->foto_producto && Storage::disk('local')->exists($p->producto->foto_producto)) {
-                        return '<img src="' . route('productos.imagen', ['id' => $p->producto->id]) . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
-                    }
-                    return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
-                })
-                ->addColumn('codigo_producto', function ($p) {
-                    return $p->producto ? $p->producto->codigo : 'N/A';
-                })
-                ->filterColumn('codigo_producto', function ($query, $keyword) {
-                    $query->whereHas('producto', function ($q) use ($keyword) {
-                        $q->where('codigo', 'ilike', "%{$keyword}%");
-                    });
-                })
-                ->addColumn('nombre_producto', function ($p) {
-                    return $p->producto ? $p->producto->nombre_producto : 'N/A';
-                })
-                ->filterColumn('nombre_producto', function ($query, $keyword) {
-                    $query->whereHas('producto', function ($q) use ($keyword) {
-                        $q->where('nombre_producto', 'ilike', "%{$keyword}%");
-                    });
-                })
-                ->addColumn('stock_producto', function ($p) {
-                    return $p->producto ? (int) ($p->producto->cantidad ?? 0).' '.$p->producto->detalle_cantidad: 'N/A';
-                })
-                ->addColumn('cantidad_despacho', function ($p) {
-                    $unidad = $p->producto ? $p->producto->detalle_cantidad : 'unidades';
-                    return $p->cantidad_despacho . ' ' . $unidad;
-                })
-                ->addColumn('pedidos_involucrados', function ($p) {
-                    return '<span class="dispatch-pill">' . (int) $p->pedidos_involucrados . ' pedidos</span>';
-                })
-                ->addColumn('fecha_entrega', function ($p) {
-                    return $p->primera_entrega ? date('d/m/Y H:i', strtotime($p->primera_entrega)) : 'Sin fecha';
-                })
-                ->addColumn('estado_cobro', function () {
-                    return '<span class="dispatch-warning"><i class="fas fa-motorcycle"></i> En reparto</span>';
-                })
-                ->addColumn('ingreso_estimado', function ($p) {
-                    return 'Bs ' . number_format((float) $p->ingreso_estimado, 2, '.', ',');
-                })
-                ->addColumn('acciones', function ($p) {
-                    return '<button type="button" class="btn btn-info btn-sm dispatch-action" onclick="verPedidosDespachadosPorProducto(this)" id-producto="' . $p->id_producto . '">
-                        <i class="fas fa-list"></i> Ver pedidos
-                    </button>';
-                })
-                ->rawColumns(['imagen', 'pedidos_involucrados', 'estado_cobro', 'acciones'])
-                ->make(true);
+            return $this->dataTableConsolidadoDespacho(
+                $dataTables,
+                $this->consolidadoProductosDespachoQuery('despachados', $request)
+            );
         }
 
         $suma_total_estimada = $this->basePedidosDespachados()
@@ -197,77 +129,10 @@ class PedidoAdministradorController extends Controller
 
     public function visualizacionParaDespachado(Request $request, DataTables $dataTables){
         if($request->ajax()){
-            $query = $this->basePedidosPendientes()
-                ->with('producto')
-                ->select('pedidos.id_producto')
-                ->selectRaw('COUNT(DISTINCT pedidos.numero_pedido) AS pedidos_involucrados')
-                ->selectRaw('SUM(pedidos.cantidad * forma_ventas.equivalencia_cantidad) AS cantidad_despacho')
-                ->selectRaw('SUM(pedidos.cantidad * forma_ventas.precio_venta) AS ingreso_estimado')
-                ->groupBy('pedidos.id_producto');
-
-            if ($request->filled('ruta_id')) {
-                $query->whereHas('cliente', function ($query) use ($request) {
-                    $query->where('ruta_id', $request->ruta_id);
-                });
-            }
-
-            if ($request->filled('preventista_id')) {
-                $query->where('pedidos.id_usuario', $request->preventista_id);
-            }
-
-            return $dataTables->eloquent($query)
-                ->addColumn('imagen', function ($p){
-                    if ($p->producto && $p->producto->foto_producto && Storage::disk('local')->exists($p->producto->foto_producto)) {
-                        return '<img src="' . route('productos.imagen', ['id' => $p->producto->id]) . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
-                    }
-                    return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail" style="width: 80px; height: 80px;">';
-                })
-                ->addColumn('codigo_producto', function ($p) {
-                    return $p->producto ? $p->producto->codigo : 'N/A';
-                })
-                ->filterColumn('codigo_producto', function ($query, $keyword) {
-                    $query->whereHas('producto', function ($q) use ($keyword) {
-                        $q->where('codigo', 'ilike', "%{$keyword}%");
-                    });
-                })
-                ->addColumn('nombre_producto', function ($p) {
-                    return $p->producto ? $p->producto->nombre_producto : 'N/A';
-                })
-                ->filterColumn('nombre_producto', function ($query, $keyword) {
-                    $query->whereHas('producto', function ($q) use ($keyword) {
-                        $q->where('nombre_producto', 'ilike', "%{$keyword}%");
-                    });
-                })
-                ->addColumn('stock_producto', function ($p) {
-                    return $p->producto ? (int) ($p->producto->cantidad ?? 0).' '.$p->producto->detalle_cantidad: 'N/A';
-                })
-                ->addColumn('cantidad_despacho', function ($p) {
-                    $unidad = $p->producto ? $p->producto->detalle_cantidad : 'unidades';
-                    return $p->cantidad_despacho . ' ' . $unidad;
-                })
-                ->addColumn('pedidos_involucrados', function ($p) {
-                    return '<span class="dispatch-pill">' . (int) $p->pedidos_involucrados . ' pedidos</span>';
-                })
-                ->addColumn('estado_stock', function ($p) {
-                    if (! $p->producto) {
-                        return '<span class="dispatch-risk">Sin producto</span>';
-                    }
-
-                    $stockActual = (int) ($p->producto->cantidad ?? 0);
-                    return $stockActual < 0
-                        ? '<span class="dispatch-risk">Revisar stock</span>'
-                        : '<span class="dispatch-ok">Reservado</span>';
-                })
-                ->addColumn('ingreso_estimado', function ($p) {
-                    return 'Bs ' . number_format((float) $p->ingreso_estimado, 2, '.', ',');
-                })
-                ->addColumn('acciones', function ($p) {
-                    return '<button type="button" class="btn btn-info btn-sm dispatch-action" onclick="verPedidosPorProducto(this)" id-producto="' . $p->id_producto . '">
-                        <i class="fas fa-list"></i> Ver pedidos
-                    </button>';
-                })
-                ->rawColumns(['imagen', 'pedidos_involucrados', 'estado_stock', 'acciones'])
-                ->make(true);
+            return $this->dataTableConsolidadoDespacho(
+                $dataTables,
+                $this->consolidadoProductosDespachoQuery('pendientes', $request)
+            );
         }
 
         $suma_total_estimada = $this->basePedidosPendientes()
@@ -278,6 +143,76 @@ class PedidoAdministradorController extends Controller
         $preventistas = User::role('vendedor')->orderBy('nombres')->get();
 
         return view('administrador.pedidos.paradespachar', compact('suma_total_estimada', 'resumenPedidos', 'rutas', 'preventistas'));
+    }
+
+    public function visualizacionPdfConsolidadoDespacho(Request $request, string $estado)
+    {
+        if (! in_array($estado, ['pendientes', 'despachados'], true)) {
+            abort(404);
+        }
+
+        $productos = $this->consolidadoProductosDespachoQuery($estado, $request)
+            ->get()
+            ->sortBy(fn ($item) => $item->producto ? $item->producto->nombre_producto : '')
+            ->values()
+            ->map(function ($item) {
+                $producto = $item->producto;
+                $imagen = null;
+
+                if ($producto && $producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
+                    $imagen = Storage::disk('local')->path($producto->foto_producto);
+                }
+
+                return [
+                    'codigo_producto' => $producto ? $producto->codigo : 'N/A',
+                    'imagen' => $imagen,
+                    'nombre_producto' => $producto ? $producto->nombre_producto : 'N/A',
+                    'stock_producto' => $producto ? (int) ($producto->cantidad ?? 0).' '.$producto->detalle_cantidad : 'N/A',
+                    'cantidad_valor' => (float) $item->cantidad_despacho,
+                    'cantidad_despacho' => number_format((float) $item->cantidad_despacho, 0, '.', ',').' '.($producto ? $producto->detalle_cantidad : 'unidades'),
+                    'ingreso_estimado' => (float) $item->ingreso_estimado,
+                ];
+            });
+
+        $preventistaIds = collect((array) $request->input('preventista_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+        $preventistasFiltro = $preventistaIds->isNotEmpty()
+            ? User::whereIn('id', $preventistaIds)->orderBy('nombres')->get()
+            : collect();
+
+        $rutaIds = collect((array) $request->input('ruta_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+        $rutasFiltro = $rutaIds->isNotEmpty()
+            ? Rutas::whereIn('id', $rutaIds)->orderBy('nombre_ruta')->get()
+            : collect();
+
+        $filtros = [
+            'ruta' => $rutasFiltro->isNotEmpty()
+                ? $rutasFiltro->pluck('nombre_ruta')->implode(', ')
+                : 'Todas las rutas',
+            'preventista' => $preventistasFiltro->isNotEmpty()
+                ? $preventistasFiltro->map(fn ($user) => trim($user->nombres.' '.$user->apellido_paterno.' '.$user->apellido_materno))->implode(', ')
+                : 'Todos los preventistas',
+            'fecha_entrega' => $request->filled('fecha_entrega') ? date('d/m/Y', strtotime($request->fecha_entrega)) : null,
+        ];
+
+        $resumen = [
+            'productos' => $productos->count(),
+            'unidades' => $productos->sum('cantidad_valor'),
+            'total' => $productos->sum('ingreso_estimado'),
+        ];
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_consolidado_despacho', [
+            'estado' => $estado,
+            'productos' => $productos,
+            'filtros' => $filtros,
+            'resumen' => $resumen,
+        ]);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('consolidado-despacho-'.$estado.'.pdf');
     }
     public function visualizacionPedido(string $numero_pedido)
     {
@@ -366,7 +301,14 @@ class PedidoAdministradorController extends Controller
         ], 200);
     }
 
-    public function visualizacionPdfDespachar(){
+    public function visualizacionPdfDespachar(Request $request){
+        $rutaIds = collect((array) $request->input('ruta_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+        $preventistaIds = collect((array) $request->input('preventista_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+
         $lista_de_pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
             ->select(
             'pedidos.numero_pedido',
@@ -380,7 +322,21 @@ class PedidoAdministradorController extends Controller
             'ruta_id',      
             )
             ->whereNotNull('fecha_entrega')
-            ->where('estado_pedido', false)
+            ->where('estado_pedido', false);
+
+        if ($rutaIds->isNotEmpty()) {
+            $lista_de_pedidos->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $lista_de_pedidos->whereIn('pedidos.id_usuario', $preventistaIds);
+        }
+
+        if ($request->filled('fecha_entrega')) {
+            $lista_de_pedidos->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        }
+
+        $lista_de_pedidos = $lista_de_pedidos
             ->groupBy(
                 'pedidos.numero_pedido',
                 'pedidos.id_usuario',
@@ -415,7 +371,21 @@ class PedidoAdministradorController extends Controller
                 'pedidos.descripcion_regalo',
             )
             ->whereNotNull('pedidos.fecha_entrega')
-            ->where('pedidos.estado_pedido', false)
+            ->where('pedidos.estado_pedido', false);
+
+        if ($rutaIds->isNotEmpty()) {
+            $pedidos->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $pedidos->whereIn('pedidos.id_usuario', $preventistaIds);
+        }
+
+        if ($request->filled('fecha_entrega')) {
+            $pedidos->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        }
+
+        $pedidos = $pedidos
             ->orderBy('pedidos.numero_pedido', 'asc')
             ->get();
 
@@ -1585,6 +1555,83 @@ class PedidoAdministradorController extends Controller
             ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
             ->whereNotNull('pedidos.fecha_entrega')
             ->where('pedidos.estado_pedido', false);
+    }
+
+    private function consolidadoProductosDespachoQuery(string $estado, Request $request)
+    {
+        $query = $estado === 'despachados'
+            ? $this->basePedidosDespachados()
+            : $this->basePedidosPendientes();
+
+        $query->with('producto')
+            ->select('pedidos.id_producto')
+            ->selectRaw('COUNT(DISTINCT pedidos.numero_pedido) AS pedidos_involucrados')
+            ->selectRaw('SUM(pedidos.cantidad * forma_ventas.equivalencia_cantidad) AS cantidad_despacho')
+            ->selectRaw('SUM(pedidos.cantidad * forma_ventas.precio_venta) AS ingreso_estimado')
+            ->groupBy('pedidos.id_producto');
+
+        $rutaIds = collect((array) $request->input('ruta_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereHas('cliente', function ($query) use ($rutaIds) {
+                $query->whereIn('ruta_id', $rutaIds);
+            });
+        }
+
+        $preventistaIds = collect((array) $request->input('preventista_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+
+        if ($preventistaIds->isNotEmpty()) {
+            $query->whereIn('pedidos.id_usuario', $preventistaIds);
+        }
+
+        if ($estado === 'despachados' && $request->filled('fecha_entrega')) {
+            $query->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        }
+
+        return $query;
+    }
+
+    private function dataTableConsolidadoDespacho(DataTables $dataTables, $query)
+    {
+        return $dataTables->eloquent($query)
+            ->addColumn('imagen', function ($p){
+                if ($p->producto && $p->producto->foto_producto && Storage::disk('local')->exists($p->producto->foto_producto)) {
+                    return '<img src="' . route('productos.imagen', ['id' => $p->producto->id]) . '" class="img-thumbnail dispatch-product-image">';
+                }
+                return '<img src="' . asset('images/logo_color.webp') . '" class="img-thumbnail dispatch-product-image">';
+            })
+            ->addColumn('codigo_producto', function ($p) {
+                return $p->producto ? $p->producto->codigo : 'N/A';
+            })
+            ->filterColumn('codigo_producto', function ($query, $keyword) {
+                $query->whereHas('producto', function ($q) use ($keyword) {
+                    $q->where('codigo', 'ilike', "%{$keyword}%");
+                });
+            })
+            ->addColumn('nombre_producto', function ($p) {
+                return $p->producto ? $p->producto->nombre_producto : 'N/A';
+            })
+            ->filterColumn('nombre_producto', function ($query, $keyword) {
+                $query->whereHas('producto', function ($q) use ($keyword) {
+                    $q->where('nombre_producto', 'ilike', "%{$keyword}%");
+                });
+            })
+            ->addColumn('stock_producto', function ($p) {
+                return $p->producto ? (int) ($p->producto->cantidad ?? 0).' '.$p->producto->detalle_cantidad: 'N/A';
+            })
+            ->addColumn('cantidad_despacho', function ($p) {
+                $unidad = $p->producto ? $p->producto->detalle_cantidad : 'unidades';
+                return '<strong class="dispatch-quantity">' . number_format((float) $p->cantidad_despacho, 0, '.', ',') . ' ' . e($unidad) . '</strong>';
+            })
+            ->addColumn('ingreso_estimado', function ($p) {
+                return '<strong class="dispatch-money">Bs ' . number_format((float) $p->ingreso_estimado, 2, '.', ',') . '</strong>';
+            })
+            ->rawColumns(['imagen', 'cantidad_despacho', 'ingreso_estimado'])
+            ->make(true);
     }
 
     private function resumenPedidosFlujo(): array

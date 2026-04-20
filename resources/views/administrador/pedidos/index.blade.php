@@ -67,6 +67,16 @@
             Fecha pedido
             <input type="date" id="filtro-fecha" class="form-control orders-filter">
         </label>
+        <label>
+            Filas por pagina
+            <select id="filas-pagina" class="form-control">
+                <option value="10">10 pedidos</option>
+                <option value="25">25 pedidos</option>
+                <option value="50">50 pedidos</option>
+                <option value="100">100 pedidos</option>
+                <option value="-1">Todos</option>
+            </select>
+        </label>
         <button class="btn btn-outline-secondary orders-main-btn" id="limpiar-filtros">
             <i class="fas fa-eraser"></i> Limpiar filtros
         </button>
@@ -137,7 +147,7 @@
         }
         .orders-flow {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 12px;
             padding: 16px;
             margin-bottom: 16px;
@@ -280,7 +290,10 @@
                     searchPlaceholder: 'Cliente, pedido o ruta'
                 },
                 pageLength: 10,
-                lengthMenu: [[10, 25, 50], [10, 25, 50]],
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
+                dom: "<'row align-items-center mb-2'<'col-md-12'f>>" +
+                    "<'row'<'col-12'tr>>" +
+                    "<'row align-items-center mt-2'<'col-md-6'i><'col-md-6'p>>",
                 ajax: {
                     url: "{{ route('administrador.pedidos.administrador.visualizacion') }}",
                     data: function (d) {
@@ -315,8 +328,14 @@
                 tabla.ajax.reload();
             });
 
+            $('#filas-pagina').on('change', function () {
+                tabla.page.len(Number(this.value)).draw();
+            });
+
             $('#limpiar-filtros').on('click', function () {
                 $('.orders-filter').val('');
+                $('#filas-pagina').val('10');
+                tabla.page.len(10);
                 tabla.ajax.reload();
             });
         });
