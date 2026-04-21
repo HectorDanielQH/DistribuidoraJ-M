@@ -26,7 +26,7 @@ class ContabilidadVentaController extends Controller
         $preventistas = User::role('vendedor')->orderBy('nombres')->get();
         $rutas = Rutas::orderBy('nombre_ruta')->get();
 
-        return view('contabilidad.dashboard.index', compact('preventistas', 'rutas'));
+        return view('Contabilidad.dashboard.index', compact('preventistas', 'rutas'));
     }
 
     public function dashboardResumen(Request $request)
