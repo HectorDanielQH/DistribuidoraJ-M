@@ -500,13 +500,13 @@ return [
             'can' => 'contador.permisos',
         ],
         [
-            'header'=> '.::COMPARACION GANANCIAL::.',
+            'header'=> '.:: ANALISIS DE RENTABILIDAD ::.',
             'can' => 'contador.permisos',
         ],
         [
-            'text' => 'Ventas por Día',
+            'text' => 'Rentabilidad Comparativa',
             'route' => 'contabilidad.ventas.comparacionGanancial',
-            'icon' => 'fas fa-fw fa-calendar-day',
+            'icon' => 'fas fa-fw fa-chart-line',
             'can' => 'contador.permisos',
         ],
         /*
@@ -721,3 +721,4 @@ return [
 
     'livewire' => false,
 ];
+

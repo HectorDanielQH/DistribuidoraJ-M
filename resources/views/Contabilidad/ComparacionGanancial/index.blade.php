@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Dashboard')
+@section('title', 'Rentabilidad Comparativa')
 
 @section('content_header')
     <div class="container-fluid py-4"
@@ -11,7 +11,7 @@
                 <i class="fas fa-boxes me-2"></i> DISTRIBUIDORA H&J <i class="fas fa-chart-line ms-2"></i>
             </h1>
             <span class="text-white" style="font-weight: 500; font-size: clamp(1rem, 2.5vw, 1.4rem);">
-                Panel de Ventas comparación ganancial+
+                Panel de rentabilidad comparativa
             </span>
         </div>
     </div>
@@ -21,11 +21,11 @@
     <div class="container-fluid my-4">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-1">
             <h2 class="text-dark mb-0" style="font-weight: 600; font-size: clamp(1.25rem, 3vw, 1.75rem);">
-                Comparación Ganancial <i class="fas fa-balance-scale-left ms-2"></i>
+                Rentabilidad Comparativa <i class="fas fa-balance-scale-left ms-2"></i>
             </h2>
         </div>
         <p class="text-muted px-1" style="font-size: clamp(0.95rem, 2.2vw, 1.2rem);">
-            En este módulo, podrá comparar las ganancias.
+            Compara resultados del periodo para revisar utilidad, comportamiento comercial y rendimiento de la venta.
         </p>
     </div>
 
