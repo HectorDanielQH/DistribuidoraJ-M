@@ -520,7 +520,6 @@
 @stop
 
 @section('js')
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -722,6 +721,8 @@
         }
 
         $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
             $('.day-sales-select').select2({
                 placeholder: 'Todos',
                 allowClear: true,
@@ -879,6 +880,11 @@
 
             $('#tablaDetallePedidos').on('click', '.btn-ver-pedido-dia', function () {
                 cargarDetallePedido($(this).data('pedido'));
+            });
+
+            $('#tablaVentasPorDia, #tablaDetallePedidos, #tablaDetalleProductos').on('error.dt', function (e, settings, techNote, message) {
+                console.error('DataTables:', message);
+                Swal.fire('Error al cargar la tabla', 'Hubo un problema al consultar los datos. Recarga la pagina y vuelve a intentar.', 'error');
             });
 
             actualizarEncabezados();
