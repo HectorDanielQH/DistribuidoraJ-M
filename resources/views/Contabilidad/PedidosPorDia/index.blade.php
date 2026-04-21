@@ -84,6 +84,33 @@
                         <th>Preventista</th>
                         <th>Items</th>
                         <th>Total</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </section>
+
+    <section class="orders-day-section">
+        <div class="detail-header">
+            <div>
+                <span class="hero-kicker">Detalle del pedido</span>
+                <h2 id="detalleTitulo">Selecciona un pedido para ver los productos</h2>
+            </div>
+            <div class="detail-total" id="detalleTotal">Bs 0.00</div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered orders-day-table" id="tablaDetallePedido">
+                <thead>
+                    <tr>
+                        <th>Codigo</th>
+                        <th>Producto</th>
+                        <th>Presentacion</th>
+                        <th>Cantidad</th>
+                        <th>Unidades</th>
+                        <th>Precio unitario</th>
+                        <th>Desc. %</th>
+                        <th>Subtotal</th>
                     </tr>
                 </thead>
             </table>
@@ -177,6 +204,25 @@
             font-size: 1.45rem;
             font-weight: 900;
         }
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .detail-header h2 {
+            color: #17211d;
+            margin: 0;
+            font-size: 1.35rem;
+            font-weight: 900;
+        }
+        .detail-total {
+            color: #166534;
+            font-size: 1.35rem;
+            font-weight: 900;
+            white-space: nowrap;
+        }
         .orders-day-table { width: 100% !important; }
         .select2-container { width: 100% !important; }
         .select2-container--default .select2-selection--multiple {
@@ -213,6 +259,7 @@
     <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-html5-3.2.4/b-print-3.2.4/r-3.0.6/datatables.min.js"></script>
     <script>
         let tablaPedidosDia = null;
+        let tablaDetallePedido = null;
 
         function obtenerFiltrosPedidosDia() {
             return {
@@ -239,6 +286,16 @@
             $('#sumClientes').text(clientes.toLocaleString('en-US'));
             $('#sumItems').text(items.toLocaleString('en-US'));
             $('#sumTotal').text(formatoMoneda(total));
+        }
+
+        function cargarDetallePedido(numeroPedido) {
+            $('#detalleTitulo').text(`Detalle del pedido #${numeroPedido}`);
+            $('#detalleTotal').text('Cargando...');
+
+            $.getJSON("{{ route('contabilidad.pedidos.porDia.detalle', ':pedido') }}".replace(':pedido', numeroPedido), function (response) {
+                tablaDetallePedido.clear().rows.add(response.items || []).draw();
+                $('#detalleTotal').text(formatoMoneda(response.total || 0));
+            });
         }
 
         $(document).ready(function () {
@@ -268,6 +325,16 @@
                     { data: 'preventista' },
                     { data: 'items' },
                     { data: 'total' },
+                    {
+                        data: 'numero_pedido',
+                        orderable: false,
+                        searchable: false,
+                        render: function (data) {
+                            return `<button type="button" class="btn btn-info btn-sm orders-day-btn" onclick="cargarDetallePedido('${data}')">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>`;
+                        }
+                    },
                 ],
                 responsive: true,
                 autoWidth: false,
@@ -280,6 +347,27 @@
                     { extend: 'excelHtml5', className: 'btn btn-success btn-sm', text: 'Excel' },
                     { extend: 'print', className: 'btn btn-secondary btn-sm', text: 'Imprimir tabla' }
                 ],
+                language: { url: '/i18n/es-ES.json' }
+            });
+
+            tablaDetallePedido = $('#tablaDetallePedido').DataTable({
+                data: [],
+                columns: [
+                    { data: 'codigo' },
+                    { data: 'producto' },
+                    { data: 'presentacion' },
+                    { data: 'cantidad' },
+                    { data: 'unidades' },
+                    { data: 'precio_unitario', render: (data) => formatoMoneda(data) },
+                    { data: 'descuento', render: (data) => `${Number(data || 0).toFixed(2)}%` },
+                    { data: 'subtotal', render: (data) => formatoMoneda(data) },
+                ],
+                responsive: true,
+                autoWidth: false,
+                paging: false,
+                searching: false,
+                info: false,
+                ordering: false,
                 language: { url: '/i18n/es-ES.json' }
             });
 

@@ -699,6 +699,46 @@ class ContabilidadVentaController extends Controller
         return $pdf->stream('pedidos-por-dia-'.$fecha.'.pdf');
     }
 
+    public function pedidosPorDiaDetalle(string $numeroPedido)
+    {
+        $ventas = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->join('productos', 'ventas.id_producto', '=', 'productos.id')
+            ->where('ventas.numero_pedido', $numeroPedido)
+            ->select(
+                'productos.codigo',
+                'productos.nombre_producto',
+                'forma_ventas.tipo_venta',
+                'forma_ventas.precio_venta',
+                'forma_ventas.equivalencia_cantidad',
+                'ventas.cantidad',
+                'ventas.descripcion_descuento_porcentaje'
+            )
+            ->orderBy('productos.nombre_producto')
+            ->get()
+            ->map(function ($venta) {
+                $descuento = (float) ($venta->descripcion_descuento_porcentaje ?? 0);
+                $subtotal = ((float) $venta->precio_venta * (int) $venta->cantidad) * (1 - ($descuento / 100));
+
+                return [
+                    'codigo' => $venta->codigo,
+                    'producto' => $venta->nombre_producto,
+                    'presentacion' => $venta->tipo_venta,
+                    'cantidad' => (int) $venta->cantidad,
+                    'unidades' => (int) $venta->cantidad * (int) $venta->equivalencia_cantidad,
+                    'precio_unitario' => round((float) $venta->precio_venta, 2),
+                    'descuento' => round($descuento, 2),
+                    'subtotal' => round($subtotal, 2),
+                ];
+            });
+
+        return response()->json([
+            'numero_pedido' => $numeroPedido,
+            'items' => $ventas,
+            'total' => round($ventas->sum('subtotal'), 2),
+        ]);
+    }
+
     private function resolverPeriodoDashboard(Request $request): array
     {
         $hoy = now();
