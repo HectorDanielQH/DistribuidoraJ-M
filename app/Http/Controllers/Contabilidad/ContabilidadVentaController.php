@@ -671,6 +671,50 @@ class ContabilidadVentaController extends Controller
 
         $pedidos = $query->get();
 
+        $detalles = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->join('productos', 'ventas.id_producto', '=', 'productos.id')
+            ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->whereDate('ventas.fecha_contabilizacion', $fecha)
+            ->select(
+                'ventas.numero_pedido',
+                'productos.codigo',
+                'productos.nombre_producto',
+                'forma_ventas.tipo_venta',
+                'forma_ventas.precio_venta',
+                'forma_ventas.equivalencia_cantidad',
+                'ventas.cantidad',
+                'ventas.descripcion_descuento_porcentaje'
+            );
+
+        if ($rutaIds->isNotEmpty()) {
+            $detalles->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $detalles->whereIn('ventas.id_usuario', $preventistaIds);
+        }
+
+        $detallesPorPedido = $detalles->orderBy('ventas.numero_pedido')->get()
+            ->groupBy('numero_pedido')
+            ->map(function ($items) {
+                return $items->map(function ($venta) {
+                    $descuento = (float) ($venta->descripcion_descuento_porcentaje ?? 0);
+                    $subtotal = ((float) $venta->precio_venta * (int) $venta->cantidad) * (1 - ($descuento / 100));
+
+                    return [
+                        'codigo' => $venta->codigo,
+                        'producto' => $venta->nombre_producto,
+                        'presentacion' => $venta->tipo_venta,
+                        'cantidad' => (int) $venta->cantidad,
+                        'unidades' => (int) $venta->cantidad * (int) $venta->equivalencia_cantidad,
+                        'precio_unitario' => round((float) $venta->precio_venta, 2),
+                        'descuento' => round($descuento, 2),
+                        'subtotal' => round($subtotal, 2),
+                    ];
+                });
+            });
+
         $rutasTexto = $rutaIds->isNotEmpty()
             ? Rutas::whereIn('id', $rutaIds)->orderBy('nombre_ruta')->pluck('nombre_ruta')->implode(', ')
             : 'Todas las rutas';
@@ -689,6 +733,7 @@ class ContabilidadVentaController extends Controller
 
         $pdf = Pdf::loadView('Contabilidad.PedidosPorDia.pdf', [
             'pedidos' => $pedidos,
+            'detallesPorPedido' => $detallesPorPedido,
             'fecha' => Carbon::parse($fecha)->format('d/m/Y'),
             'rutasTexto' => $rutasTexto,
             'preventistasTexto' => $preventistasTexto,

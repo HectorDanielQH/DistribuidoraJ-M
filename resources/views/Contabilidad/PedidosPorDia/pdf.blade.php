@@ -32,6 +32,22 @@
         .table-report tbody tr:nth-child(even) { background: #f7faf9; }
         .money { text-align: right; font-weight: 700; color: #166534; }
         .empty { padding: 24px; text-align: center; color: #64748b; font-weight: 700; }
+        .detail-wrap { margin-top: 4px; }
+        .detail-table { width: 100%; border-collapse: collapse; margin: 0 0 10px; }
+        .detail-table th {
+            background: #e8f2ee;
+            color: #263746;
+            border: 1px solid #d6dee3;
+            padding: 5px;
+            text-align: left;
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+        .detail-table td {
+            border: 1px solid #d6dee3;
+            padding: 5px;
+            font-size: 9px;
+        }
     </style>
 </head>
 <body>
@@ -110,6 +126,42 @@
                     <td>{{ $pedido->items }}</td>
                     <td class="money">Bs {{ number_format((float) $pedido->total, 2, '.', ',') }}</td>
                 </tr>
+                @if(isset($detallesPorPedido[$pedido->numero_pedido]) && count($detallesPorPedido[$pedido->numero_pedido]))
+                    <tr>
+                        <td colspan="7">
+                            <div class="detail-wrap">
+                                <table class="detail-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Codigo</th>
+                                            <th>Producto</th>
+                                            <th>Presentacion</th>
+                                            <th>Cantidad</th>
+                                            <th>Unidades</th>
+                                            <th>Precio unitario</th>
+                                            <th>Desc. %</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($detallesPorPedido[$pedido->numero_pedido] as $detalle)
+                                            <tr>
+                                                <td>{{ $detalle['codigo'] }}</td>
+                                                <td>{{ $detalle['producto'] }}</td>
+                                                <td>{{ $detalle['presentacion'] }}</td>
+                                                <td>{{ $detalle['cantidad'] }}</td>
+                                                <td>{{ $detalle['unidades'] }}</td>
+                                                <td>Bs {{ number_format($detalle['precio_unitario'], 2, '.', ',') }}</td>
+                                                <td>{{ number_format($detalle['descuento'], 2, '.', ',') }}%</td>
+                                                <td class="money">Bs {{ number_format($detalle['subtotal'], 2, '.', ',') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                @endif
             @empty
                 <tr>
                     <td colspan="7" class="empty">No hay pedidos contabilizados para los filtros seleccionados.</td>

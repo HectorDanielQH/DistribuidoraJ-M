@@ -330,7 +330,7 @@
                         orderable: false,
                         searchable: false,
                         render: function (data) {
-                            return `<button type="button" class="btn btn-info btn-sm orders-day-btn" onclick="cargarDetallePedido('${data}')">
+                            return `<button type="button" class="btn btn-info btn-sm orders-day-btn btn-ver-detalle-pedido" data-pedido="${data}">
                                 <i class="fas fa-eye"></i> Ver
                             </button>`;
                         }
@@ -373,6 +373,10 @@
 
             $('#btnAplicarPedidosDia').on('click', function () {
                 tablaPedidosDia.ajax.reload();
+            });
+
+            $('#tablaPedidosDia').on('click', '.btn-ver-detalle-pedido', function () {
+                cargarDetallePedido($(this).data('pedido'));
             });
 
             $('#btnLimpiarPedidosDia').on('click', function () {
