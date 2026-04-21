@@ -117,11 +117,20 @@ class ContabilidadVentaController extends Controller
     public function ventasPorDiaDetallePedidosPanel(Request $request, string $fecha)
     {
         $ingresoExpr = $this->dashboardIngresoExpr();
+        $pedidoFechas = Pedido::query()
+            ->select('numero_pedido')
+            ->selectRaw('MIN(fecha_pedido) AS fecha_pedido')
+            ->selectRaw('MIN(fecha_entrega) AS fecha_entrega')
+            ->groupBy('numero_pedido');
+
         $query = Venta::query()
             ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
             ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
             ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
             ->leftJoin('users', 'ventas.id_usuario', '=', 'users.id')
+            ->leftJoinSub($pedidoFechas, 'pedido_fechas', function ($join) {
+                $join->on('ventas.numero_pedido', '=', 'pedido_fechas.numero_pedido');
+            })
             ->whereBetween('ventas.fecha_contabilizacion', [
                 Carbon::parse($fecha)->startOfDay(),
                 Carbon::parse($fecha)->endOfDay()
@@ -131,8 +140,8 @@ class ContabilidadVentaController extends Controller
             ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
             ->selectRaw("COALESCE(rutas.nombre_ruta, 'N/A') AS ruta")
             ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS preventista")
-            ->selectRaw('MIN(ventas.fecha_pedido) AS fecha_pedido')
-            ->selectRaw('MIN(ventas.fecha_entrega) AS fecha_entrega')
+            ->selectRaw('MIN(pedido_fechas.fecha_pedido) AS fecha_pedido')
+            ->selectRaw('MIN(pedido_fechas.fecha_entrega) AS fecha_entrega')
             ->selectRaw('COUNT(*) AS items')
             ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total_pedido")
             ->groupBy('ventas.numero_pedido', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
@@ -663,10 +672,19 @@ class ContabilidadVentaController extends Controller
 
     public function ventasPorPreventistaDetallePedidos(string $fechaInicio, string $fechaFin, string $idPreventista)
     {
+        $pedidoFechas = Pedido::query()
+            ->select('numero_pedido')
+            ->selectRaw('MIN(fecha_pedido) AS fecha_pedido')
+            ->selectRaw('MIN(fecha_entrega) AS fecha_entrega')
+            ->groupBy('numero_pedido');
+
         $pedidos = Venta::query()
             ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
             ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
             ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
+            ->leftJoinSub($pedidoFechas, 'pedido_fechas', function ($join) {
+                $join->on('ventas.numero_pedido', '=', 'pedido_fechas.numero_pedido');
+            })
             ->where('ventas.id_usuario', $idPreventista)
             ->whereBetween('ventas.fecha_contabilizacion', [
                 Carbon::parse($fechaInicio)->startOfDay(),
@@ -677,8 +695,8 @@ class ContabilidadVentaController extends Controller
             ->selectRaw('ventas.numero_pedido')
             ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
             ->selectRaw("COALESCE(rutas.nombre_ruta, 'N/A') AS ruta")
-            ->selectRaw("MIN(ventas.fecha_pedido) AS fecha_pedido")
-            ->selectRaw("MIN(ventas.fecha_entrega) AS fecha_entrega")
+            ->selectRaw("MIN(pedido_fechas.fecha_pedido) AS fecha_pedido")
+            ->selectRaw("MIN(pedido_fechas.fecha_entrega) AS fecha_entrega")
             ->selectRaw("COUNT(*) AS items")
             ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_pedido")
             ->groupBy('ventas.id_cliente', 'ventas.numero_pedido', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta')
