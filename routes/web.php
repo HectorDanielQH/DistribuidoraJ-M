@@ -274,6 +274,13 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
     //----AREA DE CONTABILIDAD--
     Route::prefix('contabilidad')->name('contabilidad.')->middleware('can:contador.permisos')->group(function () {
+        Route::get('dashboard', [ContabilidadVentaController::class,'ventasPorDia'])->name('dashboard');
+        Route::get('dashboard/resumen', [ContabilidadVentaController::class,'dashboardResumen'])->name('dashboard.resumen');
+        Route::get('dashboard/series', [ContabilidadVentaController::class,'dashboardSeries'])->name('dashboard.series');
+        Route::get('dashboard/reportes/preventistas', [ContabilidadVentaController::class,'dashboardReportePreventistas'])->name('dashboard.reportes.preventistas');
+        Route::get('dashboard/reportes/rutas', [ContabilidadVentaController::class,'dashboardReporteRutas'])->name('dashboard.reportes.rutas');
+        Route::get('dashboard/reportes/productos', [ContabilidadVentaController::class,'dashboardReporteProductos'])->name('dashboard.reportes.productos');
+        Route::get('dashboard/reportes/cierres', [ContabilidadVentaController::class,'dashboardReporteCierres'])->name('dashboard.reportes.cierres');
         //ventas por día
         Route::get('ventas/dia', [ContabilidadVentaController::class,'ventasPorDia'])->name('ventas.porDia');
         Route::get('ventas/dia/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventista'])->name('ventas.porDia.preventista');
