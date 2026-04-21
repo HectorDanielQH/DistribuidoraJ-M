@@ -23,11 +23,144 @@ class ContabilidadVentaController extends Controller
         $this->middleware('can:contador.permisos');
     }
 
-    public function ventasPorDia(Request $request){
+    public function dashboard(Request $request){
         $preventistas = User::role('vendedor')->orderBy('nombres')->get();
         $rutas = Rutas::orderBy('nombre_ruta')->get();
 
         return view('Contabilidad.dashboard.index', compact('preventistas', 'rutas'));
+    }
+
+    public function ventasPorDia(Request $request){
+        $preventistas = User::role('vendedor')->orderBy('nombres')->get();
+        $rutas = Rutas::orderBy('nombre_ruta')->get();
+
+        return view('Contabilidad.VentasPorDia.index', compact('preventistas', 'rutas'));
+    }
+
+    public function ventasPorDiaResumenPanel(Request $request)
+    {
+        $fechaInicio = $request->filled('fecha_inicio')
+            ? Carbon::parse($request->fecha_inicio)->startOfDay()
+            : now()->startOfMonth();
+        $fechaFin = $request->filled('fecha_fin')
+            ? Carbon::parse($request->fecha_fin)->endOfDay()
+            : now()->endOfDay();
+
+        $ingresoExpr = $this->dashboardIngresoExpr();
+        $query = $this->dashboardVentasBaseQuery($request, $fechaInicio, $fechaFin);
+
+        $resumen = (clone $query)
+            ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total_vendido")
+            ->selectRaw('COUNT(DISTINCT DATE(ventas.fecha_contabilizacion)) AS dias_con_venta')
+            ->selectRaw('COUNT(DISTINCT ventas.numero_pedido) AS pedidos')
+            ->selectRaw('COUNT(DISTINCT ventas.id_cliente) AS clientes')
+            ->selectRaw('COUNT(DISTINCT ventas.id_usuario) AS preventistas')
+            ->first();
+
+        $mejorDia = (clone $query)
+            ->selectRaw('DATE(ventas.fecha_contabilizacion) AS fecha')
+            ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total")
+            ->groupBy(DB::raw('DATE(ventas.fecha_contabilizacion)'))
+            ->orderByDesc('total')
+            ->first();
+
+        $promedioDia = (float) ($resumen->dias_con_venta ?? 0) > 0
+            ? ((float) $resumen->total_vendido / (float) $resumen->dias_con_venta)
+            : 0;
+
+        return response()->json([
+            'total_vendido' => round((float) ($resumen->total_vendido ?? 0), 2),
+            'dias_con_venta' => (int) ($resumen->dias_con_venta ?? 0),
+            'pedidos' => (int) ($resumen->pedidos ?? 0),
+            'clientes' => (int) ($resumen->clientes ?? 0),
+            'preventistas' => (int) ($resumen->preventistas ?? 0),
+            'promedio_dia' => round($promedioDia, 2),
+            'mejor_dia' => [
+                'fecha' => $mejorDia?->fecha ? Carbon::parse($mejorDia->fecha)->format('d/m/Y') : 'Sin datos',
+                'total' => round((float) ($mejorDia->total ?? 0), 2),
+            ],
+        ]);
+    }
+
+    public function ventasPorDiaDataPanel(Request $request)
+    {
+        $fechaInicio = $request->filled('fecha_inicio')
+            ? Carbon::parse($request->fecha_inicio)->startOfDay()
+            : now()->startOfMonth();
+        $fechaFin = $request->filled('fecha_fin')
+            ? Carbon::parse($request->fecha_fin)->endOfDay()
+            : now()->endOfDay();
+
+        $ingresoExpr = $this->dashboardIngresoExpr();
+        $query = $this->dashboardVentasBaseQuery($request, $fechaInicio, $fechaFin)
+            ->selectRaw('DATE(ventas.fecha_contabilizacion) AS fecha_venta')
+            ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total_venta")
+            ->selectRaw('COUNT(DISTINCT ventas.numero_pedido) AS pedidos')
+            ->selectRaw('COUNT(DISTINCT ventas.id_cliente) AS clientes')
+            ->selectRaw('COUNT(DISTINCT ventas.id_usuario) AS preventistas')
+            ->groupBy(DB::raw('DATE(ventas.fecha_contabilizacion)'))
+            ->orderBy(DB::raw('DATE(ventas.fecha_contabilizacion)'), 'desc');
+
+        return DataTables::of($query)
+            ->editColumn('fecha_venta', fn ($row) => Carbon::parse($row->fecha_venta)->format('d/m/Y'))
+            ->editColumn('total_venta', fn ($row) => round((float) $row->total_venta, 2))
+            ->addColumn('acciones', function ($row) {
+                return "<button type='button' class='btn btn-info btn-sm sales-action-btn btn-ver-dia'
+                            data-fecha='{$row->fecha_venta}'>
+                            Ver Detalle <i class='fas fa-eye'></i>
+                        </button>";
+            })
+            ->rawColumns(['acciones'])
+            ->make(true);
+    }
+
+    public function ventasPorDiaDetallePedidosPanel(Request $request, string $fecha)
+    {
+        $ingresoExpr = $this->dashboardIngresoExpr();
+        $query = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
+            ->leftJoin('users', 'ventas.id_usuario', '=', 'users.id')
+            ->whereBetween('ventas.fecha_contabilizacion', [
+                Carbon::parse($fecha)->startOfDay(),
+                Carbon::parse($fecha)->endOfDay()
+            ])
+            ->whereNotNull('ventas.fecha_contabilizacion')
+            ->selectRaw('ventas.numero_pedido')
+            ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
+            ->selectRaw("COALESCE(rutas.nombre_ruta, 'N/A') AS ruta")
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS preventista")
+            ->selectRaw('MIN(ventas.fecha_pedido) AS fecha_pedido')
+            ->selectRaw('MIN(ventas.fecha_entrega) AS fecha_entrega')
+            ->selectRaw('COUNT(*) AS items')
+            ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total_pedido")
+            ->groupBy('ventas.numero_pedido', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
+            ->orderBy('ventas.numero_pedido', 'asc');
+
+        $rutaIds = collect((array) $request->input('ruta_id', []))->filter()->values();
+        $preventistaIds = collect((array) $request->input('preventista_id', []))->filter()->values();
+
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $query->whereIn('ventas.id_usuario', $preventistaIds);
+        }
+
+        return DataTables::of($query)
+            ->editColumn('fecha_pedido', fn ($row) => $row->fecha_pedido ? Carbon::parse($row->fecha_pedido)->format('d/m/Y') : 'N/A')
+            ->editColumn('fecha_entrega', fn ($row) => $row->fecha_entrega ? Carbon::parse($row->fecha_entrega)->format('d/m/Y') : 'N/A')
+            ->editColumn('total_pedido', fn ($row) => round((float) $row->total_pedido, 2))
+            ->addColumn('acciones', function ($row) {
+                return "<button type='button' class='btn btn-info btn-sm sales-action-btn btn-ver-pedido-dia'
+                            data-pedido='{$row->numero_pedido}'>
+                            Productos <i class='fas fa-eye'></i>
+                        </button>";
+            })
+            ->rawColumns(['acciones'])
+            ->make(true);
     }
 
     public function dashboardResumen(Request $request)
@@ -449,37 +582,34 @@ class ContabilidadVentaController extends Controller
 
     public function ventasPorDiaPreventistaDetallePedidosDetalle(string $numeroPedido)
     {
-        $ventas = Venta::query()->where('numero_pedido', $numeroPedido);
-        /*
-        { data: 'codigo_producto', name: 'codigo_producto' },
-                    { data: 'nombre_producto', name: 'nombre_producto' },
-                    { data: 'cantidad', name: 'cantidad' },
-                    { data: 'precio_unitario', name: 'precio_unitario' },
-                    { data: 'total', name: 'total' },
-        */
+        $ventas = Venta::query()
+            ->join('productos', 'ventas.id_producto', '=', 'productos.id')
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->where('ventas.numero_pedido', $numeroPedido)
+            ->selectRaw("COALESCE(productos.codigo, 'N/A') AS codigo_producto")
+            ->selectRaw("COALESCE(productos.nombre_producto, 'N/A') AS nombre_producto")
+            ->selectRaw("COALESCE(forma_ventas.tipo_venta, 'N/A') AS presentacion")
+            ->selectRaw('COALESCE(ventas.cantidad, 0) AS cantidad')
+            ->selectRaw('COALESCE(forma_ventas.equivalencia_cantidad, 1) AS unidades')
+            ->selectRaw('COALESCE(ventas.descripcion_descuento_porcentaje, 0) AS descuento')
+            ->selectRaw('COALESCE(forma_ventas.precio_venta, 0) AS precio_unitario')
+            ->selectRaw('(ventas.cantidad * forma_ventas.precio_venta * (1 - COALESCE(ventas.descripcion_descuento_porcentaje, 0) / 100.0)) AS total');
+
         return DataTables::of($ventas)
-            ->addColumn('codigo_producto', function ($row) {
-                $producto=Producto::find($row->id_producto);
-                return $producto ? $producto->codigo : 'N/A';
+            ->editColumn('cantidad', function ($row) {
+                return (float) $row->cantidad;
             })
-            ->addColumn('nombre_producto', function ($row) {
-                $producto=Producto::find($row->id_producto);
-                return $producto ? $producto->nombre_producto : 'N/A';
+            ->editColumn('unidades', function ($row) {
+                return (float) $row->unidades;
             })
-            ->addColumn('cantidad', function ($row) {
-                return $row->cantidad;
+            ->editColumn('descuento', function ($row) {
+                return round((float) $row->descuento, 2);
             })
-            ->addColumn('precio_unitario', function ($row) {
-                $formaVenta = FormaVenta::find($row->id_forma_venta);
-                return $formaVenta ? number_format((float)$formaVenta->precio_venta, 2, '.', '') : 'N/A';
+            ->editColumn('precio_unitario', function ($row) {
+                return round((float) $row->precio_unitario, 2);
             })
-            ->addColumn('total', function ($row) {
-                $formaVenta = FormaVenta::find($row->id_forma_venta);
-                if ($formaVenta) {
-                    $total = $formaVenta->precio_venta * $row->cantidad;
-                    return number_format((float)$total, 2, '.', '');
-                }
-                return 'N/A';
+            ->editColumn('total', function ($row) {
+                return round((float) $row->total, 2);
             })
             ->make(true);
     }
@@ -500,24 +630,30 @@ class ContabilidadVentaController extends Controller
             ])
             ->whereNotNull('ventas.fecha_contabilizacion')
             ->selectRaw("ventas.id_usuario AS id_preventista")
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS preventista")
             ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_vendido")
-            ->groupBy('ventas.id_usuario')
+            ->selectRaw('COUNT(DISTINCT ventas.numero_pedido) AS pedidos')
+            ->selectRaw('COUNT(DISTINCT ventas.id_cliente) AS clientes')
+            ->groupBy('ventas.id_usuario', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
             ->orderBy('total_vendido', 'desc');
 
         return DataTables::of($q)
-            ->addColumn('preventista', function ($row) {
-                $user=User::find($row->id_preventista);
-                return $user ? $user->nombres.' '.$user->apellidos : 'N/A';
-            })
             ->addColumn('total_vendido', function ($row) {
                 return number_format((float)$row->total_vendido, 2, '.', '');
+            })
+            ->addColumn('pedidos', function ($row) {
+                return (int) $row->pedidos;
+            })
+            ->addColumn('clientes', function ($row) {
+                return (int) $row->clientes;
             })
             ->addColumn('acciones', function ($row) {
                 // Pasa el preventista para ver el detalle de sus ventas
                 $idPreventista = $row->id_preventista;
-                return "<button type='button' class='btn btn-warning btn-sm'
-                            onclick='verDetalleVentasPreventista(this)'
-                            data-preventista='{$idPreventista}'>
+                return "<button type='button' class='btn btn-info btn-sm sales-action-btn btn-ver-preventista'
+                            data-preventista='{$idPreventista}'
+                            data-preventista-total='{$row->total_vendido}'
+                            data-preventista-nombre=\"".e($row->preventista)."\">
                             Ver Detalle <i class='fas fa-eye'></i>
                         </button>";
             })
@@ -529,45 +665,43 @@ class ContabilidadVentaController extends Controller
     {
         $pedidos = Venta::query()
             ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
             ->where('ventas.id_usuario', $idPreventista)
             ->whereBetween('ventas.fecha_contabilizacion', [
                 Carbon::parse($fechaInicio)->startOfDay(),
                 Carbon::parse($fechaFin)->endOfDay()
             ])
             ->whereNotNull('ventas.fecha_contabilizacion')
-            ->select(
-                'ventas.id_cliente',
-                'ventas.numero_pedido',
-                DB::raw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_pedido"),
-            )
-            ->groupBy('ventas.id_cliente', 'ventas.numero_pedido')
+            ->selectRaw('ventas.id_cliente')
+            ->selectRaw('ventas.numero_pedido')
+            ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
+            ->selectRaw("COALESCE(rutas.nombre_ruta, 'N/A') AS ruta")
+            ->selectRaw("MIN(ventas.fecha_pedido) AS fecha_pedido")
+            ->selectRaw("MIN(ventas.fecha_entrega) AS fecha_entrega")
+            ->selectRaw("COUNT(*) AS items")
+            ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_pedido")
+            ->groupBy('ventas.id_cliente', 'ventas.numero_pedido', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta')
             ->orderBy('ventas.numero_pedido', 'asc');
         return DataTables::of($pedidos)
             ->addColumn('nro_pedido', function ($row) {
                 return $row->numero_pedido;
             })
-            ->addColumn('cliente', function ($row) {
-                $cliente=Cliente::find($row->id_cliente);
-                return $cliente ? $cliente->nombres . ' ' . $cliente->apellidos : $row->nombre_cliente;
-            })
             ->addColumn('fecha_pedido', function ($row) {
-                $fechaPedido=Venta::where('numero_pedido',$row->numero_pedido)->first();
-                return $fechaPedido ? Carbon::parse($fechaPedido->fecha_pedido)->format('d/m/Y') : 'N/A';
+                return $row->fecha_pedido ? Carbon::parse($row->fecha_pedido)->format('d/m/Y') : 'N/A';
             })
             ->addColumn('fecha_entrega', function ($row) {
-                $fechaEntrega=Venta::where('numero_pedido',$row->numero_pedido)->first();
-                return $fechaEntrega ? Carbon::parse($fechaEntrega->fecha_entrega)->format('d/m/Y') : 'N/A';
+                return $row->fecha_entrega ? Carbon::parse($row->fecha_entrega)->format('d/m/Y') : 'N/A';
             })
             ->addColumn('total_pedido', function ($row) {
                 return number_format((float)$row->total_pedido, 2, '.', '');
             })
-            ->addColumn('ruta', function ($row) {
-                $cliente=Cliente::find($row->id_cliente);
-                return $cliente ? $cliente->ruta->nombre_ruta : 'N/A';
+            ->addColumn('items', function ($row) {
+                return (int) $row->items;
             })
             ->addColumn('acciones', function ($row) {
-                return "<button type='button' class='btn btn-warning btn-sm'
-                            onclick='verDetallePedido({$row->numero_pedido})'>
+                return "<button type='button' class='btn btn-info btn-sm sales-action-btn btn-ver-pedido'
+                            data-pedido='{$row->numero_pedido}'>
                             Detalle Pedido <i class='fas fa-eye'></i>
                         </button>";
             })

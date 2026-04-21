@@ -286,6 +286,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('pedidos/dia/pdf', [ContabilidadVentaController::class,'pedidosPorDiaPdf'])->name('pedidos.porDia.pdf');
         Route::get('pedidos/dia/{numeroPedido}/detalle', [ContabilidadVentaController::class,'pedidosPorDiaDetalle'])->name('pedidos.porDia.detalle');
         //ventas por día
+        Route::get('ventas/dia/resumen/panel', [ContabilidadVentaController::class,'ventasPorDiaResumenPanel'])->name('ventas.porDia.panel.resumen');
+        Route::get('ventas/dia/data/panel', [ContabilidadVentaController::class,'ventasPorDiaDataPanel'])->name('ventas.porDia.panel.data');
+        Route::get('ventas/dia/detalle/pedidos/panel/{fecha}', [ContabilidadVentaController::class,'ventasPorDiaDetallePedidosPanel'])->name('ventas.porDia.panel.detallepedidos');
         Route::get('ventas/dia', [ContabilidadVentaController::class,'ventasPorDia'])->name('ventas.porDia');
         Route::get('ventas/dia/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventista'])->name('ventas.porDia.preventista');
         Route::get('ventas/dia/detalle/pedidos/{fecha}/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventistaDetallePedidos'])->name('ventas.porDia.preventista.detallepedidos');
