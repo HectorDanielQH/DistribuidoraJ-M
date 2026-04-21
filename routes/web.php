@@ -281,6 +281,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('dashboard/reportes/rutas', [ContabilidadVentaController::class,'dashboardReporteRutas'])->name('dashboard.reportes.rutas');
         Route::get('dashboard/reportes/productos', [ContabilidadVentaController::class,'dashboardReporteProductos'])->name('dashboard.reportes.productos');
         Route::get('dashboard/reportes/cierres', [ContabilidadVentaController::class,'dashboardReporteCierres'])->name('dashboard.reportes.cierres');
+        Route::get('pedidos/dia', [ContabilidadVentaController::class,'pedidosPorDia'])->name('pedidos.porDia');
+        Route::get('pedidos/dia/data', [ContabilidadVentaController::class,'pedidosPorDiaData'])->name('pedidos.porDia.data');
+        Route::get('pedidos/dia/pdf', [ContabilidadVentaController::class,'pedidosPorDiaPdf'])->name('pedidos.porDia.pdf');
         //ventas por día
         Route::get('ventas/dia', [ContabilidadVentaController::class,'ventasPorDia'])->name('ventas.porDia');
         Route::get('ventas/dia/{idpreventista}', [ContabilidadVentaController::class,'ventasPorDiaPreventista'])->name('ventas.porDia.preventista');

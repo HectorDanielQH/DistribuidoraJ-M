@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Contabilidad;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
 use App\Models\FormaVenta;
@@ -576,6 +577,126 @@ class ContabilidadVentaController extends Controller
 
     public function comparacionGanancial(){
         return view('Contabilidad.ComparacionGanancial.index');
+    }
+
+    public function pedidosPorDia()
+    {
+        $preventistas = User::role('vendedor')->orderBy('nombres')->get();
+        $rutas = Rutas::orderBy('nombre_ruta')->get();
+
+        return view('Contabilidad.PedidosPorDia.index', compact('preventistas', 'rutas'));
+    }
+
+    public function pedidosPorDiaData(Request $request)
+    {
+        $fecha = $request->filled('fecha')
+            ? Carbon::parse($request->fecha)->toDateString()
+            : now()->toDateString();
+
+        $ingresoExpr = $this->dashboardIngresoExpr();
+
+        $query = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
+            ->leftJoin('users', 'ventas.id_usuario', '=', 'users.id')
+            ->whereDate('ventas.fecha_contabilizacion', $fecha)
+            ->selectRaw('ventas.numero_pedido')
+            ->selectRaw('DATE(ventas.fecha_contabilizacion) AS fecha_contable')
+            ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
+            ->selectRaw("COALESCE(rutas.nombre_ruta, 'Sin ruta') AS ruta")
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS preventista")
+            ->selectRaw('COUNT(*) AS items')
+            ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total")
+            ->groupBy('ventas.numero_pedido', DB::raw('DATE(ventas.fecha_contabilizacion)'), 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
+            ->orderBy('ventas.numero_pedido', 'desc');
+
+        $rutaIds = collect((array) $request->input('ruta_id', []))->filter()->values();
+        $preventistaIds = collect((array) $request->input('preventista_id', []))->filter()->values();
+
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $query->whereIn('ventas.id_usuario', $preventistaIds);
+        }
+
+        return DataTables::of($query)
+            ->editColumn('fecha_contable', function ($row) {
+                return Carbon::parse($row->fecha_contable)->format('d/m/Y');
+            })
+            ->editColumn('items', function ($row) {
+                return (int) $row->items . ' items';
+            })
+            ->editColumn('total', function ($row) {
+                return 'Bs ' . number_format((float) $row->total, 2, '.', ',');
+            })
+            ->make(true);
+    }
+
+    public function pedidosPorDiaPdf(Request $request)
+    {
+        $fecha = $request->filled('fecha')
+            ? Carbon::parse($request->fecha)->toDateString()
+            : now()->toDateString();
+
+        $ingresoExpr = $this->dashboardIngresoExpr();
+        $rutaIds = collect((array) $request->input('ruta_id', []))->filter()->values();
+        $preventistaIds = collect((array) $request->input('preventista_id', []))->filter()->values();
+
+        $query = Venta::query()
+            ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
+            ->leftJoin('users', 'ventas.id_usuario', '=', 'users.id')
+            ->whereDate('ventas.fecha_contabilizacion', $fecha)
+            ->selectRaw('ventas.numero_pedido')
+            ->selectRaw('DATE(ventas.fecha_contabilizacion) AS fecha_contable')
+            ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
+            ->selectRaw("COALESCE(rutas.nombre_ruta, 'Sin ruta') AS ruta")
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS preventista")
+            ->selectRaw('COUNT(*) AS items')
+            ->selectRaw("COALESCE(SUM({$ingresoExpr}), 0) AS total")
+            ->groupBy('ventas.numero_pedido', DB::raw('DATE(ventas.fecha_contabilizacion)'), 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
+            ->orderBy('ventas.numero_pedido', 'desc');
+
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $query->whereIn('ventas.id_usuario', $preventistaIds);
+        }
+
+        $pedidos = $query->get();
+
+        $rutasTexto = $rutaIds->isNotEmpty()
+            ? Rutas::whereIn('id', $rutaIds)->orderBy('nombre_ruta')->pluck('nombre_ruta')->implode(', ')
+            : 'Todas las rutas';
+
+        $preventistasTexto = $preventistaIds->isNotEmpty()
+            ? User::whereIn('id', $preventistaIds)->orderBy('nombres')->get()
+                ->map(fn ($user) => trim($user->nombres.' '.$user->apellido_paterno.' '.$user->apellido_materno))
+                ->implode(', ')
+            : 'Todos los preventistas';
+
+        $resumen = [
+            'pedidos' => $pedidos->count(),
+            'items' => $pedidos->sum('items'),
+            'total' => $pedidos->sum('total'),
+        ];
+
+        $pdf = Pdf::loadView('Contabilidad.PedidosPorDia.pdf', [
+            'pedidos' => $pedidos,
+            'fecha' => Carbon::parse($fecha)->format('d/m/Y'),
+            'rutasTexto' => $rutasTexto,
+            'preventistasTexto' => $preventistasTexto,
+            'resumen' => $resumen,
+        ]);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('pedidos-por-dia-'.$fecha.'.pdf');
     }
 
     private function resolverPeriodoDashboard(Request $request): array

@@ -484,6 +484,12 @@ return [
             'can' => 'contador.permisos',
         ],
         [
+            'text' => 'Pedidos por Dia',
+            'route' => 'contabilidad.pedidos.porDia',
+            'icon' => 'fas fa-fw fa-print',
+            'can' => 'contador.permisos',
+        ],
+        [
             'header'=> '.::VENTAS POR PREVENTISTA::.',
             'can' => 'contador.permisos',
         ],
