@@ -727,8 +727,12 @@ class ContabilidadVentaController extends Controller
             ->make(true);
     }
 
-    public function comparacionGanancial(){
-        return view('Contabilidad.ComparacionGanancial.index');
+    public function comparacionGanancial()
+    {
+        $preventistas = User::role('vendedor')->orderBy('nombres')->get();
+        $rutas = Rutas::orderBy('nombre_ruta')->get();
+
+        return view('Contabilidad.ComparacionGanancial.index', compact('preventistas', 'rutas'));
     }
 
     public function pedidosPorDia()

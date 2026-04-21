@@ -274,7 +274,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
     //----AREA DE CONTABILIDAD--
     Route::prefix('contabilidad')->name('contabilidad.')->middleware('can:contador.permisos')->group(function () {
-        Route::get('dashboard', [ContabilidadVentaController::class,'ventasPorDia'])->name('dashboard');
+        Route::get('dashboard', [ContabilidadVentaController::class,'dashboard'])->name('dashboard');
         Route::get('dashboard/resumen', [ContabilidadVentaController::class,'dashboardResumen'])->name('dashboard.resumen');
         Route::get('dashboard/series', [ContabilidadVentaController::class,'dashboardSeries'])->name('dashboard.series');
         Route::get('dashboard/reportes/preventistas', [ContabilidadVentaController::class,'dashboardReportePreventistas'])->name('dashboard.reportes.preventistas');
