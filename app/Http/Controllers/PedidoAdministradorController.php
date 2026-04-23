@@ -981,51 +981,67 @@ class PedidoAdministradorController extends Controller
             'cantidad' => 'required|integer|min:1',
         ]);
 
-        $producto = Producto::findOrFail($request->input('producto_id'));
-        $formaVenta = FormaVenta::findOrFail($request->input('tipo_venta_id'));
-        $cantidadSolicitada = $request->cantidad;
-        $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
+        DB::transaction(function () use ($request, $id_numero_pedido) {
+            $pedidoBase = Pedido::where('numero_pedido', $id_numero_pedido)
+                ->whereNull('fecha_entrega')
+                ->where('estado_pedido', false)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($producto->cantidad < $cantidadEnUnidades) {
-            return response()->json(['error' => 'No hay suficiente stock del producto.'], 400);
-        }
+            $formaVenta = FormaVenta::whereKey($request->input('tipo_venta_id'))
+                ->where('id_producto', $request->input('producto_id'))
+                ->firstOrFail();
 
-        // Disminuir el stock del producto
-        $producto->cantidad -= $cantidadEnUnidades;
-        $producto->save();
+            $producto = Producto::whereKey($request->input('producto_id'))
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        Pedido::create([
-            'id_usuario' => Pedido::where('numero_pedido', $id_numero_pedido)->value('id_usuario'),
-            'id_cliente' => Pedido::where('numero_pedido', $id_numero_pedido)->value('id_cliente'),
-            'id_producto' => $producto->id,
-            'id_forma_venta' => $formaVenta->id,
-            'numero_pedido' => $id_numero_pedido,
-            'fecha_pedido' => Pedido::where('numero_pedido', $id_numero_pedido)->value('fecha_pedido')??null,
-            'fecha_entrega' => null,
-            'cantidad' => $cantidadSolicitada,
-            'estado_pedido' => false,
-            'promocion' => $producto->promocion ?? false,
-            'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
-            'descripcion_regalo' => $producto->descripcion_regalo ?? null,
-        ]);
+            $cantidadSolicitada = (int) $request->cantidad;
+            $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
+
+            if ($producto->cantidad < $cantidadEnUnidades) {
+                abort(400, 'No hay suficiente stock del producto.');
+            }
+
+            $producto->cantidad -= $cantidadEnUnidades;
+            $producto->save();
+
+            Pedido::create([
+                'id_usuario' => $pedidoBase->id_usuario,
+                'id_cliente' => $pedidoBase->id_cliente,
+                'id_producto' => $producto->id,
+                'id_forma_venta' => $formaVenta->id,
+                'numero_pedido' => $id_numero_pedido,
+                'fecha_pedido' => $pedidoBase->fecha_pedido,
+                'fecha_entrega' => null,
+                'cantidad' => $cantidadSolicitada,
+                'estado_pedido' => false,
+                'promocion' => $producto->promocion ?? false,
+                'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
+                'descripcion_regalo' => $producto->descripcion_regalo ?? null,
+            ]);
+        }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto agregado al pedido correctamente.']);
     }
 
     public function eliminarProductoPedido(string $id_pedido)
     {
-        $pedido = Pedido::findOrFail($id_pedido);
-        $producto = Producto::findOrFail($pedido->id_producto);
-        $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
+        DB::transaction(function () use ($id_pedido) {
+            $pedido = Pedido::whereKey($id_pedido)
+                ->whereNull('fecha_entrega')
+                ->where('estado_pedido', false)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $producto = Producto::whereKey($pedido->id_producto)->lockForUpdate()->firstOrFail();
+            $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
 
-        // Calcular la cantidad en unidades de inventario según la forma de venta
-        $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+            $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+            $producto->cantidad += $cantidadEnUnidades;
+            $producto->save();
 
-        // Aumentar el stock del producto
-        $producto->cantidad += $cantidadEnUnidades;
-        $producto->save();
-
-        $pedido->delete();
+            $pedido->delete();
+        }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto eliminado del pedido correctamente.']);
     }
@@ -1093,51 +1109,67 @@ class PedidoAdministradorController extends Controller
             'cantidad' => 'required|integer|min:1',
         ]);
 
-        $producto = Producto::findOrFail($request->input('producto_id'));
-        $formaVenta = FormaVenta::findOrFail($request->input('tipo_venta_id'));
-        $cantidadSolicitada = $request->cantidad;
-        $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
+        DB::transaction(function () use ($request, $id_numero_pedido) {
+            $pedidoBase = Pedido::where('numero_pedido', $id_numero_pedido)
+                ->whereNotNull('fecha_entrega')
+                ->where('estado_pedido', false)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($producto->cantidad < $cantidadEnUnidades) {
-            return response()->json(['error' => 'No hay suficiente stock del producto.'], 400);
-        }
+            $formaVenta = FormaVenta::whereKey($request->input('tipo_venta_id'))
+                ->where('id_producto', $request->input('producto_id'))
+                ->firstOrFail();
 
-        // Disminuir el stock del producto
-        $producto->cantidad -= $cantidadEnUnidades;
-        $producto->save();
+            $producto = Producto::whereKey($request->input('producto_id'))
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        Pedido::create([
-            'id_usuario' => Pedido::where('numero_pedido', $id_numero_pedido)->value('id_usuario'),
-            'id_cliente' => Pedido::where('numero_pedido', $id_numero_pedido)->value('id_cliente'),
-            'id_producto' => $producto->id,
-            'id_forma_venta' => $formaVenta->id,
-            'numero_pedido' => $id_numero_pedido,
-            'fecha_pedido' => Pedido::where('numero_pedido', $id_numero_pedido)->value('fecha_pedido')??null,
-            'fecha_entrega' => Pedido::where('numero_pedido', $id_numero_pedido)->value('fecha_entrega')??null,
-            'cantidad' => $cantidadSolicitada,
-            'estado_pedido' => false,
-            'promocion' => $producto->promocion ?? false,
-            'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
-            'descripcion_regalo' => $producto->descripcion_regalo ?? null,
-        ]);
+            $cantidadSolicitada = (int) $request->cantidad;
+            $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
+
+            if ($producto->cantidad < $cantidadEnUnidades) {
+                abort(400, 'No hay suficiente stock del producto.');
+            }
+
+            $producto->cantidad -= $cantidadEnUnidades;
+            $producto->save();
+
+            Pedido::create([
+                'id_usuario' => $pedidoBase->id_usuario,
+                'id_cliente' => $pedidoBase->id_cliente,
+                'id_producto' => $producto->id,
+                'id_forma_venta' => $formaVenta->id,
+                'numero_pedido' => $id_numero_pedido,
+                'fecha_pedido' => $pedidoBase->fecha_pedido,
+                'fecha_entrega' => $pedidoBase->fecha_entrega,
+                'cantidad' => $cantidadSolicitada,
+                'estado_pedido' => false,
+                'promocion' => $producto->promocion ?? false,
+                'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
+                'descripcion_regalo' => $producto->descripcion_regalo ?? null,
+            ]);
+        }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto agregado al pedido correctamente.']);
     }
 
     public function eliminarProductoPedidoDespachado(string $id_pedido)
     {
-        $pedido = Pedido::findOrFail($id_pedido);
-        $producto = Producto::findOrFail($pedido->id_producto);
-        $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
+        DB::transaction(function () use ($id_pedido) {
+            $pedido = Pedido::whereKey($id_pedido)
+                ->whereNotNull('fecha_entrega')
+                ->where('estado_pedido', false)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $producto = Producto::whereKey($pedido->id_producto)->lockForUpdate()->firstOrFail();
+            $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
 
-        // Calcular la cantidad en unidades de inventario según la forma de venta
-        $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+            $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+            $producto->cantidad += $cantidadEnUnidades;
+            $producto->save();
 
-        // Aumentar el stock del producto
-        $producto->cantidad += $cantidadEnUnidades;
-        $producto->save();
-
-        $pedido->delete();
+            $pedido->delete();
+        }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto eliminado del pedido correctamente.']);
     }
@@ -1404,98 +1436,81 @@ class PedidoAdministradorController extends Controller
             'cantidad' => 'required|integer|min:1',
         ]);
 
-        $producto = Producto::findOrFail($request->input('producto_id'));
-        $formaVenta = FormaVenta::findOrFail($request->input('tipo_venta_id'));
-        $cantidadSolicitada = $request->cantidad;
-        $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
+        DB::transaction(function () use ($request, $id_numero_pedido) {
+            $pedidoActual = Pedido::where('numero_pedido', $id_numero_pedido)
+                ->where('estado_pedido', true)
+                ->whereNotNull('fecha_entrega')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($producto->cantidad < $cantidadEnUnidades) {
-            return response()->json(['error' => 'No hay suficiente stock del producto.'], 400);
-        }
+            $formaVenta = FormaVenta::whereKey($request->input('tipo_venta_id'))
+                ->where('id_producto', $request->input('producto_id'))
+                ->firstOrFail();
 
-        // Disminuir el stock del producto
-        $producto->cantidad -= $cantidadEnUnidades;
-        $producto->save();
+            $producto = Producto::whereKey($request->input('producto_id'))
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $pedido_actual=Pedido::where('numero_pedido', $id_numero_pedido)->firstOrFail();
+            $cantidadSolicitada = (int) $request->cantidad;
+            $cantidadEnUnidades = $cantidadSolicitada * $formaVenta->equivalencia_cantidad;
 
-        Pedido::create([
-            'id_usuario' => $pedido_actual->id_usuario,
-            'id_cliente' => $pedido_actual->id_cliente,
-            'id_producto' => $producto->id,
-            'id_forma_venta' => $formaVenta->id,
-            'numero_pedido' => $pedido_actual->numero_pedido,
-            'fecha_pedido' => $pedido_actual->fecha_pedido??null,
-            'fecha_entrega' => $pedido_actual->fecha_entrega??null,
-            'cantidad' => $cantidadSolicitada,
-            'estado_pedido' => true,
-            'promocion' => $producto->promocion ?? false,
-            'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
-            'descripcion_regalo' => $producto->descripcion_regalo ?? null,
-        ]);
-
-        if($pedido_actual->estado_pedido==true){
-            $venta_contabilizada=Venta::where('numero_pedido', $pedido_actual->numero_pedido)->first();
-            Venta::where('numero_pedido', $pedido_actual->numero_pedido)->delete();
-            $pedidos_restantes=Pedido::where('numero_pedido', $pedido_actual->numero_pedido)->get();
-            foreach($pedidos_restantes as $p){
-                Venta::create([
-                    'id_usuario' => $p->id_usuario,
-                    'id_cliente' => $p->id_cliente,
-                    'id_producto' => $p->id_producto,
-                    'id_forma_venta' => $p->id_forma_venta,
-                    'precio_unitario' => $p->precio_unitario,
-                    'numero_pedido' => $p->numero_pedido,
-                    'fecha_contabilizacion' => $venta_contabilizada->fecha_contabilizacion,
-                    'cantidad' => $p->cantidad,
-                    'promocion' => $p->promocion,
-                    'descripcion_descuento_porcentaje' => $p->descripcion_descuento_porcentaje,
-                    'descripcion_regalo' => $p->descripcion_regalo
-                ]);
+            if ($producto->cantidad < $cantidadEnUnidades) {
+                abort(400, 'No hay suficiente stock del producto.');
             }
-        }
+
+            $producto->cantidad -= $cantidadEnUnidades;
+            $producto->save();
+
+            Pedido::create([
+                'id_usuario' => $pedidoActual->id_usuario,
+                'id_cliente' => $pedidoActual->id_cliente,
+                'id_producto' => $producto->id,
+                'id_forma_venta' => $formaVenta->id,
+                'numero_pedido' => $pedidoActual->numero_pedido,
+                'fecha_pedido' => $pedidoActual->fecha_pedido ?? null,
+                'fecha_entrega' => $pedidoActual->fecha_entrega ?? null,
+                'cantidad' => $cantidadSolicitada,
+                'estado_pedido' => true,
+                'promocion' => $producto->promocion ?? false,
+                'descripcion_descuento_porcentaje' => $producto->descripcion_descuento_porcentaje ?? null,
+                'descripcion_regalo' => $producto->descripcion_regalo ?? null,
+            ]);
+
+            $fechaContabilizacion = Venta::where('numero_pedido', $pedidoActual->numero_pedido)
+                ->lockForUpdate()
+                ->value('fecha_contabilizacion');
+
+            $this->reconstruirVentasContabilizadas($pedidoActual->numero_pedido, $fechaContabilizacion);
+        }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto agregado al pedido correctamente.']);
     }
 
     public function eliminarProductoPedidoContabilizado(string $id_pedido)
     {
-        $pedido = Pedido::findOrFail($id_pedido);
-        $producto = Producto::findOrFail($pedido->id_producto);
-        $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
+        DB::transaction(function () use ($id_pedido) {
+            $pedido = Pedido::whereKey($id_pedido)
+                ->where('estado_pedido', true)
+                ->whereNotNull('fecha_entrega')
+                ->lockForUpdate()
+                ->firstOrFail();
+            $producto = Producto::whereKey($pedido->id_producto)->lockForUpdate()->firstOrFail();
+            $formaVenta = FormaVenta::findOrFail($pedido->id_forma_venta);
 
-        // Calcular la cantidad en unidades de inventario según la forma de venta
-        $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+            $cantidadEnUnidades = $pedido->cantidad * $formaVenta->equivalencia_cantidad;
+            $numeroPedido = $pedido->numero_pedido;
 
-        // Aumentar el stock del producto
-        $producto->cantidad += $cantidadEnUnidades;
-        $producto->save();
+            $producto->cantidad += $cantidadEnUnidades;
+            $producto->save();
 
-        $pedido->delete();
+            $fechaContabilizacion = Venta::where('numero_pedido', $numeroPedido)
+                ->lockForUpdate()
+                ->value('fecha_contabilizacion');
 
-        if(Pedido::where('numero_pedido', $pedido->numero_pedido)->where('estado_pedido', true)->exists()){
-            $venta_contabilizada=Venta::where('numero_pedido', $pedido->numero_pedido)->first();
-            Venta::where('numero_pedido', $pedido->numero_pedido)->delete();
-            $pedidos_restantes=Pedido::where('numero_pedido', $pedido->numero_pedido)->get();
-            foreach($pedidos_restantes as $p){
-                Venta::create([
-                    'id_usuario' => $p->id_usuario,
-                    'id_cliente' => $p->id_cliente,
-                    'id_producto' => $p->id_producto,
-                    'id_forma_venta' => $p->id_forma_venta,
-                    'precio_unitario' => $p->precio_unitario,
-                    'numero_pedido' => $p->numero_pedido,
-                    'fecha_contabilizacion' => $venta_contabilizada->fecha_contabilizacion,
-                    'cantidad' => $p->cantidad,
-                    'promocion' => $p->promocion,
-                    'descripcion_descuento_porcentaje' => $p->descripcion_descuento_porcentaje,
-                    'descripcion_regalo' => $p->descripcion_regalo
-                ]);
-            }
-        }
-        else{
-            Venta::where('numero_pedido', $pedido->numero_pedido)->delete();
-        }
+            $pedido->delete();
+
+            $this->reconstruirVentasContabilizadas($numeroPedido, $fechaContabilizacion);
+        }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto eliminado del pedido correctamente.']);
     }
@@ -1636,6 +1651,37 @@ class PedidoAdministradorController extends Controller
             })
             ->rawColumns(['imagen', 'cantidad_despacho', 'ingreso_estimado'])
             ->make(true);
+    }
+
+    private function reconstruirVentasContabilizadas(string $numeroPedido, $fechaContabilizacion = null): void
+    {
+        $pedidosRestantes = Pedido::where('numero_pedido', $numeroPedido)
+            ->where('estado_pedido', true)
+            ->whereNotNull('fecha_entrega')
+            ->lockForUpdate()
+            ->get();
+
+        Venta::where('numero_pedido', $numeroPedido)->delete();
+
+        if ($pedidosRestantes->isEmpty()) {
+            return;
+        }
+
+        foreach ($pedidosRestantes as $p) {
+            Venta::create([
+                'id_usuario' => $p->id_usuario,
+                'id_cliente' => $p->id_cliente,
+                'id_producto' => $p->id_producto,
+                'id_forma_venta' => $p->id_forma_venta,
+                'precio_unitario' => $p->precio_unitario,
+                'numero_pedido' => $p->numero_pedido,
+                'fecha_contabilizacion' => $fechaContabilizacion,
+                'cantidad' => $p->cantidad,
+                'promocion' => $p->promocion,
+                'descripcion_descuento_porcentaje' => $p->descripcion_descuento_porcentaje,
+                'descripcion_regalo' => $p->descripcion_regalo
+            ]);
+        }
     }
 
     private function resumenPedidosFlujo(): array
