@@ -11,6 +11,7 @@ use App\Models\Producto;
 use App\Models\Rutas;
 use App\Models\User;
 use App\Models\Venta;
+use App\Models\VentaMayorista;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -235,7 +236,7 @@ class ContabilidadVentaController extends Controller
 
         $despachadosPendientes = (clone $pedidosDespachadosPendientes)
             ->selectRaw('COUNT(DISTINCT pedidos.numero_pedido) AS pedidos')
-            ->selectRaw('COALESCE(SUM(pedidos.cantidad * forma_ventas.precio_venta), 0) AS monto')
+            ->selectRaw('COALESCE(SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)), 0) AS monto')
             ->first();
 
         $ventasPeriodoIds = $this->dashboardVentasBaseQuery($request, now()->subDays(30)->startOfDay(), now()->endOfDay())
@@ -513,7 +514,7 @@ class ContabilidadVentaController extends Controller
             ->where('ventas.id_usuario', $idPreventista)
             ->whereNotNull('ventas.fecha_contabilizacion')
             ->selectRaw("DATE(ventas.fecha_contabilizacion) AS fecha_venta") // Postgres: DATE(ts)
-            ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_venta")
+            ->selectRaw("SUM(COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) * ventas.cantidad)::numeric(14,2) AS total_venta")
             ->groupBy(DB::raw("DATE(ventas.fecha_contabilizacion)"))
             ->orderBy(DB::raw("DATE(ventas.fecha_contabilizacion)"), 'desc');
 
@@ -558,7 +559,7 @@ class ContabilidadVentaController extends Controller
             ->select(
                 'ventas.id_cliente',
                 'ventas.numero_pedido',
-                DB::raw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_pedido"),
+                DB::raw("SUM(COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) * ventas.cantidad)::numeric(14,2) AS total_pedido"),
                 'ventas.fecha_contabilizacion'
             )
             ->groupBy('ventas.id_cliente', 'ventas.numero_pedido', 'ventas.fecha_contabilizacion')
@@ -601,8 +602,8 @@ class ContabilidadVentaController extends Controller
             ->selectRaw('COALESCE(ventas.cantidad, 0) AS cantidad')
             ->selectRaw('COALESCE(forma_ventas.equivalencia_cantidad, 1) AS unidades')
             ->selectRaw('COALESCE(ventas.descripcion_descuento_porcentaje, 0) AS descuento')
-            ->selectRaw('COALESCE(forma_ventas.precio_venta, 0) AS precio_unitario')
-            ->selectRaw('(ventas.cantidad * forma_ventas.precio_venta * (1 - COALESCE(ventas.descripcion_descuento_porcentaje, 0) / 100.0)) AS total');
+            ->selectRaw('COALESCE(ventas.precio_unitario, forma_ventas.precio_venta, 0) AS precio_unitario')
+            ->selectRaw('(ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) * (1 - COALESCE(ventas.descripcion_descuento_porcentaje, 0) / 100.0)) AS total');
 
         return DataTables::of($ventas)
             ->editColumn('cantidad', function ($row) {
@@ -640,7 +641,7 @@ class ContabilidadVentaController extends Controller
             ->whereNotNull('ventas.fecha_contabilizacion')
             ->selectRaw("ventas.id_usuario AS id_preventista")
             ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS preventista")
-            ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_vendido")
+            ->selectRaw("SUM(COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) * ventas.cantidad)::numeric(14,2) AS total_vendido")
             ->selectRaw('COUNT(DISTINCT ventas.numero_pedido) AS pedidos')
             ->selectRaw('COUNT(DISTINCT ventas.id_cliente) AS clientes')
             ->groupBy('ventas.id_usuario', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
@@ -698,7 +699,7 @@ class ContabilidadVentaController extends Controller
             ->selectRaw("MIN(pedido_fechas.fecha_pedido) AS fecha_pedido")
             ->selectRaw("MIN(pedido_fechas.fecha_entrega) AS fecha_entrega")
             ->selectRaw("COUNT(*) AS items")
-            ->selectRaw("SUM(forma_ventas.precio_venta * ventas.cantidad)::numeric(14,2) AS total_pedido")
+            ->selectRaw("SUM(COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) * ventas.cantidad)::numeric(14,2) AS total_pedido")
             ->groupBy('ventas.id_cliente', 'ventas.numero_pedido', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta')
             ->orderBy('ventas.numero_pedido', 'asc');
         return DataTables::of($pedidos)
@@ -733,6 +734,134 @@ class ContabilidadVentaController extends Controller
         $rutas = Rutas::orderBy('nombre_ruta')->get();
 
         return view('Contabilidad.ComparacionGanancial.index', compact('preventistas', 'rutas'));
+    }
+
+    public function mayoristasDashboard()
+    {
+        $mayoristas = User::query()
+            ->whereHas('roles', function ($query) {
+                $query->whereIn('name', ['mayorista', 'mayoristas']);
+            })
+            ->orderBy('nombres')
+            ->get();
+        $rutas = Rutas::orderBy('nombre_ruta')->get();
+
+        return view('Contabilidad.Mayoristas.index', compact('mayoristas', 'rutas'));
+    }
+
+    public function mayoristasResumen(Request $request)
+    {
+        $base = $this->ventasMayoristasBaseQuery($request);
+
+        $resumen = (clone $base)
+            ->selectRaw('COUNT(DISTINCT ventas_mayoristas.numero_venta) AS ventas')
+            ->selectRaw('COUNT(DISTINCT ventas_mayoristas.id_cliente) AS clientes')
+            ->selectRaw('COUNT(DISTINCT ventas_mayoristas.id_producto) AS productos')
+            ->selectRaw('COUNT(DISTINCT ventas_mayoristas.id_usuario) AS mayoristas')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * forma_ventas.equivalencia_cantidad), 0) AS unidades')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->first();
+
+        $topMayorista = (clone $base)
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS nombre")
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->groupBy('ventas_mayoristas.id_usuario', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
+            ->orderByDesc('total')
+            ->first();
+
+        $topProducto = (clone $base)
+            ->selectRaw('productos.nombre_producto AS nombre')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->groupBy('ventas_mayoristas.id_producto', 'productos.nombre_producto')
+            ->orderByDesc('total')
+            ->first();
+
+        $ticketPromedio = ((int) ($resumen->ventas ?? 0)) > 0
+            ? ((float) $resumen->total / (int) $resumen->ventas)
+            : 0;
+
+        return response()->json([
+            'ventas' => (int) ($resumen->ventas ?? 0),
+            'clientes' => (int) ($resumen->clientes ?? 0),
+            'productos' => (int) ($resumen->productos ?? 0),
+            'mayoristas' => (int) ($resumen->mayoristas ?? 0),
+            'unidades' => (float) ($resumen->unidades ?? 0),
+            'total' => round((float) ($resumen->total ?? 0), 2),
+            'ticket_promedio' => round($ticketPromedio, 2),
+            'top_mayorista' => [
+                'nombre' => $topMayorista->nombre ?? 'Sin datos',
+                'total' => round((float) ($topMayorista->total ?? 0), 2),
+            ],
+            'top_producto' => [
+                'nombre' => $topProducto->nombre ?? 'Sin datos',
+                'total' => round((float) ($topProducto->total ?? 0), 2),
+            ],
+        ]);
+    }
+
+    public function mayoristasSeries(Request $request)
+    {
+        $serie = $this->ventasMayoristasBaseQuery($request)
+            ->selectRaw("TO_CHAR(DATE(ventas_mayoristas.fecha_venta), 'YYYY-MM-DD') AS fecha")
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->groupBy(DB::raw("TO_CHAR(DATE(ventas_mayoristas.fecha_venta), 'YYYY-MM-DD')"))
+            ->orderBy('fecha')
+            ->get();
+
+        $mayoristas = $this->ventasMayoristasBaseQuery($request)
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS etiqueta")
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->groupBy('ventas_mayoristas.id_usuario', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->get();
+
+        return response()->json([
+            'serie' => [
+                'labels' => $serie->pluck('fecha'),
+                'data' => $serie->pluck('total')->map(fn ($valor) => round((float) $valor, 2)),
+            ],
+            'mayoristas' => [
+                'labels' => $mayoristas->pluck('etiqueta'),
+                'data' => $mayoristas->pluck('total')->map(fn ($valor) => round((float) $valor, 2)),
+            ],
+        ]);
+    }
+
+    public function mayoristasReporteVentas(Request $request)
+    {
+        $query = $this->ventasMayoristasBaseQuery($request)
+            ->selectRaw('ventas_mayoristas.numero_venta')
+            ->selectRaw("TO_CHAR(DATE(MIN(ventas_mayoristas.fecha_venta)), 'DD/MM/YYYY') AS fecha_venta")
+            ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
+            ->selectRaw("COALESCE(rutas.nombre_ruta, 'Sin ruta') AS ruta")
+            ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS mayorista")
+            ->selectRaw('COUNT(*) AS items')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * forma_ventas.equivalencia_cantidad), 0) AS unidades')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->groupBy('ventas_mayoristas.numero_venta', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno')
+            ->orderByDesc('ventas_mayoristas.numero_venta');
+
+        return DataTables::of($query)
+            ->editColumn('total', fn ($row) => round((float) $row->total, 2))
+            ->make(true);
+    }
+
+    public function mayoristasReporteProductos(Request $request)
+    {
+        $query = $this->ventasMayoristasBaseQuery($request)
+            ->selectRaw('productos.codigo')
+            ->selectRaw('productos.nombre_producto AS producto')
+            ->selectRaw('COUNT(DISTINCT ventas_mayoristas.numero_venta) AS ventas')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad), 0) AS presentaciones')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * forma_ventas.equivalencia_cantidad), 0) AS unidades')
+            ->selectRaw('COALESCE(SUM(ventas_mayoristas.cantidad * ventas_mayoristas.precio_unitario), 0) AS total')
+            ->groupBy('productos.codigo', 'productos.nombre_producto')
+            ->orderByDesc('total');
+
+        return DataTables::of($query)
+            ->editColumn('total', fn ($row) => round((float) $row->total, 2))
+            ->make(true);
     }
 
     public function pedidosPorDia()
@@ -837,7 +966,7 @@ class ContabilidadVentaController extends Controller
                 'productos.codigo',
                 'productos.nombre_producto',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'forma_ventas.equivalencia_cantidad',
                 'ventas.cantidad',
                 'ventas.descripcion_descuento_porcentaje'
@@ -910,7 +1039,7 @@ class ContabilidadVentaController extends Controller
                 'productos.codigo',
                 'productos.nombre_producto',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'forma_ventas.equivalencia_cantidad',
                 'ventas.cantidad',
                 'ventas.descripcion_descuento_porcentaje'
@@ -1030,7 +1159,37 @@ class ContabilidadVentaController extends Controller
 
     private function dashboardIngresoExpr(): string
     {
-        return '(ventas.cantidad * forma_ventas.precio_venta * (1 - COALESCE(ventas.descripcion_descuento_porcentaje, 0) / 100.0))';
+        return '(ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) * (1 - COALESCE(ventas.descripcion_descuento_porcentaje, 0) / 100.0))';
+    }
+
+    private function ventasMayoristasBaseQuery(Request $request)
+    {
+        $query = VentaMayorista::query()
+            ->join('forma_ventas', 'ventas_mayoristas.id_forma_venta', '=', 'forma_ventas.id')
+            ->join('productos', 'ventas_mayoristas.id_producto', '=', 'productos.id')
+            ->join('clientes', 'ventas_mayoristas.id_cliente', '=', 'clientes.id')
+            ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
+            ->join('users', 'ventas_mayoristas.id_usuario', '=', 'users.id');
+
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('ventas_mayoristas.fecha_venta', '>=', $request->fecha_inicio);
+        }
+
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('ventas_mayoristas.fecha_venta', '<=', $request->fecha_fin);
+        }
+
+        $rutaIds = collect((array) $request->input('ruta_id', []))->filter()->values();
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        $mayoristaIds = collect((array) $request->input('mayorista_id', []))->filter()->values();
+        if ($mayoristaIds->isNotEmpty()) {
+            $query->whereIn('ventas_mayoristas.id_usuario', $mayoristaIds);
+        }
+
+        return $query;
     }
 
     private function dashboardCostoExpr(): string
@@ -1056,3 +1215,4 @@ class ContabilidadVentaController extends Controller
         return round((($actual - $anterior) / $anterior) * 100, 2);
     }
 }
+

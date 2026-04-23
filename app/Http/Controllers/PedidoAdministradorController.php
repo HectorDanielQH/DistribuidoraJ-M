@@ -24,7 +24,7 @@ class PedidoAdministradorController extends Controller
                 ->select('pedidos.id_cliente', 'pedidos.numero_pedido', 'pedidos.id_usuario')
                 ->selectRaw('DATE(pedidos.fecha_pedido) AS fecha_pedido')
                 ->selectRaw('COUNT(*) AS cantidad_items')
-                ->selectRaw('SUM(pedidos.cantidad * forma_ventas.precio_venta) AS total_estimado')
+                ->selectRaw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) AS total_estimado')
                 ->selectRaw('SUM(pedidos.cantidad * forma_ventas.equivalencia_cantidad) AS unidades_reservadas')
                 ->groupBy('pedidos.id_cliente', 'pedidos.numero_pedido', 'pedidos.id_usuario', DB::raw('DATE(pedidos.fecha_pedido)'))
                 ->orderBy('pedidos.numero_pedido', 'asc');
@@ -117,7 +117,7 @@ class PedidoAdministradorController extends Controller
         }
 
         $suma_total_estimada = $this->basePedidosDespachados()
-            ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+            ->select(DB::raw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) as total'))
             ->value('total');
         $resumenPedidos = $this->resumenPedidosFlujo();
         $rutas = Rutas::orderBy('nombre_ruta')->get();
@@ -136,7 +136,7 @@ class PedidoAdministradorController extends Controller
         }
 
         $suma_total_estimada = $this->basePedidosPendientes()
-            ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+            ->select(DB::raw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) as total'))
             ->value('total');
         $resumenPedidos = $this->resumenPedidosFlujo();
         $rutas = Rutas::orderBy('nombre_ruta')->get();
@@ -226,7 +226,7 @@ class PedidoAdministradorController extends Controller
                 'productos.cantidad as cantidad_stock',
                 'productos.detalle_cantidad',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'pedidos.id as id_pedido',
                 'pedidos.numero_pedido',
                 'pedidos.cantidad as cantidad_pedido',
@@ -361,7 +361,7 @@ class PedidoAdministradorController extends Controller
                 'productos.cantidad as cantidad_stock',
                 'productos.detalle_cantidad',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'pedidos.id as id_pedido',
                 'pedidos.id_usuario as id_vendedor',
                 'pedidos.numero_pedido',
@@ -435,7 +435,7 @@ class PedidoAdministradorController extends Controller
                 'productos.cantidad as cantidad_stock',
                 'productos.detalle_cantidad',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'pedidos.id as id_pedido',
                 'pedidos.id_usuario as id_vendedor',
                 'pedidos.numero_pedido',
@@ -491,7 +491,7 @@ class PedidoAdministradorController extends Controller
                 ->selectRaw('DATE(pedidos.fecha_pedido) AS fecha_pedido')
                 ->selectRaw('DATE(pedidos.fecha_entrega) AS fecha_entrega')
                 ->selectRaw('COUNT(*) AS items')
-                ->selectRaw('SUM(pedidos.cantidad * forma_ventas.precio_venta) AS monto_estimado')
+                ->selectRaw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) AS monto_estimado')
                 ->groupBy('pedidos.numero_pedido', 'pedidos.id_cliente', 'pedidos.id_usuario', DB::raw('DATE(pedidos.fecha_pedido)'), DB::raw('DATE(pedidos.fecha_entrega)'))
                 ->orderBy('pedidos.numero_pedido', 'asc');
 
@@ -558,7 +558,7 @@ class PedidoAdministradorController extends Controller
                 'productos.foto_producto',
                 'forma_ventas.tipo_venta',
                 'forma_ventas.id as id_forma_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'forma_ventas.equivalencia_cantidad',
                 'pedidos.id as id_pedido',
                 'pedidos.numero_pedido',
@@ -882,6 +882,7 @@ class PedidoAdministradorController extends Controller
                     'id_cliente' => $pedido->id_cliente,
                     'id_producto' => $pedido->id_producto,
                     'id_forma_venta' => $pedido->id_forma_venta,
+                    'precio_unitario' => $pedido->precio_unitario,
                     'numero_pedido' => $pedido->numero_pedido,
                     'fecha_contabilizacion' => $fechaContabilizacion,
                     'cantidad' => $pedido->cantidad,
@@ -893,7 +894,7 @@ class PedidoAdministradorController extends Controller
 
             $total = Pedido::whereIn('pedidos.numero_pedido', $numerosPedido)
                 ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
-                ->sum(DB::raw('pedidos.cantidad * forma_ventas.precio_venta'));
+                ->sum(DB::raw('pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)'));
 
             return [
                 'pedidos' => $pedidosPendientes,
@@ -966,7 +967,7 @@ class PedidoAdministradorController extends Controller
         $pedido = Pedido::where('numero_pedido', $id_numero_pedido)->firstOrFail();
         $suma_pedido= Pedido::where('numero_pedido', $id_numero_pedido)
             ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
-            ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+            ->select(DB::raw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) as total'))
             ->value('total');
         return view('administrador.pedidos.editar_pedido', compact('pedido','suma_pedido'));
     }
@@ -1079,7 +1080,7 @@ class PedidoAdministradorController extends Controller
         $pedido = Pedido::where('numero_pedido', $id_numero_pedido)->firstOrFail();
         $suma_pedido= Pedido::where('numero_pedido', $id_numero_pedido)
             ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
-            ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+            ->select(DB::raw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) as total'))
             ->value('total');
         return view('administrador.pedidos.editar_pedido_despachado', compact('pedido','suma_pedido'));
     }
@@ -1162,7 +1163,7 @@ class PedidoAdministradorController extends Controller
                 ->selectRaw('COUNT(DISTINCT ventas.numero_pedido) AS pedidos')
                 ->selectRaw('COUNT(*) AS items')
                 ->selectRaw('COUNT(DISTINCT ventas.id_usuario) AS preventistas')
-                ->selectRaw('SUM(ventas.cantidad * forma_ventas.precio_venta) AS total')
+                ->selectRaw('SUM(ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta)) AS total')
                 ->whereNotNull('ventas.fecha_contabilizacion')
                 ->groupBy(DB::raw('DATE(ventas.fecha_contabilizacion)'))
                 ->orderByDesc(DB::raw('DATE(ventas.fecha_contabilizacion)'));
@@ -1229,7 +1230,7 @@ class PedidoAdministradorController extends Controller
             'total' => Pedido::where('estado_pedido', true)
                 ->whereNotNull('fecha_entrega')
                 ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
-                ->sum(DB::raw('pedidos.cantidad * forma_ventas.precio_venta')),
+                ->sum(DB::raw('pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)')),
             'hoy' => Venta::whereDate('fecha_contabilizacion', now()->toDateString())->distinct('numero_pedido')->count('numero_pedido'),
         ];
 
@@ -1259,7 +1260,7 @@ class PedidoAdministradorController extends Controller
             ->selectRaw('DATE(pedidos_fechas.fecha_pedido) AS fecha_pedido')
             ->selectRaw('DATE(pedidos_fechas.fecha_entrega) AS fecha_entrega')
             ->selectRaw('COUNT(*) AS items')
-            ->selectRaw('SUM(ventas.cantidad * forma_ventas.precio_venta) AS total')
+            ->selectRaw('SUM(ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta)) AS total')
             ->whereDate('ventas.fecha_contabilizacion', $fecha)
             ->groupBy('ventas.numero_pedido', 'ventas.id_cliente', 'ventas.id_usuario', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno', 'pedidos_fechas.fecha_pedido', 'pedidos_fechas.fecha_entrega')
             ->orderBy('ventas.numero_pedido');
@@ -1391,7 +1392,7 @@ class PedidoAdministradorController extends Controller
         $pedido = Pedido::where('numero_pedido', $id_numero_pedido)->firstOrFail();
         $suma_pedido= Pedido::where('numero_pedido', $id_numero_pedido)
             ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
-            ->select(DB::raw('SUM(pedidos.cantidad * forma_ventas.precio_venta) as total'))
+            ->select(DB::raw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) as total'))
             ->value('total');
         return view('administrador.pedidos.editar_pedido_contabilizado', compact('pedido','suma_pedido'));
     }
@@ -1443,6 +1444,7 @@ class PedidoAdministradorController extends Controller
                     'id_cliente' => $p->id_cliente,
                     'id_producto' => $p->id_producto,
                     'id_forma_venta' => $p->id_forma_venta,
+                    'precio_unitario' => $p->precio_unitario,
                     'numero_pedido' => $p->numero_pedido,
                     'fecha_contabilizacion' => $venta_contabilizada->fecha_contabilizacion,
                     'cantidad' => $p->cantidad,
@@ -1481,6 +1483,7 @@ class PedidoAdministradorController extends Controller
                     'id_cliente' => $p->id_cliente,
                     'id_producto' => $p->id_producto,
                     'id_forma_venta' => $p->id_forma_venta,
+                    'precio_unitario' => $p->precio_unitario,
                     'numero_pedido' => $p->numero_pedido,
                     'fecha_contabilizacion' => $venta_contabilizada->fecha_contabilizacion,
                     'cantidad' => $p->cantidad,
@@ -1522,6 +1525,7 @@ class PedidoAdministradorController extends Controller
                     'id_cliente' => $p->id_cliente,
                     'id_producto' => $p->id_producto,
                     'id_forma_venta' => $p->id_forma_venta,
+                    'precio_unitario' => $p->precio_unitario,
                     'numero_pedido' => $p->numero_pedido,
                     'fecha_contabilizacion' => $request->input('fecha_contabilizacion').' 00:00:00',
                     'cantidad' => $p->cantidad,
@@ -1567,7 +1571,7 @@ class PedidoAdministradorController extends Controller
             ->select('pedidos.id_producto')
             ->selectRaw('COUNT(DISTINCT pedidos.numero_pedido) AS pedidos_involucrados')
             ->selectRaw('SUM(pedidos.cantidad * forma_ventas.equivalencia_cantidad) AS cantidad_despacho')
-            ->selectRaw('SUM(pedidos.cantidad * forma_ventas.precio_venta) AS ingreso_estimado')
+            ->selectRaw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) AS ingreso_estimado')
             ->groupBy('pedidos.id_producto');
 
         $rutaIds = collect((array) $request->input('ruta_id', []))
@@ -1642,10 +1646,11 @@ class PedidoAdministradorController extends Controller
         return [
             'pendientes' => (clone $pendientes)->distinct('pedidos.numero_pedido')->count('pedidos.numero_pedido'),
             'pendientes_items' => (clone $pendientes)->count(),
-            'pendientes_total' => (float) (clone $pendientes)->sum(DB::raw('pedidos.cantidad * forma_ventas.precio_venta')),
+            'pendientes_total' => (float) (clone $pendientes)->sum(DB::raw('pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)')),
             'despachados' => (clone $despachados)->distinct('pedidos.numero_pedido')->count('pedidos.numero_pedido'),
-            'despachados_total' => (float) (clone $despachados)->sum(DB::raw('pedidos.cantidad * forma_ventas.precio_venta')),
+            'despachados_total' => (float) (clone $despachados)->sum(DB::raw('pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)')),
             'contabilizados' => Pedido::where('estado_pedido', true)->whereNotNull('fecha_entrega')->distinct('numero_pedido')->count('numero_pedido'),
         ];
     }
 }
+

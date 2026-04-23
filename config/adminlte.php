@@ -428,6 +428,16 @@ return [
             'icon' => 'fas fa-fw fa-plus',
             'can' => 'administrador.permisos',
         ],
+        [
+            'header' => '.:: MAYORISTAS ::.',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Ventas Mayoristas',
+            'route' => 'administrador.mayoristas.index',
+            'icon' => 'fas fa-fw fa-dolly-flatbed',
+            'can' => 'administrador.permisos',
+        ],
         /*
         [
             'header' => '.:: REPORTES ::.',
@@ -470,6 +480,29 @@ return [
             'route' => 'preventistas.ventas.vendedor.misVentas',
             'icon' => 'fas fa-fw fa-tasks',
             'can' => 'vendedor.permisos',
+        ],
+
+
+        
+        [
+            'header'=> '.:: PEDIDOS MAYORISTAS ::.',
+            'can' => 'mayoristas.panel',
+        ],
+        [
+            'text' => 'Panel Mayorista',
+            'route' => 'mayoristas.pedidos.index',
+            'icon' => 'fas fa-fw fa-dolly',
+            'can' => 'mayoristas.panel',
+        ],
+        [
+            'header'=> '.:: MAYORISTAS ::.',
+            'can' => 'contador.permisos',
+        ],
+        [
+            'text' => 'Analisis Mayorista',
+            'route' => 'contabilidad.mayoristas.dashboard',
+            'icon' => 'fas fa-fw fa-dolly-flatbed',
+            'can' => 'contador.permisos',
         ],
 
 //---------------------------AREA DE CONTABILIDAD------------------------------

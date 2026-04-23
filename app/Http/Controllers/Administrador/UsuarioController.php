@@ -57,9 +57,11 @@ class UsuarioController extends Controller
                     return $usuario->celular;
                 })
                 ->addColumn('rol', function ($usuario) {
-                    $rol = $usuario->getRoleNames()->first();
-                    if ($rol) {
-                        return '<span class="badge badge-success">' . e($rol) . '</span>';
+                    $roles = $usuario->getRoleNames();
+                    if ($roles->isNotEmpty()) {
+                        return $roles->map(function ($rol) {
+                            return '<span class="badge badge-success mr-1 mb-1">' . e($rol) . '</span>';
+                        })->implode(' ');
                     }
                     return '<span class="badge badge-danger">No asignado</span>';
                 })
@@ -98,7 +100,8 @@ class UsuarioController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'direccion' => 'required|string|max:255',
             'estado' => 'required',
-            'rol' => 'required|exists:roles,name',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'required|exists:roles,name',
             'fotoperfil' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ],[
             'cedulaidentidad.required' => 'El campo Cédula de Identidad es obligatorio.',
@@ -111,8 +114,11 @@ class UsuarioController extends Controller
             'email.unique' => 'El Correo Electrónico ya está registrado.',
             'direccion.required' => 'El campo Dirección es obligatorio.',
             'estado.required' => 'El campo Estado es obligatorio.',
-            'rol.required' => 'El campo Rol es obligatorio.',
-            'rol.exists' => 'El Rol seleccionado no es válido.',
+            'roles.required' => 'Debes asignar al menos un rol.',
+            'roles.array' => 'Los roles enviados no son validos.',
+            'roles.min' => 'Debes asignar al menos un rol.',
+            'roles.*.required' => 'Debes asignar al menos un rol.',
+            'roles.*.exists' => 'Uno de los roles seleccionados no es valido.',
             'fotoperfil.image' => 'El archivo debe ser una imagen.',
             'fotoperfil.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif, svg.',
             'fotoperfil.max' => 'La imagen no debe exceder los 2MB.',
@@ -134,7 +140,7 @@ class UsuarioController extends Controller
                 'direccion' => trim(strtoupper($request->direccion)),
                 'estado' => trim(strtoupper($request->estado)),
                 'foto_perfil' => $path,
-            ])->assignRole($request->rol);
+            ])->assignRole($request->input('roles', []));
 
         } else {
             User::create([
@@ -149,7 +155,7 @@ class UsuarioController extends Controller
                 'direccion' => trim(strtoupper($request->direccion)),
                 'estado' => trim(strtoupper($request->estado)),
                 'foto_perfil' => null,
-            ])->assignRole($request->rol);
+            ])->assignRole($request->input('roles', []));
         }
 
         return response()->json([
@@ -164,11 +170,11 @@ class UsuarioController extends Controller
     public function show(string $id)
     {
         $usuario = User::findOrFail($id);
-        $rol_usuario = $usuario->getRoleNames()->first();
+        $roles_usuario = $usuario->getRoleNames()->values();
         return response()->json([
             'status' => 'success',
             'usuario' => $usuario,
-            'rol' => $rol_usuario,
+            'roles' => $roles_usuario,
         ], 200);
     }
 
@@ -194,7 +200,8 @@ class UsuarioController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $id,
             'direccion' => 'required|string|max:255',
             'estado' => 'required',
-            'rol' => 'required|exists:roles,name',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'required|exists:roles,name',
             'fotoperfil' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ],[
             'cedulaidentidad.required' => 'El campo Cédula de Identidad es obligatorio.',
@@ -207,8 +214,11 @@ class UsuarioController extends Controller
             'email.unique' => 'El Correo Electrónico ya está registrado.',
             'direccion.required' => 'El campo Dirección es obligatorio.',
             'estado.required' => 'El campo Estado es obligatorio.',
-            'rol.required' => 'El campo Rol es obligatorio.',
-            'rol.exists' => 'El Rol seleccionado no es válido.',
+            'roles.required' => 'Debes asignar al menos un rol.',
+            'roles.array' => 'Los roles enviados no son validos.',
+            'roles.min' => 'Debes asignar al menos un rol.',
+            'roles.*.required' => 'Debes asignar al menos un rol.',
+            'roles.*.exists' => 'Uno de los roles seleccionados no es valido.',
             'fotoperfil.image' => 'El archivo debe ser una imagen.',
             'fotoperfil.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif, svg.',
             'fotoperfil.max' => 'La imagen no debe exceder los 2MB.',
@@ -240,7 +250,7 @@ class UsuarioController extends Controller
             'foto_perfil' => $path,
         ]);
 
-        $usuario->syncRoles([$request->rol]);
+        $usuario->syncRoles($request->input('roles', []));
 
 
         return response()->json([

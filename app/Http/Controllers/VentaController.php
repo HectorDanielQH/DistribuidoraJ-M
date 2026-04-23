@@ -88,7 +88,7 @@ class VentaController extends Controller
                 CONCAT(users.nombres, ' ', COALESCE(users.apellido_paterno,''), ' ', COALESCE(users.apellido_materno,'')) as usuario,
                 ventas.numero_pedido,
                 CONCAT(clientes.nombres, ' ', COALESCE(clientes.apellidos,'')) as cliente,
-                SUM(ventas.cantidad * forma_ventas.precio_venta) as total_pedido
+                SUM(ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta)) as total_pedido
             ")
             ->groupBy('ventas.id_usuario', 'usuario', 'ventas.numero_pedido', 'cliente')
             ->orderBy('ventas.numero_pedido', 'asc')
@@ -148,7 +148,7 @@ class VentaController extends Controller
                 'productos.cantidad as cantidad_stock',
                 'productos.detalle_cantidad',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'ventas.id as id_pedido',
                 'ventas.numero_pedido',
                 'ventas.cantidad as cantidad_pedido',
@@ -257,7 +257,7 @@ class VentaController extends Controller
         if($request->ajax()){
             $ventas = Venta::query()
                 ->selectRaw('DATE(fecha_contabilizacion) as fecha_contabilizacion')
-                ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
+                ->selectRaw('SUM(cantidad * COALESCE(ventas.precio_unitario, (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta))) as total')
                 ->groupBy(DB::raw('DATE(fecha_contabilizacion)'))
                 ->orderBy('fecha_contabilizacion', 'desc');
             return $dataTable->of($ventas)
@@ -305,7 +305,7 @@ class VentaController extends Controller
                 'productos.cantidad as cantidad_stock',
                 'productos.detalle_cantidad',
                 'forma_ventas.tipo_venta',
-                'forma_ventas.precio_venta',
+                DB::raw('COALESCE(ventas.precio_unitario, forma_ventas.precio_venta) AS precio_venta'),
                 'ventas.id as id_pedido',
                 'ventas.numero_pedido',
                 'ventas.cantidad as cantidad_pedido',
@@ -367,7 +367,7 @@ class VentaController extends Controller
                 ->addColumn('monto_contabilizado', function($venta) {
                     $total = DB::table('ventas')
                         ->where('numero_pedido', $venta->numero_pedido)
-                        ->sum(DB::raw('cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)'));
+                        ->sum(DB::raw('cantidad * COALESCE(ventas.precio_unitario, (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta))'));
                     return number_format($total, 2, '.', ',').' Bs.-';
                 })
                 ->addColumn('preventista', function($venta) {
@@ -397,7 +397,7 @@ class VentaController extends Controller
 
         $total_monto_contabilizado = DB::table('ventas')
             ->whereBetween('ventas.fecha_contabilizacion', [$inicio, $fin])
-            ->selectRaw('SUM(cantidad * (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta)) as total')
+            ->selectRaw('SUM(cantidad * COALESCE(ventas.precio_unitario, (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta))) as total')
             ->value('total');
 
         return view('administrador.ventas.ver_venta_por_fecha_arqueo', compact('fecha_arqueo','total_monto_contabilizado'));
@@ -478,6 +478,7 @@ class VentaController extends Controller
                 'id_cliente' => 1377, // Cliente genérico CUENTA EMPRESA
                 'id_producto' => $producto->id,
                 'id_forma_venta' => $formaVenta->id,
+                'precio_unitario' => $formaVenta->precio_venta,
                 'numero_pedido' => $numero_pedido,
                 'fecha_contabilizacion' => $fechaVenta->toDateTimeString(),
                 'cantidad' => $detalle['cantidad'],
@@ -494,3 +495,4 @@ class VentaController extends Controller
         return response()->json(['message' => 'Venta registrada correctamente'], 200);
     }
 }
+

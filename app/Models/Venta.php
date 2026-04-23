@@ -11,6 +11,7 @@ class Venta extends Model
         'id_cliente',
         'id_producto',
         'id_forma_venta',
+        'precio_unitario',
         'numero_pedido',
         'fecha_pedido',
         'fecha_entrega',

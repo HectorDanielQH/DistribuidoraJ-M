@@ -4,6 +4,7 @@ use App\Http\Controllers\Administrador\PermisosController;
 use App\Http\Controllers\Administrador\ProveedorController;
 use App\Http\Controllers\Administrador\LineaController;
 use App\Http\Controllers\Administrador\MarcaController;
+use App\Http\Controllers\Administrador\VentaMayoristaController as AdministradorVentaMayoristaController;
 use App\Http\Controllers\Administrador\ProductoController;
 use App\Http\Controllers\Administrador\LotesController;
 use App\Http\Controllers\Administrador\UsuarioController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Administrador\ControlRutasController;
 use App\Http\Controllers\Administrador\NoAtendidosController;
 //----------------------------Contabilidad-----------------------------------
 use App\Http\Controllers\Contabilidad\ContabilidadVentaController;
+use App\Http\Controllers\Mayorista\PedidoMayoristaController;
 
 //---------------------------------------------------------------
 use App\Http\Controllers\PreVentista\ProductoVendedorController;
@@ -166,6 +168,12 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('ventas/administrador/crear-venta', [VentaController::class,'crearVenta'])->name('ventas.administrador.crearVenta');
         Route::post('ventas/administrador/guardar-venta', [VentaController::class,'guardarVenta'])->name('ventas.administrador.guardarVenta');
 
+        Route::get('mayoristas', [AdministradorVentaMayoristaController::class, 'index'])->name('mayoristas.index');
+        Route::get('mayoristas/resumen', [AdministradorVentaMayoristaController::class, 'resumen'])->name('mayoristas.resumen');
+        Route::get('mayoristas/data', [AdministradorVentaMayoristaController::class, 'data'])->name('mayoristas.data');
+        Route::get('mayoristas/{numeroVenta}/detalle', [AdministradorVentaMayoristaController::class, 'detalle'])->name('mayoristas.detalle');
+        Route::get('mayoristas/reporte/pdf', [AdministradorVentaMayoristaController::class, 'pdf'])->name('mayoristas.pdf');
+
         //-----------------------------------------------------------------//
 
         //Rutas generales de administrador
@@ -198,6 +206,18 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('ventas/vendedor/mis-ventas/detalle/{fecha_contabilizacion}', [VentasVendedorController::class, 'detalleVentasPorFechaContabilizacion'])->name('ventas.vendedor.detalleVentasPorFechaContabilizacion');
         Route::get('pedidos/vendedor/mi-numero-de-pedido/{numero_pedido}', [PedidoController::class, 'obtenerPedidosPorNumero'])->name('ventas.vendedor.miNumeroDePedido');
         //------------------------------------
+    });
+
+Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.panel')->group(function () {
+        Route::get('pedidos', [PedidoMayoristaController::class, 'index'])->name('pedidos.index');
+        Route::get('clientes/buscar', [PedidoMayoristaController::class, 'buscarClientes'])->name('clientes.buscar');
+        Route::get('productos/buscar', [PedidoMayoristaController::class, 'buscarProductos'])->name('productos.buscar');
+        Route::get('productos/{id}/detalle', [PedidoMayoristaController::class, 'obtenerProducto'])->name('productos.detalle');
+        Route::get('formas-venta/{id}', [PedidoMayoristaController::class, 'obtenerFormaVenta'])->name('formasVenta.detalle');
+        Route::get('stock-productos', [PedidoMayoristaController::class, 'obtenerStockProductos'])->name('productos.stock');
+        Route::get('pedidos/listado', [PedidoMayoristaController::class, 'listadoPedidos'])->name('pedidos.listado');
+        Route::get('pedidos/{numero}/detalle', [PedidoMayoristaController::class, 'detallePedido'])->name('pedidos.detalle');
+        Route::post('pedidos/guardar', [PedidoMayoristaController::class, 'guardarPedido'])->name('pedidos.guardar');
     });
     Route::middleware('can:administrador.permisos')->group(function () {
         Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
@@ -301,6 +321,11 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //--comparacion ganancial
         Route::get('ventas/comparacionganancial', [ContabilidadVentaController::class,'comparacionGanancial'])->name('ventas.comparacionGanancial');
+        Route::get('mayoristas', [ContabilidadVentaController::class,'mayoristasDashboard'])->name('mayoristas.dashboard');
+        Route::get('mayoristas/resumen', [ContabilidadVentaController::class,'mayoristasResumen'])->name('mayoristas.resumen');
+        Route::get('mayoristas/series', [ContabilidadVentaController::class,'mayoristasSeries'])->name('mayoristas.series');
+        Route::get('mayoristas/reportes/ventas', [ContabilidadVentaController::class,'mayoristasReporteVentas'])->name('mayoristas.reportes.ventas');
+        Route::get('mayoristas/reportes/productos', [ContabilidadVentaController::class,'mayoristasReporteProductos'])->name('mayoristas.reportes.productos');
     });
     //----------------------------
 });

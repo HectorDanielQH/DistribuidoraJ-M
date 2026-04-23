@@ -6,6 +6,7 @@ use App\Models\Asignacion;
 use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\Venta;
+use App\Models\VentaMayorista;
 use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
@@ -62,13 +63,19 @@ class HomeController extends Controller
             $stats['mis_ventas_hoy'] = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
                 ->where('ventas.id_usuario', $user->id)
                 ->whereDate('ventas.fecha_contabilizacion', now()->toDateString())
-                ->sum(DB::raw('ventas.cantidad * forma_ventas.precio_venta'));
+                ->sum(DB::raw('ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta)'));
         }
 
         if ($user->can('contador.permisos')) {
             $stats['ventas_hoy'] = Venta::join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
                 ->whereDate('ventas.fecha_contabilizacion', now()->toDateString())
-                ->sum(DB::raw('ventas.cantidad * forma_ventas.precio_venta'));
+                ->sum(DB::raw('ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta)'));
+        }
+
+        if ($user->can('mayorista.permisos') || $user->can('mayoristas.permisos')) {
+            $stats['pedidos_pendientes'] = VentaMayorista::where('id_usuario', $user->id)
+                ->distinct('numero_venta')
+                ->count('numero_venta');
         }
 
         return view('home', compact('stats'));

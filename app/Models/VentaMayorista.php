@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Pedido extends Model
+class VentaMayorista extends Model
 {
-    protected $table = 'pedidos';
+    protected $table = 'ventas_mayoristas';
 
     protected $fillable = [
         'id_usuario',
@@ -14,28 +14,32 @@ class Pedido extends Model
         'id_producto',
         'id_forma_venta',
         'precio_unitario',
-        'numero_pedido',
-        'fecha_pedido',
-        'fecha_entrega',
+        'numero_venta',
+        'fecha_venta',
         'cantidad',
-        'estado_pedido',
-        'promocion',
-        'descripcion_descuento_porcentaje',
-        'descripcion_regalo'
+        'observaciones',
+    ];
+
+    protected $casts = [
+        'fecha_venta' => 'datetime',
+        'precio_unitario' => 'decimal:2',
     ];
 
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario');
     }
+
     public function cliente()
     {
         return $this->belongsTo(Cliente::class, 'id_cliente');
     }
+
     public function producto()
     {
         return $this->belongsTo(Producto::class, 'id_producto');
     }
+
     public function formaVenta()
     {
         return $this->belongsTo(FormaVenta::class, 'id_forma_venta');

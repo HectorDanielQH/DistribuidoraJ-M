@@ -132,18 +132,13 @@
                         </div>
 
                         <div class="col-md-6">
-                            <x-adminlte-select name="rol" label="Asignar Rol" label-class="text-dark" igroup-size="lg">
-                                <x-slot name="prependSlot">
-                                    <div class="input-group-text bg-dark">
-                                        <i class="
-                                            fas fa-list-alt
-                                        "></i>
-                                    </div>
-                                </x-slot>
+                            <label for="rolescrear" class="text-dark font-weight-bold d-block">Permisos del usuario</label>
+                            <select name="roles[]" id="rolescrear" class="form-control role-select" multiple>
                                 @foreach($roles as $rol)
                                     <option value="{{ $rol->name }}">{{ strtoupper($rol->name) }}</option>
                                 @endforeach
-                            </x-adminlte-select>
+                            </select>
+                            <small class="text-muted">Puedes asignar uno o varios permisos.</small>
                         </div>
                         <div class="col-md-6">
                             <x-adminlte-select name="estado" label="Estado" label-class="text-dark" igroup-size="lg">
@@ -217,7 +212,7 @@
                     <p><strong>Dirección:</strong> <p id="direccionview"></p> </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Rol:</strong> <p id="rolview"></p> </p>
+                    <p><strong>Permisos:</strong> <p id="rolview"></p> </p>
                 </div>
                 <div class="col-md-6">
                     <p><strong>Estado:</strong> <p id="idestado"></p> </p>
@@ -308,18 +303,13 @@
                         </div>
 
                         <div class="col-md-6">
-                            <x-adminlte-select name="rol" id="roleditar" label="Asignar Rol" label-class="text-dark" igroup-size="lg">
-                                <x-slot name="prependSlot">
-                                    <div class="input-group-text bg-dark">
-                                        <i class="
-                                            fas fa-list-alt
-                                        "></i>
-                                    </div>
-                                </x-slot>
+                            <label for="roleditar" class="text-dark font-weight-bold d-block">Permisos del usuario</label>
+                            <select name="roles[]" id="roleditar" class="form-control role-select" multiple>
                                 @foreach($roles as $rol)
                                     <option value="{{ $rol->name }}">{{ strtoupper($rol->name) }}</option>
                                 @endforeach
-                            </x-adminlte-select>
+                            </select>
+                            <small class="text-muted">Puedes asignar uno o varios permisos.</small>
                         </div>
                         <div class="col-md-6">
                             <x-adminlte-select name="estado" id="estadoeditar" label="Estado" label-class="text-dark" igroup-size="lg">
@@ -364,7 +354,7 @@
                         <th scope="col">Perfil</th>
                         <th scope="col">Nombre Completo</th>
                         <th scope="col">Celular</th>
-                        <th scope="col">Rol</th>
+                        <th scope="col">Permisos</th>
                         <th scope="col">Acciones</th>
                     </tr>
                 </thead>
@@ -382,6 +372,7 @@
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
     <link href="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <style>
         input.form-control:focus, select.form-control:focus {
             border-color: #1abc9c;
@@ -512,6 +503,16 @@
             gap: 8px;
         }
 
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            min-height: 44px;
+        }
+
+        .select2-container .select2-search--inline .select2-search__field {
+            margin-top: 8px;
+        }
+
         @media (max-width: 575.98px) {
             .content-header,
             .content {
@@ -582,9 +583,22 @@
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.datatables.net/v/dt/dt-2.3.2/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         $(document).ready(function(){
+            $('#rolescrear').select2({
+                width: '100%',
+                placeholder: 'Selecciona uno o varios permisos',
+                dropdownParent: $('#modalPurple')
+            });
+
+            $('#roleditar').select2({
+                width: '100%',
+                placeholder: 'Selecciona uno o varios permisos',
+                dropdownParent: $('#modalEditarUsuario')
+            });
+
             $('#tablaUsuarios').DataTable({
                 language: {
                     url: '/i18n/es-ES.json'
@@ -611,7 +625,7 @@
                     { data: 'action', orderable: false, searchable: false }
                 ],
                 createdRow: function (row) {
-                    const labels = ['ID', 'C.I.', 'Perfil', 'Nombre', 'Celular', 'Rol', 'Acciones'];
+                    const labels = ['ID', 'C.I.', 'Perfil', 'Nombre', 'Celular', 'Permisos', 'Acciones'];
                     $('td', row).each(function (index) {
                         $(this).attr('data-mobile-label', labels[index]);
                     });
@@ -674,6 +688,7 @@
                     $('#botonenviar-cerrar').click();
                     $('#tablaUsuarios').DataTable().ajax.reload();
                     $('#registro-usuario')[0].reset();
+                    $('#rolescrear').val(null).trigger('change');
                 },
                 error: function(xhr, status, error) {
                     Swal.fire({
@@ -748,7 +763,7 @@
             $('#celularview').text('');
             $('#emailview').text('');
             $('#direccionview').text('');
-            $('#rolview').text('');
+            $('#rolview').html('');
             $('#idestado').text('');
             $('#fotoperfilview').attr('src', '{{ asset('images/logo_white.webp') }}');
 
@@ -764,7 +779,12 @@
                     $('#celularview').text(response.usuario.celular);
                     $('#emailview').text(response.usuario.email);
                     $('#direccionview').text(response.usuario.direccion);
-                    $('#rolview').text(response.rol);
+                    const roles = response.roles || [];
+                    $('#rolview').html(
+                        roles.length
+                            ? roles.map(rol => `<span class="badge badge-success mr-1 mb-1">${rol}</span>`).join(' ')
+                            : '<span class="badge badge-danger">No asignado</span>'
+                    );
                     $('#idestado').text(response.usuario.estado);
 
                     if(response.usuario.foto_perfil) {
@@ -812,7 +832,7 @@
             $('#celulareditar').val('');
             $('#emaileditar').val('');
             $('#direccioneditar').val('');
-            $('#roleditar').val('');
+            $('#roleditar').val(null).trigger('change');
             $('#estadoeditar').val('');
             $('#fotoperfileditar').val('');
 
@@ -828,7 +848,7 @@
                     $('#celulareditar').val(response.usuario.celular);
                     $('#emaileditar').val(response.usuario.email);
                     $('#direccioneditar').val(response.usuario.direccion);
-                    $('#roleditar').val(response.rol);
+                    $('#roleditar').val(response.roles || []).trigger('change');
                     $('#estadoeditar').val(response.usuario.estado);
 
                     Swal.fire({
