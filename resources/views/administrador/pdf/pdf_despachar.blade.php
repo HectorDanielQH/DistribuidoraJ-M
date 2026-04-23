@@ -90,23 +90,24 @@
             color: #4b5563;
             font-size: 8px;
         }
-        .cards-row {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 11px 8px;
-            margin-left: -11px;
-            margin-right: -11px;
+        .cards-wrap {
+            font-size: 0;
+            margin: 0 -5px;
         }
         .card-cell {
+            display: inline-block;
             width: 50%;
             vertical-align: top;
+            padding: 0 5px 9px;
             page-break-inside: avoid;
+            break-inside: avoid;
+            font-size: 9px;
         }
         .card {
             border: 1px solid #aeb8be;
             border-radius: 5px;
-            overflow: hidden;
             page-break-inside: avoid;
+            break-inside: avoid;
             background: #ffffff;
         }
         .card-title {
@@ -134,6 +135,7 @@
             padding: 3px 7px 0;
             font-size: 8px;
             vertical-align: top;
+            word-break: break-word;
         }
         .meta strong {
             color: #374151;
@@ -145,6 +147,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 7px;
+            table-layout: fixed;
         }
         .items th {
             border-top: 1px solid #d6dde0;
@@ -161,21 +164,24 @@
             padding: 5px 7px;
             font-size: 9px;
             vertical-align: top;
+            word-break: break-word;
         }
         .items .product {
             font-weight: 700;
             text-transform: uppercase;
+            line-height: 1.18;
         }
         .items .qty {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             color: #2f3d48;
-            white-space: nowrap;
+            white-space: normal;
+            line-height: 1.18;
         }
         .items .price {
             text-align: right;
-            font-size: 11px;
+            font-size: 10px;
             white-space: nowrap;
         }
         .total {
@@ -204,6 +210,9 @@
         }
         .page-break {
             page-break-after: always;
+        }
+        .spacer-card {
+            visibility: hidden;
         }
     </style>
 </head>
@@ -267,87 +276,87 @@
     </tr>
 </table>
 
-@foreach($lista_de_pedidos->chunk(2) as $grupo)
-    <table class="cards-row">
-        <tr>
-            @foreach($grupo as $lista)
-                @php
-                    $items = $itemsPorPedido[$lista->numero_pedido] ?? [];
-                    $vend = $vendedores[$lista->id_vendedor] ?? null;
-                    $ruta = $rutas[$lista->ruta_id] ?? null;
-                    $totalPedido = 0;
-                    foreach ($items as $it) {
-                        $linea = $it->cantidad_pedido * $it->precio_venta;
-                        if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
-                            $linea -= $linea * ($it->descripcion_descuento_porcentaje / 100);
-                        }
-                        $totalPedido += $linea;
+<div class="cards-wrap">
+    @foreach($lista_de_pedidos->chunk(2) as $grupo)
+        @foreach($grupo as $lista)
+            @php
+                $items = $itemsPorPedido[$lista->numero_pedido] ?? [];
+                $vend = $vendedores[$lista->id_vendedor] ?? null;
+                $ruta = $rutas[$lista->ruta_id] ?? null;
+                $totalPedido = 0;
+                foreach ($items as $it) {
+                    $linea = $it->cantidad_pedido * $it->precio_venta;
+                    if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                        $linea -= $linea * ($it->descripcion_descuento_porcentaje / 100);
                     }
-                    $direccion = trim(($lista->calle_avenida ?? '') . ' ' . ($lista->zona_barrio ?? ''));
-                    $nombreVendedor = $vend ? trim($vend->nombres.' '.$vend->apellido_paterno.' '.$vend->apellido_materno) : 'No asignado';
-                @endphp
-                <td class="card-cell">
-                    <div class="card">
-                        <table class="card-title">
-                            <tr>
-                                <td>{{ $lista->nombres }} {{ $lista->apellidos }}</td>
-                                <td class="order">#{{ $lista->numero_pedido }}</td>
-                            </tr>
-                        </table>
+                    $totalPedido += $linea;
+                }
+                $direccion = trim(($lista->calle_avenida ?? '') . ' ' . ($lista->zona_barrio ?? ''));
+                $nombreVendedor = $vend ? trim($vend->nombres.' '.$vend->apellido_paterno.' '.$vend->apellido_materno) : 'No asignado';
+            @endphp
+            <div class="card-cell">
+                <div class="card">
+                    <table class="card-title">
+                        <tr>
+                            <td>{{ $lista->nombres }} {{ $lista->apellidos }}</td>
+                            <td class="order">#{{ $lista->numero_pedido }}</td>
+                        </tr>
+                    </table>
 
-                        <table class="meta">
-                            <tr>
-                                <td colspan="2"><strong>Dir:</strong> {{ $direccion ?: 'Sin direccion registrada' }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Zona:</strong> {{ $lista->zona_barrio ?: 'N/A' }}</td>
-                                <td><strong>Cel. comprador:</strong> {{ $lista->celular ?: 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Ruta:</strong> {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}</td>
-                                <td><strong>Vendedor:</strong> {{ $nombreVendedor }}</td>
-                            </tr>
-                        </table>
+                    <table class="meta">
+                        <tr>
+                            <td colspan="2"><strong>Dir:</strong> {{ $direccion ?: 'Sin direccion registrada' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Zona:</strong> {{ $lista->zona_barrio ?: 'N/A' }}</td>
+                            <td><strong>Cel. comprador:</strong> {{ $lista->celular ?: 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ruta:</strong> {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}</td>
+                            <td><strong>Vendedor:</strong> {{ $nombreVendedor }}</td>
+                        </tr>
+                    </table>
 
-                        <div class="watermark">DISTRIBUIDORA H&amp;J</div>
+                    <div class="watermark">DISTRIBUIDORA H&amp;J</div>
 
-                        <table class="items">
-                            <thead>
+                    <table class="items">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left">Producto</th>
+                                <th style="width:110px">Cant.</th>
+                                <th style="width:72px;text-align:right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($items as $it)
+                                @php
+                                    $sub = $it->cantidad_pedido * $it->precio_venta;
+                                    if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                                        $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
+                                    }
+                                @endphp
                                 <tr>
-                                    <th style="text-align:left">Producto</th>
-                                    <th style="width:90px">Cant.</th>
-                                    <th style="width:76px;text-align:right">Total</th>
+                                    <td>
+                                        <div class="product">{{ $it->nombre_producto }}</div>
+                                        <span class="muted">{{ $it->codigo }}</span>
+                                    </td>
+                                    <td class="qty">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
+                                    <td class="price">{{ number_format($sub, 2, '.', ',') }}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($items as $it)
-                                    @php
-                                        $sub = $it->cantidad_pedido * $it->precio_venta;
-                                        if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
-                                            $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
-                                        }
-                                    @endphp
-                                    <tr>
-                                        <td>
-                                            <div class="product">{{ $it->nombre_producto }}</div>
-                                            <span class="muted">{{ $it->codigo }}</span>
-                                        </td>
-                                        <td class="qty">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
-                                        <td class="price">{{ number_format($sub, 2, '.', ',') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                            @endforeach
+                        </tbody>
+                    </table>
 
-                        <div class="total">Total: <strong>{{ number_format($totalPedido, 2, '.', ',') }} Bs</strong></div>
-                    </div>
-                </td>
-            @endforeach
-            @if($grupo->count() === 1)
-                <td class="card-cell">&nbsp;</td>
-            @endif
-        </tr>
-    </table>
-@endforeach
+                    <div class="total">Total: <strong>{{ number_format($totalPedido, 2, '.', ',') }} Bs</strong></div>
+                </div>
+            </div>
+        @endforeach
+        @if($grupo->count() === 1)
+            <div class="card-cell spacer-card">
+                <div class="card">&nbsp;</div>
+            </div>
+        @endif
+    @endforeach
+</div>
 </body>
 </html>
