@@ -319,6 +319,7 @@ class PedidoAdministradorController extends Controller
             'clientes.celular',
             'clientes.calle_avenida',
             'clientes.zona_barrio',
+            'clientes.referencia_direccion',
             'ruta_id',      
             )
             ->whereNotNull('fecha_entrega')
@@ -346,6 +347,7 @@ class PedidoAdministradorController extends Controller
                 'clientes.celular',
                 'clientes.calle_avenida',
                 'clientes.zona_barrio',
+                'clientes.referencia_direccion',
                 'ruta_id',
             )
             ->orderBy('pedidos.id_usuario', 'asc')

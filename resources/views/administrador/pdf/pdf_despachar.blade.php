@@ -143,8 +143,15 @@
             word-break: break-word;
             overflow-wrap: anywhere;
         }
+        .meta .full-row {
+            padding-top: 5px;
+        }
         .meta strong {
             color: #374151;
+        }
+        .meta-label {
+            display: inline-block;
+            min-width: 114px;
         }
         .muted {
             color: #6b7280;
@@ -296,29 +303,60 @@
                         }
                         $totalPedido += $linea;
                     }
-                    $direccion = trim(($lista->calle_avenida ?? '') . ' ' . ($lista->zona_barrio ?? ''));
                     $nombreVendedor = $vend ? trim($vend->nombres.' '.$vend->apellido_paterno.' '.$vend->apellido_materno) : 'No asignado';
+                    $celularVendedor = $vend && !empty($vend->celular) ? $vend->celular : 'N/A';
                 @endphp
                 <td class="card-cell">
                     <div class="card">
                         <table class="card-title">
                             <tr>
-                                <td>{{ $lista->nombres }} {{ $lista->apellidos }}</td>
+                                <td>Numero de pedido</td>
                                 <td class="order">#{{ $lista->numero_pedido }}</td>
                             </tr>
                         </table>
 
                         <table class="meta">
                             <tr>
-                                <td colspan="2"><strong>Dir:</strong> {{ $direccion ?: 'Sin direccion registrada' }}</td>
+                                <td colspan="2" class="full-row">
+                                    <strong class="meta-label">Nombre del comprador:</strong>
+                                    {{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'N/A' }}
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Zona:</strong> {{ $lista->zona_barrio ?: 'N/A' }}</td>
-                                <td><strong>Cel. comprador:</strong> {{ $lista->celular ?: 'N/A' }}</td>
+                                <td>
+                                    <strong class="meta-label">Celular del comprador:</strong>
+                                    {{ $lista->celular ?: 'N/A' }}
+                                </td>
+                                <td>
+                                    <strong class="meta-label">Direccion del comprador:</strong>
+                                    {{ $lista->calle_avenida ?: 'N/A' }}
+                                </td>
                             </tr>
                             <tr>
-                                <td><strong>Ruta:</strong> {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}</td>
-                                <td><strong>Vendedor:</strong> {{ $nombreVendedor }}</td>
+                                <td>
+                                    <strong class="meta-label">Zona del comprador:</strong>
+                                    {{ $lista->zona_barrio ?: 'N/A' }}
+                                </td>
+                                <td>
+                                    <strong class="meta-label">Direccion de referencia:</strong>
+                                    {{ $lista->referencia_direccion ?: 'N/A' }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong class="meta-label">Vendedor:</strong>
+                                    {{ $nombreVendedor }}
+                                </td>
+                                <td>
+                                    <strong class="meta-label">Celular vendedor:</strong>
+                                    {{ $celularVendedor }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <strong class="meta-label">Ruta del vendedor:</strong>
+                                    {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}
+                                </td>
                             </tr>
                         </table>
 
