@@ -26,11 +26,12 @@
             color: #20272d;
             font-size: 9px;
             line-height: 1.22;
+            background: #f8fafc;
         }
         .header {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 7px;
+            margin-bottom: 8px;
         }
         .header td {
             vertical-align: top;
@@ -39,36 +40,49 @@
             width: 42px;
         }
         .title {
-            font-size: 13px;
+            font-size: 14px;
             letter-spacing: 0;
             text-transform: uppercase;
-            color: #2f3d48;
+            color: #233240;
             margin: 0;
             font-weight: 700;
+        }
+        .title-sub {
+            margin-top: 2px;
+            font-size: 8px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: .2px;
         }
         .date-box {
             text-align: right;
             font-size: 8px;
             color: #111827;
+            background: #eef3f7;
+            border: 1px solid #d7dde2;
+            border-radius: 6px;
+            padding: 6px 8px;
         }
         .date-box strong {
             display: block;
             font-size: 12px;
         }
         .divider {
-            height: 4px;
-            background: #293948;
-            margin: 4px 0 12px;
+            height: 5px;
+            background: #233240;
+            margin: 6px 0 12px;
+            border-radius: 999px;
         }
         .summary {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 13px;
-            border: 1px solid #d7dde2;
-            border-radius: 6px;
+            border: 1px solid #cfd8de;
+            background: #ffffff;
+            border-radius: 8px;
         }
         .summary td {
-            padding: 8px 6px;
+            padding: 9px 6px;
             text-align: center;
             border-left: 1px solid #d7dde2;
         }
@@ -77,8 +91,8 @@
         }
         .summary strong {
             display: block;
-            font-size: 12px;
-            color: #263646;
+            font-size: 13px;
+            color: #20303d;
         }
         .summary .green {
             color: #2f7d32;
@@ -87,7 +101,7 @@
             display: block;
             letter-spacing: 0;
             text-transform: uppercase;
-            color: #4b5563;
+            color: #64748b;
             font-size: 8px;
         }
         .cards-grid {
@@ -107,8 +121,8 @@
             margin-right: 0;
         }
         .card {
-            border: 1px solid #aeb8be;
-            border-radius: 5px;
+            border: 1px solid #cfd8de;
+            border-radius: 8px;
             page-break-inside: avoid;
             break-inside: avoid;
             background: #ffffff;
@@ -119,44 +133,61 @@
         .card-title {
             width: 100%;
             border-collapse: collapse;
-            background: #2f4151;
+            background: #233240;
             color: #ffffff;
         }
         .card-title td {
-            padding: 6px 7px;
+            padding: 7px 8px;
             font-size: 9px;
             letter-spacing: 0;
-            text-transform: uppercase;
             font-weight: 700;
             word-break: break-word;
             overflow-wrap: anywhere;
         }
+        .buyer-caption {
+            display: block;
+            font-size: 7px;
+            text-transform: uppercase;
+            color: #cbd5e1;
+            letter-spacing: .25px;
+            margin-bottom: 2px;
+        }
+        .buyer-name {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #ffffff;
+            line-height: 1.2;
+        }
         .card-title .order {
             text-align: right;
-            font-size: 10px;
-            width: 84px;
+            font-size: 11px;
+            width: 88px;
             white-space: nowrap;
+            color: #ffffff;
         }
         .meta {
             width: 100%;
             border-collapse: collapse;
+            background: #fbfdff;
         }
         .meta td {
-            padding: 3px 7px 0;
+            padding: 5px 8px 2px;
             font-size: 8px;
             vertical-align: top;
             word-break: break-word;
             overflow-wrap: anywhere;
+            border-bottom: 1px solid #edf2f7;
         }
-        .meta .full-row {
-            padding-top: 5px;
+        .meta tr:last-child td {
+            border-bottom: 0;
         }
         .meta strong {
-            color: #374151;
+            color: #334155;
         }
         .meta-label {
             display: inline-block;
-            min-width: 114px;
+            min-width: 108px;
         }
         .muted {
             color: #6b7280;
@@ -164,12 +195,13 @@
         .items {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 7px;
+            margin-top: 6px;
             table-layout: fixed;
         }
         .items th {
             border-top: 1px solid #d6dde0;
             border-bottom: 1px solid #d6dde0;
+            background: #f1f5f9;
             padding: 4px 7px;
             font-size: 7px;
             color: #374151;
@@ -179,7 +211,7 @@
         }
         .items td {
             border-bottom: 1px solid #eef1f2;
-            padding: 5px 7px;
+            padding: 6px 7px;
             font-size: 9px;
             vertical-align: top;
             word-break: break-word;
@@ -202,30 +234,35 @@
             text-align: right;
             font-size: 10px;
             white-space: nowrap;
+            font-weight: 700;
+            color: #20303d;
         }
         .total {
             border-top: 1px solid #9bc79d;
-            background: #edf8ee;
-            padding: 7px 8px;
+            background: #ecfdf3;
+            padding: 8px 9px;
             text-align: right;
             font-size: 9px;
             letter-spacing: 0;
             text-transform: uppercase;
             font-weight: 700;
+            color: #166534;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
         }
         .total strong {
-            font-size: 12px;
+            font-size: 13px;
             letter-spacing: 0;
-            color: #111827;
+            color: #14532d;
         }
         .watermark {
             text-align: center;
-            color: #c7d0d5;
-            font-size: 11px;
+            color: #d6dde3;
+            font-size: 9px;
             letter-spacing: 0;
             font-weight: 700;
-            margin: 2px 0 -2px;
-            opacity: .6;
+            margin: 4px 0 0;
+            opacity: .55;
         }
         .page-break {
             page-break-after: always;
@@ -266,6 +303,7 @@
         </td>
         <td>
             <h1 class="title">Reporte de carga y despacho</h1>
+            <div class="title-sub">Boletas de entrega listas para despacho</div>
         </td>
         <td class="date-box" style="width:120px">
             <strong>{{ now()->format('d/m/Y') }}</strong>
@@ -313,7 +351,10 @@
         <div class="card">
             <table class="card-title">
                 <tr>
-                    <td>{{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'Comprador no disponible' }}</td>
+                    <td>
+                        <span class="buyer-caption">Comprador</span>
+                        <span class="buyer-name">{{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'Comprador no disponible' }}</span>
+                    </td>
                     <td class="order">#{{ $lista->numero_pedido }}</td>
                 </tr>
             </table>
