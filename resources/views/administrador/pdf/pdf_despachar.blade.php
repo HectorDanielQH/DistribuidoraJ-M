@@ -91,6 +91,7 @@
             border-collapse: collapse;
             margin-bottom: 6px;
             table-layout: fixed;
+            page-break-inside: avoid;
         }
         .sheet-row td {
             vertical-align: top;
@@ -215,6 +216,12 @@
         .empty-cell {
             border: 0;
         }
+        .page {
+            width: 100%;
+        }
+        .page-break {
+            page-break-after: always;
+        }
     </style>
 </head>
 <body>
@@ -222,10 +229,30 @@
     use App\Models\Rutas;
     use App\Models\User;
 
-    $itemsPorPedido = [];
-    foreach ($pedidos as $pedidoItem) {
-        $itemsPorPedido[$pedidoItem->numero_pedido][] = $pedidoItem;
-    }
+    $pedidos = collect($pedidos)
+        ->filter(fn ($pedido) => !empty($pedido->numero_pedido))
+        ->unique(fn ($pedido) => $pedido->id_pedido ?: implode('|', [
+            $pedido->numero_pedido,
+            $pedido->id_producto,
+            $pedido->tipo_venta,
+            $pedido->cantidad_pedido,
+            $pedido->precio_venta,
+        ]))
+        ->values();
+
+    $lista_de_pedidos = collect($lista_de_pedidos)
+        ->filter(fn ($pedido) => !empty($pedido->numero_pedido))
+        ->unique('numero_pedido')
+        ->sortBy([
+            ['id_vendedor', 'asc'],
+            ['numero_pedido', 'asc'],
+        ])
+        ->values();
+
+    $itemsPorPedido = $pedidos->groupBy('numero_pedido');
+    $lista_de_pedidos = $lista_de_pedidos
+        ->filter(fn ($pedido) => $itemsPorPedido->has($pedido->numero_pedido))
+        ->values();
 
     $vendedorIds = $lista_de_pedidos->pluck('id_vendedor')->filter()->unique()->all();
     $rutaIds = $lista_de_pedidos->pluck('ruta_id')->filter()->unique()->all();
@@ -247,7 +274,14 @@
     $maxItemsPorBoleta = 16;
 
     foreach ($lista_de_pedidos as $lista) {
-        $items = collect($itemsPorPedido[$lista->numero_pedido] ?? []);
+        $items = collect($itemsPorPedido->get($lista->numero_pedido, []))
+            ->sortBy('id_pedido')
+            ->values();
+
+        if ($items->isEmpty()) {
+            continue;
+        }
+
         $segmentos = $items->chunk($maxItemsPorBoleta)->values();
         $totalPedido = 0;
 
@@ -280,6 +314,9 @@
             ];
         }
     }
+
+    $filasBoletas = collect($boletas)->chunk(2)->values();
+    $paginas = $filasBoletas->chunk(2)->values();
 @endphp
 
 <table class="header">
@@ -321,96 +358,100 @@
     </tr>
 </table>
 
-@foreach(collect($boletas)->chunk(2) as $fila)
-    <table class="sheet-row">
-        <tr>
-            @foreach($fila as $boleta)
-                <td class="ticket-cell">
-                    <table class="ticket">
-                        <tr class="ticket-title">
-                            <td class="ticket-title-left">
-                                <span class="buyer-name">{{ $boleta['nombre_comprador'] }}</span>
-                                <span class="buyer-note">
-                                    @if($boleta['es_continuacion'])
-                                        Continuacion {{ $boleta['segmento'] }}
-                                    @endif
-                                </span>
-                            </td>
-                            <td class="order-no">#{{ $boleta['pedido']->numero_pedido }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <table class="meta">
-                                    <tr>
-                                        <td><span class="meta-label">Celular:</span> {{ $boleta['pedido']->celular ?: 'N/A' }}</td>
-                                        <td><span class="meta-label">Direccion:</span> {{ $boleta['pedido']->calle_avenida ?: 'N/A' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="meta-label">Zona:</span> {{ $boleta['pedido']->zona_barrio ?: 'N/A' }}</td>
-                                        <td><span class="meta-label">Referencia:</span> {{ $boleta['pedido']->referencia_direccion ?: 'N/A' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><span class="meta-label">Vendedor:</span> {{ $boleta['nombre_vendedor'] }}</td>
-                                        <td><span class="meta-label">Celular vendedor:</span> {{ $boleta['celular_vendedor'] }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="2"><span class="meta-label">Ruta:</span> {{ $boleta['ruta_nombre'] }}</td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <table class="items">
-                                    <thead>
-                                        <tr>
-                                            <th>Producto</th>
-                                            <th class="qty">Cantidad</th>
-                                            <th class="price">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($boleta['items'] as $it)
-                                            @php
-                                                $sub = $it->cantidad_pedido * $it->precio_venta;
-                                                if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
-                                                    $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
-                                                }
-                                            @endphp
+@foreach($paginas as $pagina)
+    <div class="page {{ $loop->last ? '' : 'page-break' }}">
+        @foreach($pagina as $fila)
+            <table class="sheet-row">
+                <tr>
+                    @foreach($fila as $boleta)
+                        <td class="ticket-cell">
+                            <table class="ticket">
+                                <tr class="ticket-title">
+                                    <td class="ticket-title-left">
+                                        <span class="buyer-name">{{ $boleta['nombre_comprador'] }}</span>
+                                        <span class="buyer-note">
+                                            @if($boleta['es_continuacion'])
+                                                Continuacion {{ $boleta['segmento'] }}
+                                            @endif
+                                        </span>
+                                    </td>
+                                    <td class="order-no">#{{ $boleta['pedido']->numero_pedido }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <table class="meta">
                                             <tr>
-                                                <td>
-                                                    <div class="product-name">{{ $it->nombre_producto }}</div>
-                                                    <div class="product-code">{{ $it->codigo }}</div>
-                                                </td>
-                                                <td class="qty">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
-                                                <td class="price">{{ number_format($sub, 2, '.', ',') }}</td>
+                                                <td><span class="meta-label">Celular:</span> {{ $boleta['pedido']->celular ?: 'N/A' }}</td>
+                                                <td><span class="meta-label">Direccion:</span> {{ $boleta['pedido']->calle_avenida ?: 'N/A' }}</td>
                                             </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="ticket-footer {{ $boleta['es_ultimo_segmento'] ? 'total' : 'continua' }}">
-                                @if($boleta['es_ultimo_segmento'])
-                                    Total pedido: <strong>{{ number_format($boleta['total_pedido'], 2, '.', ',') }} Bs</strong>
-                                @else
-                                    Continua en la siguiente boleta
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                @if(! $loop->last)
-                    <td class="cut-space">&nbsp;</td>
-                @endif
-            @endforeach
-            @if($fila->count() === 1)
-                <td class="cut-space">&nbsp;</td>
-                <td class="ticket-cell empty-cell">&nbsp;</td>
-            @endif
-        </tr>
-    </table>
+                                            <tr>
+                                                <td><span class="meta-label">Zona:</span> {{ $boleta['pedido']->zona_barrio ?: 'N/A' }}</td>
+                                                <td><span class="meta-label">Referencia:</span> {{ $boleta['pedido']->referencia_direccion ?: 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="meta-label">Vendedor:</span> {{ $boleta['nombre_vendedor'] }}</td>
+                                                <td><span class="meta-label">Celular vendedor:</span> {{ $boleta['celular_vendedor'] }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2"><span class="meta-label">Ruta:</span> {{ $boleta['ruta_nombre'] }}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <table class="items">
+                                            <thead>
+                                                <tr>
+                                                    <th>Producto</th>
+                                                    <th class="qty">Cantidad</th>
+                                                    <th class="price">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($boleta['items'] as $it)
+                                                    @php
+                                                        $sub = $it->cantidad_pedido * $it->precio_venta;
+                                                        if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                                                            $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
+                                                        }
+                                                    @endphp
+                                                    <tr>
+                                                        <td>
+                                                            <div class="product-name">{{ $it->nombre_producto }}</div>
+                                                            <div class="product-code">{{ $it->codigo }}</div>
+                                                        </td>
+                                                        <td class="qty">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
+                                                        <td class="price">{{ number_format($sub, 2, '.', ',') }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="ticket-footer {{ $boleta['es_ultimo_segmento'] ? 'total' : 'continua' }}">
+                                        @if($boleta['es_ultimo_segmento'])
+                                            Total pedido: <strong>{{ number_format($boleta['total_pedido'], 2, '.', ',') }} Bs</strong>
+                                        @else
+                                            Continua en la siguiente boleta
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        @if(! $loop->last)
+                            <td class="cut-space">&nbsp;</td>
+                        @endif
+                    @endforeach
+                    @if($fila->count() === 1)
+                        <td class="cut-space">&nbsp;</td>
+                        <td class="ticket-cell empty-cell">&nbsp;</td>
+                    @endif
+                </tr>
+            </table>
+        @endforeach
+    </div>
 @endforeach
 </body>
 </html>
