@@ -90,23 +90,21 @@
             color: #4b5563;
             font-size: 8px;
         }
-        .cards-row {
+        .cards-grid {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 8px 8px;
-            table-layout: fixed;
-            margin: 0 0 2px;
-            page-break-inside: auto;
-        }
-        .cards-row tr {
-            page-break-inside: auto;
+            font-size: 0;
         }
         .card-cell {
-            width: 50%;
+            display: inline-block;
+            width: 49%;
+            margin: 0 1% 8px 0;
             vertical-align: top;
             page-break-inside: auto;
             break-inside: auto;
             font-size: 9px;
+        }
+        .card-cell:nth-child(2n) {
+            margin-right: 0;
         }
         .card {
             border: 1px solid #aeb8be;
@@ -114,6 +112,9 @@
             page-break-inside: avoid;
             break-inside: avoid;
             background: #ffffff;
+        }
+        .grid-break {
+            clear: both;
         }
         .card-title {
             width: 100%;
@@ -291,112 +292,108 @@
     </tr>
 </table>
 
-@foreach($lista_de_pedidos->chunk(2) as $grupo)
-    <table class="cards-row">
-        <tr>
-            @foreach($grupo as $lista)
-                @php
-                    $items = $itemsPorPedido[$lista->numero_pedido] ?? [];
-                    $vend = $vendedores[$lista->id_vendedor] ?? null;
-                    $ruta = $rutas[$lista->ruta_id] ?? null;
-                    $totalPedido = 0;
-                    foreach ($items as $it) {
-                        $linea = $it->cantidad_pedido * $it->precio_venta;
-                        if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
-                            $linea -= $linea * ($it->descripcion_descuento_porcentaje / 100);
-                        }
-                        $totalPedido += $linea;
-                    }
-                    $nombreVendedor = $vend ? trim($vend->nombres.' '.$vend->apellido_paterno.' '.$vend->apellido_materno) : 'No asignado';
-                    $celularVendedor = $vend && !empty($vend->celular) ? $vend->celular : 'N/A';
-                @endphp
-                <td class="card-cell">
-                    <div class="card">
-                        <table class="card-title">
-                            <tr>
-                                <td>{{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'Comprador no disponible' }}</td>
-                                <td class="order">#{{ $lista->numero_pedido }}</td>
-                            </tr>
-                        </table>
+<div class="cards-grid">
+@foreach($lista_de_pedidos as $lista)
+    @php
+        $items = $itemsPorPedido[$lista->numero_pedido] ?? [];
+        $vend = $vendedores[$lista->id_vendedor] ?? null;
+        $ruta = $rutas[$lista->ruta_id] ?? null;
+        $totalPedido = 0;
+        foreach ($items as $it) {
+            $linea = $it->cantidad_pedido * $it->precio_venta;
+            if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                $linea -= $linea * ($it->descripcion_descuento_porcentaje / 100);
+            }
+            $totalPedido += $linea;
+        }
+        $nombreVendedor = $vend ? trim($vend->nombres.' '.$vend->apellido_paterno.' '.$vend->apellido_materno) : 'No asignado';
+        $celularVendedor = $vend && !empty($vend->celular) ? $vend->celular : 'N/A';
+    @endphp
+    <div class="card-cell">
+        <div class="card">
+            <table class="card-title">
+                <tr>
+                    <td>{{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'Comprador no disponible' }}</td>
+                    <td class="order">#{{ $lista->numero_pedido }}</td>
+                </tr>
+            </table>
 
-                        <table class="meta">
-                            <tr>
-                                <td>
-                                    <strong class="meta-label">Celular del comprador:</strong>
-                                    {{ $lista->celular ?: 'N/A' }}
-                                </td>
-                                <td>
-                                    <strong class="meta-label">Direccion del comprador:</strong>
-                                    {{ $lista->calle_avenida ?: 'N/A' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <strong class="meta-label">Zona del comprador:</strong>
-                                    {{ $lista->zona_barrio ?: 'N/A' }}
-                                </td>
-                                <td>
-                                    <strong class="meta-label">Direccion de referencia:</strong>
-                                    {{ $lista->referencia_direccion ?: 'N/A' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <strong class="meta-label">Vendedor:</strong>
-                                    {{ $nombreVendedor }}
-                                </td>
-                                <td>
-                                    <strong class="meta-label">Celular vendedor:</strong>
-                                    {{ $celularVendedor }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    <strong class="meta-label">Ruta del vendedor:</strong>
-                                    {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}
-                                </td>
-                            </tr>
-                        </table>
+            <table class="meta">
+                <tr>
+                    <td>
+                        <strong class="meta-label">Celular del comprador:</strong>
+                        {{ $lista->celular ?: 'N/A' }}
+                    </td>
+                    <td>
+                        <strong class="meta-label">Direccion del comprador:</strong>
+                        {{ $lista->calle_avenida ?: 'N/A' }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong class="meta-label">Zona del comprador:</strong>
+                        {{ $lista->zona_barrio ?: 'N/A' }}
+                    </td>
+                    <td>
+                        <strong class="meta-label">Direccion de referencia:</strong>
+                        {{ $lista->referencia_direccion ?: 'N/A' }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong class="meta-label">Vendedor:</strong>
+                        {{ $nombreVendedor }}
+                    </td>
+                    <td>
+                        <strong class="meta-label">Celular vendedor:</strong>
+                        {{ $celularVendedor }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <strong class="meta-label">Ruta del vendedor:</strong>
+                        {{ $ruta ? $ruta->nombre_ruta : 'No asignada' }}
+                    </td>
+                </tr>
+            </table>
 
-                        <div class="watermark">DISTRIBUIDORA H&amp;J</div>
+            <div class="watermark">DISTRIBUIDORA H&amp;J</div>
 
-                        <table class="items">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left">Producto</th>
-                                    <th style="width:104px">Cant.</th>
-                                    <th style="width:68px;text-align:right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($items as $it)
-                                    @php
-                                        $sub = $it->cantidad_pedido * $it->precio_venta;
-                                        if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
-                                            $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
-                                        }
-                                    @endphp
-                                    <tr>
-                                        <td>
-                                            <div class="product">{{ $it->nombre_producto }}</div>
-                                            <span class="muted">{{ $it->codigo }}</span>
-                                        </td>
-                                        <td class="qty">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
-                                        <td class="price">{{ number_format($sub, 2, '.', ',') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th style="text-align:left">Producto</th>
+                        <th style="width:104px">Cant.</th>
+                        <th style="width:68px;text-align:right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($items as $it)
+                        @php
+                            $sub = $it->cantidad_pedido * $it->precio_venta;
+                            if ($it->promocion && $it->descripcion_descuento_porcentaje > 0) {
+                                $sub -= $sub * ($it->descripcion_descuento_porcentaje / 100);
+                            }
+                        @endphp
+                        <tr>
+                            <td>
+                                <div class="product">{{ $it->nombre_producto }}</div>
+                                <span class="muted">{{ $it->codigo }}</span>
+                            </td>
+                            <td class="qty">{{ $it->cantidad_pedido }} ({{ $it->tipo_venta }})</td>
+                            <td class="price">{{ number_format($sub, 2, '.', ',') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
 
-                        <div class="total">Total: <strong>{{ number_format($totalPedido, 2, '.', ',') }} Bs</strong></div>
-                    </div>
-                </td>
-            @endforeach
-            @if($grupo->count() === 1)
-                <td class="card-cell">&nbsp;</td>
-            @endif
-        </tr>
-    </table>
+            <div class="total">Total: <strong>{{ number_format($totalPedido, 2, '.', ',') }} Bs</strong></div>
+        </div>
+    </div>
+    @if($loop->iteration % 2 === 0)
+        <div class="grid-break"></div>
+    @endif
 @endforeach
+</div>
 </body>
 </html>
