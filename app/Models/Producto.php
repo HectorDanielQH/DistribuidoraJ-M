@@ -42,4 +42,9 @@ class Producto extends Model
     {
         return $this->hasMany(FormaVenta::class, 'id_producto');
     }
+
+    public function restriccionesVendedor()
+    {
+        return $this->hasMany(RestriccionVendedor::class, 'producto_id');
+    }
 }

@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'verificar.estado'=>\App\Http\Middleware\VerificarEstadoUsuario::class,
+            'vendedor.o.admin' => \App\Http\Middleware\VendedorOrAdminMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

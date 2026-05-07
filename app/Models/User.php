@@ -88,4 +88,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Asignacion::class, 'id_usuario');
     }
+
+    public function restriccionesVendedor()
+    {
+        return $this->hasMany(RestriccionVendedor::class, 'vendedor_id');
+    }
 }

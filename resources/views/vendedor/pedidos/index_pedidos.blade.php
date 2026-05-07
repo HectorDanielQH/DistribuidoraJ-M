@@ -14,9 +14,9 @@
         </a>
     </div>
     <div class="step-strip">
-        <div class="step-item is-active"><span>1</span> Agregar</div>
-        <div class="step-item"><span>2</span> Revisar</div>
-        <div class="step-item"><span>3</span> Registrar</div>
+        <div class="step-item is-active" id="step-indicator-1"><span>1</span> Agregar</div>
+        <div class="step-item" id="step-indicator-2"><span>2</span> Revisar</div>
+        <div class="step-item" id="step-indicator-3"><span>3</span> Registrar</div>
     </div>
 @stop
 
@@ -34,7 +34,7 @@
     <section class="quick-action-box">
         <div>
             <h2>1. Agrega productos</h2>
-            <p>Toca el boton verde, busca el producto y escribe la cantidad.</p>
+            <p>Empieza agregando productos. Luego revisa el pedido y al final confirma el registro.</p>
         </div>
         <button class="btn btn-success btn-add-product" data-toggle="modal" data-target="#modalAgregarProducto">
             <i class="fas fa-plus-circle"></i> Agregar producto
@@ -87,10 +87,8 @@
                 <h3 class="card-title mb-2 mb-md-0">
                     <i class="fas fa-shopping-cart"></i> 2. Revisa el pedido
                 </h3>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-success" data-toggle="modal" data-target="#modalAgregarProducto">
-                        <i class="fas fa-plus"></i> Agregar producto
-                    </button>
+                <div class="review-caption">
+                    Verifica cantidades, formas de venta y total antes de registrar.
                 </div>
             </div>
 
@@ -130,10 +128,19 @@
                 </div>
             </div>
 
-            <div class="card-footer d-flex justify-content-end sticky-actions">
-                <button class="btn btn-primary btn-lg" id="btn-registrar-pedido" onclick="registrarPedido()">
-                    <i class="fas fa-check-circle"></i> Registrar pedido
-                </button>
+            <div class="card-footer sticky-actions">
+                <div class="sticky-copy">
+                    <strong>3. Registra el pedido</strong>
+                    <span>Cuando todo este correcto, confirma el registro final.</span>
+                </div>
+                <div class="sticky-buttons">
+                    <button class="btn btn-outline-success btn-lg btn-add-inline" data-toggle="modal" data-target="#modalAgregarProducto">
+                        <i class="fas fa-plus-circle"></i> Agregar otro producto
+                    </button>
+                    <button class="btn btn-success btn-lg btn-register" id="btn-registrar-pedido" onclick="registrarPedido()" disabled>
+                        <i class="fas fa-check-circle"></i> 3. Registrar pedido
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -284,6 +291,42 @@
             color: #64748b;
             font-size: .86rem;
             font-weight: 700;
+        }
+
+        .restriction-live {
+            width: 100%;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .restriction-live.is-near {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        .restriction-live.is-over {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .restriction-progress {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .restriction-progress-bar {
+            height: 100%;
+            background: currentColor;
         }
 
         .search-label {
@@ -512,10 +555,21 @@
             color: var(--order-green);
         }
 
+        .step-item.is-complete {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .step-item.is-complete span {
+            background: #dcfce7;
+            color: #166534;
+        }
+
         .order-page {
             display: grid;
             gap: 12px;
-            padding-bottom: 96px;
+            padding-bottom: 180px;
         }
 
         .client-box,
@@ -600,6 +654,13 @@
             font-weight: 900;
         }
 
+        .review-caption {
+            color: var(--order-muted);
+            font-size: .92rem;
+            font-weight: 800;
+            text-align: right;
+        }
+
         .modern-card .card-header .btn {
             border-radius: 8px;
             font-weight: 900;
@@ -608,6 +669,7 @@
         .total-bar {
             border-top: 1px solid var(--order-line);
             background: #fbfdfc;
+            margin-bottom: 120px;
         }
 
         .total-bar h5 {
@@ -628,7 +690,8 @@
             z-index: 1000;
             display: flex !important;
             align-items: center;
-            justify-content: center !important;
+            justify-content: space-between !important;
+            gap: 12px;
             padding: 10px;
             border: 1px solid var(--order-line);
             border-radius: 8px;
@@ -636,11 +699,44 @@
             box-shadow: 0 8px 20px rgba(15, 23, 42, .12);
         }
 
+        .sticky-copy {
+            display: grid;
+            gap: 2px;
+        }
+
+        .sticky-copy strong {
+            color: var(--order-text);
+            font-weight: 900;
+        }
+
+        .sticky-copy span {
+            color: var(--order-muted);
+            font-size: .9rem;
+            font-weight: 800;
+        }
+
+        .sticky-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: min(100%, 620px);
+        }
+
+        .btn-add-inline {
+            white-space: nowrap;
+        }
+
         .btn-register {
-            width: 100%;
+            flex: 1 1 auto;
             background: var(--order-green);
             border-color: var(--order-green);
             font-size: 1.05rem;
+        }
+
+        .btn-register:disabled {
+            background: #cbd5e1;
+            border-color: #cbd5e1;
+            color: #475569;
         }
 
         .btn-back-search {
@@ -711,9 +807,23 @@
                 font-size: .9rem;
             }
 
+            .order-page {
+                padding-bottom: 250px;
+            }
+
+            .total-bar {
+                margin-bottom: 190px;
+            }
+
             .quick-action-box {
                 align-items: stretch;
                 flex-direction: column;
+            }
+
+            .review-caption {
+                width: 100%;
+                text-align: left;
+                margin-top: 8px;
             }
 
             .container {
@@ -744,6 +854,21 @@
             .btn-modal-add {
                 width: 100%;
             }
+
+            .sticky-actions,
+            .sticky-buttons {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .sticky-buttons {
+                width: 100%;
+            }
+
+            .btn-add-inline,
+            .btn-register {
+                width: 100%;
+            }
         }
     </style>
 @stop
@@ -756,11 +881,20 @@
         let idProducto_para_tabla="";
         let tablaProductos = [];
         let stockActual = {};
+        let reservaOriginalPedido = {};
+        let restriccionProductoActual = null;
         let productoAbiertoId = null;
         let intervaloStock = null;
         let temporizadorBusqueda = null;
+        let pasoActual = 1;
+
+        function generarClaveCarrito() {
+            return `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
 
         $(document).ready(function(){
+            actualizarPasoVisual(1);
+            actualizarAccionesPedido();
             buscarProductosPedido('');
 
             // Carga inicial de pedidos pendientes
@@ -786,6 +920,8 @@
                                 }
 
                                 let producto={
+                                    'cart_key': generarClaveCarrito(),
+                                    'pedido_id': pedido.pedido_id,
                                     'id_producto': pedido.id_producto,
                                     'codigo_producto': pedido.codigo_producto,
                                     'imagen_producto' : foto,
@@ -794,12 +930,14 @@
                                     'tipo_venta': pedido.tipo_venta,
                                     'precio_venta': pedido.precio_venta,
                                     'cantidad': pedido.cantidad,
+                                    'equivalencia_cantidad': pedido.equivalencia_cantidad || 1,
                                     'sub_total': ((pedido.precio_venta * pedido.cantidad)-(pedido.precio_venta * pedido.cantidad * (pedido.descripcion_descuento_porcentaje / 100))),
                                     'promocion': pedido.promocion,
                                     'descripcion_regalo': pedido.descripcion_regalo,
                                     'descripcion_descuento_porcentaje': pedido.descripcion_descuento_porcentaje? pedido.descripcion_descuento_porcentaje : '0',
                                 };
                                 tablaProductos.push(producto);
+                                reservaOriginalPedido[pedido.id_producto] = Number(reservaOriginalPedido[pedido.id_producto] || 0) + (Number(pedido.cantidad || 0) * Number(pedido.equivalencia_cantidad || 1));
                             });
                             construirTablaProductos();
                             refrescarStockProductos(true);
@@ -816,6 +954,7 @@
             }, 7000);
 
             $('#modalAgregarProducto').on('shown.bs.modal', function () {
+                actualizarPasoVisual(1);
                 if (!productoAbiertoId) {
                     $('#caja-busqueda-producto').trigger('focus');
                 }
@@ -823,8 +962,53 @@
 
             $('#modalAgregarProducto').on('hidden.bs.modal', function () {
                 reiniciarModalProducto();
+                actualizarPasoVisual(tablaProductos.length ? 2 : 1);
             });
         });
+
+        function actualizarPasoVisual(paso) {
+            pasoActual = paso;
+
+            [1, 2, 3].forEach(function (numero) {
+                $('#step-indicator-' + numero).removeClass('is-active is-complete');
+            });
+
+            if (paso <= 1) {
+                $('#step-indicator-1').addClass('is-active');
+                return;
+            }
+
+            $('#step-indicator-1').addClass('is-complete');
+
+            if (paso === 2) {
+                $('#step-indicator-2').addClass('is-active');
+                return;
+            }
+
+            $('#step-indicator-2').addClass('is-complete');
+            $('#step-indicator-3').addClass('is-active');
+        }
+
+        function actualizarAccionesPedido() {
+            const hayProductos = tablaProductos.length > 0;
+            const $botonRegistrar = $('#btn-registrar-pedido');
+            const $botonAgregarInline = $('.btn-add-inline');
+
+            $botonRegistrar.prop('disabled', !hayProductos);
+
+            if (hayProductos) {
+                $botonRegistrar.html('<i class="fas fa-check-circle"></i> 3. Registrar pedido');
+                $botonAgregarInline.removeClass('d-none');
+                if (pasoActual !== 3) {
+                    actualizarPasoVisual(2);
+                }
+                return;
+            }
+
+            $botonRegistrar.html('<i class="fas fa-check-circle"></i> 3. Agrega productos primero');
+            $botonAgregarInline.addClass('d-none');
+            actualizarPasoVisual(1);
+        }
 
         $('#caja-busqueda-producto').on('input', function () {
             const termino = $(this).val();
@@ -857,10 +1041,19 @@
         function reiniciarModalProducto() {
             idProducto_para_tabla = "";
             productoAbiertoId = null;
+            restriccionProductoActual = null;
             $('#caja-busqueda-producto').val('');
             $('#resultado-busqueda').empty();
             buscarProductosPedido('');
             mostrarBusquedaProducto();
+        }
+
+        function reservaOriginalActualProducto(productoId) {
+            return Number(reservaOriginalPedido[productoId] || 0);
+        }
+
+        function stockDisponibleEdicion(productoId) {
+            return Number(stockActual[productoId]?.cantidad || 0) + reservaOriginalActualProducto(productoId);
         }
 
         function buscarProductosPedido(termino) {
@@ -918,7 +1111,11 @@
                 $.ajax({
                     url: "{{ route('pedidos.vendedor.obtenerProducto',':id') }}".replace(':id', productoId),
                     type: 'GET',
+                    data: {
+                        cliente_id: '{{ $asignacion->cliente->id }}'
+                    },
                     success: function(data) {
+                        restriccionProductoActual = data.restriccion || null;
                         ocultarBusquedaProducto();
                         stockActual[data.producto.id] = {
                             cantidad: Number(data.producto.cantidad || 0),
@@ -991,6 +1188,7 @@
                                             <div class="inventory-sync mb-2">
                                                 <i class="fas fa-sync-alt"></i> Se actualiza cada pocos segundos
                                             </div>
+                                            <div id="restriccion-producto-box" class="restriction-live d-none mb-2"></div>
                                             ${promoHtml}
                                             <div class="w-100 sale-options-table">
                                                 <strong>Formas de Venta:</strong>
@@ -1034,12 +1232,15 @@
                                                 <input type="hidden" id="id-producto-promocion-descuento-pedido" value="${data.producto.descripcion_descuento_porcentaje}" />
                                                 <input type="hidden" id="id-producto-cantidad-pedido" value="${data.producto.cantidad}" />
                                                 <input type="hidden" id="id-convalidacion-cantidad" value="0" />
+                                                <input type="hidden" id="id-restriccion-limite-producto" value="" />
+                                                <input type="hidden" id="id-restriccion-unidad-producto" value="" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         `);
+                        actualizarVistaRestriccionProducto(data.restriccion);
                         refrescarStockProductos(true);
                     },
                     error: function() {
@@ -1065,6 +1266,7 @@
                     $inputPrecio.val(Number(data.precio_venta).toFixed(2));
                     $inputPrecio.attr('placeholder', '');
                     cant_convalidacion.val(data.equivalencia_cantidad || 1);
+                    actualizarVistaRestriccionProducto(actualRestrictionSnapshot());
                 },
                 error: function() {
                     Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo obtener el precio de la forma de venta' });
@@ -1081,9 +1283,22 @@
             let promocionDescuento = parseFloat($('#id-producto-promocion-descuento-pedido').val() || 0);
             let cantidadProducto = parseFloat($('#id-producto-cantidad-pedido').val() || 0);
             let convalidacionCantidad = parseFloat($('#id-convalidacion-cantidad').val() || 1);
+            const pendienteTabla = totalNormalizadoActualProducto(productoAbiertoId);
+            const cantidadNormalizada = cantidad * convalidacionCantidad;
 
-            if ((cantidad * convalidacionCantidad) > cantidadProducto && cantidad > 0) {
+            if ((pendienteTabla + cantidadNormalizada) > cantidadProducto && cantidad > 0) {
                 Swal.fire({ icon: 'warning', title: 'Stock actualizado', text: `Solo hay ${cantidadProducto} unidades disponibles en inventario.` });
+                e.value = cantidad-1;
+                cantidad = cantidad-1;
+            }
+
+            const restriccion = actualRestrictionSnapshot();
+            if (restriccion && ((pendienteTabla + cantidadNormalizada) > restriccion.limite_efectivo) && cantidad > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Limite excedido',
+                    text: `Solo puedes cargar hasta ${restriccion.limite_efectivo.toFixed(2)} ${restriccion.detalle_cantidad || ''} segun el stock actual del producto.`
+                });
                 e.value = cantidad-1;
                 cantidad = cantidad-1;
             }
@@ -1095,6 +1310,7 @@
                 }
             }
             total.val((cantidad * precioCalculo).toFixed(2));
+            actualizarVistaRestriccionProducto(actualRestrictionSnapshot());
         }
 
         function idsParaActualizarStock() {
@@ -1116,7 +1332,7 @@
             }
 
             if (String(productoId) === String(productoAbiertoId)) {
-                const cantidad = Number(stock.cantidad || 0);
+                const cantidad = stockDisponibleEdicion(productoId);
                 const detalle = stock.detalle_cantidad || '';
                 const $stock = $('#stock-producto-texto');
                 const $cantidadHidden = $('#id-producto-cantidad-pedido');
@@ -1143,6 +1359,8 @@
                         text: 'Otro vendedor actualizo este producto. Vuelve a ingresar la cantidad.'
                     });
                 }
+
+                actualizarVistaRestriccionProducto(actualRestrictionSnapshot());
             }
         }
 
@@ -1194,9 +1412,9 @@
                     </tr>
                 `);
             } else {
-                tablaProductos.forEach(function(producto, idx) {
+                tablaProductos.forEach(function(producto) {
                     $tbody.append(`
-                        <tr data-index="${idx}">
+                        <tr data-cart-key="${producto.cart_key}">
                             <td>${producto.codigo_producto}</td>
                             <td><img src="${producto.imagen_producto}" alt="${producto.texto_producto}" class="img-fluid"></td>
                             <td>${producto.texto_producto}</td>
@@ -1206,7 +1424,7 @@
                             <td class="text-center">${producto.descripcion_descuento_porcentaje ? `<span class="badge badge-success">${producto.descripcion_descuento_porcentaje}%</span>` : 'N/A'}</td>
                             <td class="text-right">${Number(producto.sub_total).toFixed(2)} Bs.-</td>
                             <td>
-                                <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
+                                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarProducto('${producto.cart_key}')">
                                     <i class="fas fa-trash"></i> Eliminar
                                 </button>
                             </td>
@@ -1219,16 +1437,16 @@
             const $cards = $('#lista-cards-productos');
             $cards.empty();
             if (tablaProductos.length) {
-                tablaProductos.forEach(function(prod, idx) {
+                tablaProductos.forEach(function(prod) {
                     $cards.append(`
-                        <div class="prod-card" data-index="${idx}">
+                        <div class="prod-card" data-cart-key="${prod.cart_key}">
                             <div class="d-flex align-items-center">
                                 <img src="${prod.imagen_producto}" alt="${prod.texto_producto}" style="height:56px;width:56px;object-fit:cover;border-radius:8px;margin-right:12px;">
                                 <div class="flex-grow-1">
                                     <div class="title">${prod.texto_producto}</div>
                                     <div class="small text-muted">Cod: ${prod.codigo_producto} • ${prod.tipo_venta}</div>
                                 </div>
-                                <button class="btn btn-danger" onclick="eliminarProducto(this)">
+                                <button type="button" class="btn btn-danger" onclick="eliminarProducto('${prod.cart_key}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -1247,7 +1465,7 @@
                             </div>
                             <div class="d-flex justify-content-between">
                                 <span class="label">Stock ahora:</span>
-                                <span class="font-weight-bold">${stockActual[prod.id_producto]?.cantidad ?? '...'} ${stockActual[prod.id_producto]?.detalle_cantidad ?? ''}</span>
+                                <span class="font-weight-bold">${stockDisponibleEdicion(prod.id_producto).toFixed(2)} ${stockActual[prod.id_producto]?.detalle_cantidad ?? ''}</span>
                             </div>
                         </div>
                     `);
@@ -1264,6 +1482,7 @@
                 totalPedido += parseFloat(prod.sub_total || 0);
             });
             $('#total-pedido').text(totalPedido.toFixed(2));
+            actualizarAccionesPedido();
         }
 
         function registrarTabla(){
@@ -1283,9 +1502,11 @@
                 return Swal.fire({ icon: 'warning', title: 'Cantidad inválida' });
             }
 
-            const stock = stockActual[idProducto_para_tabla]?.cantidad ?? Number($('#id-producto-cantidad-pedido').val() || 0);
+            const stock = stockDisponibleEdicion(idProducto_para_tabla) || Number($('#id-producto-cantidad-pedido').val() || 0);
             const equivalencia = Number($('#id-convalidacion-cantidad').val() || 1);
-            if ((cantidad * equivalencia) > stock) {
+            const restriccion = actualRestrictionSnapshot();
+            const pendienteTabla = totalNormalizadoActualProducto(idProducto_para_tabla);
+            if ((pendienteTabla + (cantidad * equivalencia)) > stock) {
                 return Swal.fire({
                     icon: 'warning',
                     title: 'Stock insuficiente',
@@ -1293,7 +1514,17 @@
                 });
             }
 
+            if (restriccion && ((pendienteTabla + (cantidad * equivalencia)) > restriccion.limite_efectivo)) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Limite excedido',
+                    text: `La cantidad supera el limite permitido por el stock actual. Maximo usable ahora: ${restriccion.limite_efectivo.toFixed(2)} ${restriccion.detalle_cantidad || ''}.`
+                });
+            }
+
             let producto={
+                'cart_key': generarClaveCarrito(),
+                'pedido_id': null,
                 'id_producto': idProducto_para_tabla,
                 'codigo_producto': productoEncontrado ? productoEncontrado.codigo : '',
                 'imagen_producto' : $('#foto-producto-agregar-pedido').attr('src') || '',
@@ -1306,6 +1537,7 @@
                 'promocion': $('#id-producto-promocion-pedido').val() || '0',
                 'descripcion_regalo': $('#id-producto-promocion-regalo-pedido').val() || '',
                 'descripcion_descuento_porcentaje': $('#id-producto-promocion-descuento-pedido').val() || '0',
+                'equivalencia_cantidad': equivalencia,
             };
 
             // Evitar duplicado exacto por código + forma venta (opcional)
@@ -1329,9 +1561,10 @@
             });
 
             construirTablaProductos();
+            actualizarPasoVisual(2);
         }
 
-        function eliminarProducto(e){
+        function eliminarProductoLegacy(cartKey){
             // detectar index según vista
             let $row = $(e).closest('[data-index]');
             if (!$row.length) {
@@ -1357,6 +1590,12 @@
         }
 
         function registrarPedido() {
+            if (tablaProductos.length === 0) {
+                return Swal.fire({ icon: 'warning', title: 'Primero agrega productos', text: 'El paso 1 debe completarse antes de registrar el pedido.' });
+            }
+
+            actualizarPasoVisual(3);
+
             Swal.fire({
                 title: 'Confirmar Pedido',
                 text: "¿Estás seguro de que deseas registrar este pedido?",
@@ -1368,10 +1607,6 @@
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    if (tablaProductos.length === 0) {
-                        return Swal.fire({ icon: 'warning', title: 'Advertencia', text: 'No hay productos en el pedido.' });
-                    }
-
                     const $boton = $('#btn-registrar-pedido');
                     $boton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Registrando');
 
@@ -1395,11 +1630,186 @@
                                     .then(() => window.location.href = "{{ route('asignacionvendedor.index') }}");
                             },
                             error: function(xhr) {
-                                $boton.prop('disabled', false).html('<i class="fas fa-save"></i> Registrar Pedido');
+                                $boton.prop('disabled', false).html('<i class="fas fa-check-circle"></i> 3. Registrar pedido');
+                                actualizarPasoVisual(2);
                                 refrescarStockProductos(true);
                                 Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: xhr.responseJSON?.message || 'El inventario cambio. Revisa el pedido e intenta nuevamente.' });
                             }
                         });
+                    });
+                } else {
+                    actualizarPasoVisual(tablaProductos.length ? 2 : 1);
+                }
+            });
+        }
+
+        function totalNormalizadoActualProducto(productoId) {
+            return tablaProductos
+                .filter(prod => String(prod.id_producto) === String(productoId))
+                .reduce((acc, prod) => acc + (Number(prod.cantidad || 0) * Number(prod.equivalencia_cantidad || 1)), 0);
+        }
+
+        function actualRestrictionSnapshot() {
+            if (!restriccionProductoActual) {
+                return null;
+            }
+
+            const productoId = productoAbiertoId || $('#id-producto-agregar-pedido').val();
+            const stockContextual = stockDisponibleEdicion(productoId);
+            const disponiblePorLimite = Number(restriccionProductoActual.cantidad_disponible_por_limite || 0);
+
+            return {
+                ...restriccionProductoActual,
+                detalle_cantidad: restriccionProductoActual.detalle_cantidad || $('#id-restriccion-unidad-producto').val() || '',
+                stock_actual: stockContextual,
+                limite_efectivo: Math.min(disponiblePorLimite, stockContextual)
+            };
+        }
+
+        function actualizarVistaRestriccionProducto(restriccion) {
+            const $box = $('#restriccion-producto-box');
+
+            if (!restriccion) {
+                $('#id-restriccion-limite-producto').val('');
+                $('#id-restriccion-unidad-producto').val('');
+                $box.addClass('d-none').removeClass('is-near is-over').empty();
+                return;
+            }
+
+            $('#id-restriccion-limite-producto').val(restriccion.limite ?? '');
+            $('#id-restriccion-unidad-producto').val(restriccion.detalle_cantidad ?? '');
+
+            const cantidadActual = Number($('#cantidad-precio-pedido').val() || 0);
+            const equivalencia = Number($('#id-convalidacion-cantidad').val() || 1);
+            const pendienteActual = cantidadActual * equivalencia;
+            const pendienteTabla = totalNormalizadoActualProducto(productoAbiertoId);
+            const proyectado = pendienteTabla + pendienteActual;
+            const limite = Number(restriccion.limite || 0);
+            const stockActual = Number(restriccion.stock_actual || 0);
+            const asignadoGlobal = Number(restriccion.cantidad_asignada_global || 0);
+            const limiteEfectivo = Number(restriccion.limite_efectivo || 0);
+            const restante = Math.max(limiteEfectivo - pendienteTabla, 0);
+            const disponibleReal = Math.max(limiteEfectivo - proyectado, 0);
+            const porcentaje = limiteEfectivo > 0 ? Math.min((proyectado / limiteEfectivo) * 100, 100) : 0;
+
+            let claseExtra = '';
+            let textoEstado = 'Dentro del limite efectivo';
+
+            if (proyectado > limiteEfectivo) {
+                claseExtra = 'is-over';
+                textoEstado = 'Supera el limite efectivo';
+            } else if (porcentaje >= 80) {
+                claseExtra = 'is-near';
+                textoEstado = 'Cerca del limite efectivo';
+            }
+
+            $box
+                .removeClass('d-none is-near is-over')
+                .addClass(claseExtra)
+                .html(`
+                    <strong><i class="fas fa-shield-alt"></i> Limite asignado para este producto</strong>
+                    <div class="mt-2">Stock actual del producto: ${stockActual.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Limite configurado: ${limite.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Ya asignado en otras rutas o pedidos: ${asignadoGlobal.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Disponible para este pedido ahora: ${limiteEfectivo.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Ya cargado en este pedido: ${pendienteTabla.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Libre antes de agregar esta cantidad: ${restante.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Disponible real para vender ahora: ${disponibleReal.toFixed(2)} ${restriccion.detalle_cantidad || ''}</div>
+                    <div>Estado actual: ${textoEstado}</div>
+                    <div class="restriction-progress">
+                        <div class="restriction-progress-bar" style="width:${porcentaje}%"></div>
+                    </div>
+                `);
+        }
+
+        function eliminarProductoLocal(cartKey) {
+            const item = tablaProductos.find(function (prod) {
+                return prod.cart_key === cartKey;
+            });
+
+            if (!item) {
+                return false;
+            }
+
+            tablaProductos = tablaProductos.filter(function (prod) {
+                return prod.cart_key !== cartKey;
+            });
+
+            if (item.pedido_id) {
+                const cantidadNormalizada = Number(item.cantidad || 0) * Number(item.equivalencia_cantidad || 1);
+                reservaOriginalPedido[item.id_producto] = Math.max(
+                    Number(reservaOriginalPedido[item.id_producto] || 0) - cantidadNormalizada,
+                    0
+                );
+            }
+
+            construirTablaProductos();
+            actualizarVistaRestriccionProducto(actualRestrictionSnapshot());
+            refrescarStockProductos(false);
+            return true;
+        }
+
+        function eliminarProducto(cartKey) {
+            const item = tablaProductos.find(function (prod) {
+                return prod.cart_key === cartKey;
+            });
+
+            if (!item) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'No se pudo eliminar',
+                    text: 'Ese producto ya no estaba en el carrito. Recarga la pantalla si lo sigues viendo.'
+                });
+            }
+
+            if (!item.pedido_id) {
+                eliminarProductoLocal(cartKey);
+
+                return Swal.fire({
+                    icon: 'success',
+                    title: 'Producto eliminado',
+                    text: 'El producto ha sido eliminado correctamente.',
+                    timer: 1200,
+                    showConfirmButton: false,
+                });
+            }
+
+            $.ajax({
+                url: "{{ route('pedidos.vendedor.eliminarItem', ':id') }}".replace(':id', item.pedido_id),
+                type: 'DELETE',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    id_cliente: '{{ $asignacion->cliente->id }}',
+                    id_producto: item.id_producto,
+                    id_forma_venta: item.id_forma_venta
+                },
+                beforeSend: function () {
+                    Swal.fire({
+                        title: 'Eliminando...',
+                        text: 'Quitando el producto del pedido y devolviendo stock.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+                },
+                success: function () {
+                    Swal.close();
+                    eliminarProductoLocal(cartKey);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Producto eliminado',
+                        text: 'El producto fue eliminado del pedido y de la base de datos.',
+                        timer: 1200,
+                        showConfirmButton: false,
+                    });
+                },
+                error: function (xhr) {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se pudo eliminar',
+                        text: xhr.responseJSON?.message || 'No se pudo eliminar el producto del pedido.'
                     });
                 }
             });

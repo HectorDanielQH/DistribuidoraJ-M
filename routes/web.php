@@ -4,6 +4,7 @@ use App\Http\Controllers\Administrador\PermisosController;
 use App\Http\Controllers\Administrador\ProveedorController;
 use App\Http\Controllers\Administrador\LineaController;
 use App\Http\Controllers\Administrador\MarcaController;
+use App\Http\Controllers\Administrador\RestriccionVendedorController;
 use App\Http\Controllers\Administrador\VentaMayoristaController as AdministradorVentaMayoristaController;
 use App\Http\Controllers\Administrador\ProductoController;
 use App\Http\Controllers\Administrador\LotesController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PreVentista\VentasVendedorController;
 use App\Http\Controllers\RendimientoPersonalController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\VendedorRestriccionController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -168,6 +170,9 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('ventas/administrador/crear-venta', [VentaController::class,'crearVenta'])->name('ventas.administrador.crearVenta');
         Route::post('ventas/administrador/guardar-venta', [VentaController::class,'guardarVenta'])->name('ventas.administrador.guardarVenta');
 
+        Route::get('reportes/productos-preventistas', [RestriccionVendedorController::class, 'reportesIndex'])->name('reportes.productosPreventistas');
+        Route::get('restricciones/vendedor', [RestriccionVendedorController::class, 'restriccionesIndex'])->name('restricciones.vendedor');
+
         Route::get('mayoristas', [AdministradorVentaMayoristaController::class, 'index'])->name('mayoristas.index');
         Route::get('mayoristas/resumen', [AdministradorVentaMayoristaController::class, 'resumen'])->name('mayoristas.resumen');
         Route::get('mayoristas/data', [AdministradorVentaMayoristaController::class, 'data'])->name('mayoristas.data');
@@ -282,6 +287,7 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
         Route::get('pedidos/vendedor/obtenerproducto/{id}', [PedidoController::class, 'ObtenerProductoParaPedido'])->name('pedidos.vendedor.obtenerProducto');
         Route::get('pedidos/vendedor/obtenerformaventa/{id}', [PedidoController::class, 'ObtenerFormaVenta'])->name('pedidos.vendedor.obtenerformaventa');
         Route::get('pedidos/vendedor/stock-productos', [PedidoController::class, 'obtenerStockProductos'])->name('pedidos.vendedor.stockProductos');
+        Route::delete('pedidos/vendedor/eliminar-item/{id}', [PedidoController::class, 'eliminarItemPendiente'])->name('pedidos.vendedor.eliminarItem');
         Route::post('pedidos/vendedor/registrarpedido', [PedidoController::class, 'registrarPedido'])->name('pedidos.vendedor.registrarPedido');
 
         //ver pedidos desde vendedor
@@ -290,6 +296,19 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
 
         //pdf vendedor
         Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
+    });
+
+    Route::prefix('api/admin')->middleware('can:administrador.permisos')->group(function () {
+        Route::get('reportes/productos-preventistas', [RestriccionVendedorController::class, 'reporteProductosPreventistas'])->name('api.admin.reportes.productosPreventistas');
+        Route::get('restricciones-vendedor/producto/{id}', [RestriccionVendedorController::class, 'contextoProducto'])->name('api.admin.restricciones.producto');
+        Route::get('restricciones-vendedor', [RestriccionVendedorController::class, 'listarRestricciones'])->name('api.admin.restricciones.index');
+        Route::post('restricciones-vendedor', [RestriccionVendedorController::class, 'guardarRestriccion'])->name('api.admin.restricciones.store');
+        Route::put('restricciones-vendedor/{id}', [RestriccionVendedorController::class, 'actualizarRestriccion'])->name('api.admin.restricciones.update');
+        Route::delete('restricciones-vendedor/{id}', [RestriccionVendedorController::class, 'eliminarRestriccion'])->name('api.admin.restricciones.destroy');
+    });
+
+    Route::prefix('api/vendedor')->middleware('vendedor.o.admin')->group(function () {
+        Route::get('restricciones', [VendedorRestriccionController::class, 'index'])->name('api.vendedor.restricciones.index');
     });
 
     //----AREA DE CONTABILIDAD--

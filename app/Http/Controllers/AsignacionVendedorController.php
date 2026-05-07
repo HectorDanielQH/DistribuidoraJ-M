@@ -266,12 +266,14 @@ class AsignacionVendedorController extends Controller
             ->where('pedidos.id_usuario', auth()->id())
             ->where('pedidos.estado_pedido', false)
             ->select(
+                'pedidos.id as pedido_id',
                 'productos.id as id_producto',
                 'productos.codigo as codigo_producto',
                 'productos.foto_producto',
                 'productos.nombre_producto',
                 'forma_ventas.id as id_forma_venta',
                 'forma_ventas.tipo_venta',
+                'forma_ventas.equivalencia_cantidad',
                 'forma_ventas.precio_venta',
                 'pedidos.promocion',
                 'pedidos.descripcion_descuento_porcentaje',

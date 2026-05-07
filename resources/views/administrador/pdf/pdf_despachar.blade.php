@@ -96,16 +96,16 @@
             border-spacing: 8px 8px;
             table-layout: fixed;
             margin: 0 0 2px;
-            page-break-inside: avoid;
+            page-break-inside: auto;
         }
         .cards-row tr {
-            page-break-inside: avoid;
+            page-break-inside: auto;
         }
         .card-cell {
             width: 50%;
             vertical-align: top;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            page-break-inside: auto;
+            break-inside: auto;
             font-size: 9px;
         }
         .card {
@@ -127,10 +127,14 @@
             letter-spacing: 0;
             text-transform: uppercase;
             font-weight: 700;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
         .card-title .order {
             text-align: right;
             font-size: 10px;
+            width: 84px;
+            white-space: nowrap;
         }
         .meta {
             width: 100%;
@@ -310,18 +314,12 @@
                     <div class="card">
                         <table class="card-title">
                             <tr>
-                                <td>Numero de pedido</td>
+                                <td>{{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'Comprador no disponible' }}</td>
                                 <td class="order">#{{ $lista->numero_pedido }}</td>
                             </tr>
                         </table>
 
                         <table class="meta">
-                            <tr>
-                                <td colspan="2" class="full-row">
-                                    <strong class="meta-label">Nombre del comprador:</strong>
-                                    {{ trim(($lista->nombres ?? '').' '.($lista->apellidos ?? '')) ?: 'N/A' }}
-                                </td>
-                            </tr>
                             <tr>
                                 <td>
                                     <strong class="meta-label">Celular del comprador:</strong>

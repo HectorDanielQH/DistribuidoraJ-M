@@ -429,6 +429,26 @@ return [
             'can' => 'administrador.permisos',
         ],
         [
+            'header' => '.:: REPORTES ::.',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Productos por Preventista',
+            'route' => 'administrador.reportes.productosPreventistas',
+            'icon' => 'fas fa-fw fa-chart-bar',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'header' => '.:: RESTRICCIONES ::.',
+            'can' => 'administrador.permisos',
+        ],
+        [
+            'text' => 'Limites por Vendedor',
+            'route' => 'administrador.restricciones.vendedor',
+            'icon' => 'fas fa-fw fa-user-lock',
+            'can' => 'administrador.permisos',
+        ],
+        [
             'header' => '.:: MAYORISTAS ::.',
             'can' => 'administrador.permisos',
         ],
@@ -754,4 +774,3 @@ return [
 
     'livewire' => false,
 ];
-
