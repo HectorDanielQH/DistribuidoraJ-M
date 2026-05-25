@@ -45,7 +45,7 @@
         }
         .title-sub {
             margin-top: 1px;
-            font-size: 8px;
+            font-size: 10px;
             text-transform: uppercase;
             color: #6b7280;
         }
@@ -54,7 +54,7 @@
             border: 1px solid #d1d5db;
             padding: 4px 5px;
             text-align: right;
-            font-size: 8px;
+            font-size: 10px;
         }
         .date-box strong {
             display: block;
@@ -82,7 +82,7 @@
         }
         .summary span {
             display: block;
-            font-size: 8px;
+            font-size: 10px;
             text-transform: uppercase;
             color: #6b7280;
         }
@@ -112,7 +112,7 @@
         .ticket-title td {
             border-bottom: 1px solid #9ca3af;
             padding: 5px 6px;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 700;
         }
         .ticket-title-left {
@@ -126,7 +126,7 @@
         }
         .buyer-note {
             display: block;
-            font-size: 8px;
+            font-size: 10px;
             color: #6b7280;
             text-transform: uppercase;
         }
@@ -144,7 +144,7 @@
         .meta td {
             border-bottom: 1px solid #e5e7eb;
             padding: 4px 6px;
-            font-size: 8px;
+            font-size: 10px;
             vertical-align: top;
             word-break: break-word;
         }
@@ -164,14 +164,14 @@
             border-top: 1px solid #d1d5db;
             border-bottom: 1px solid #d1d5db;
             padding: 4px 5px;
-            font-size: 8px;
+            font-size: 10px;
             text-transform: uppercase;
             text-align: left;
         }
         .items td {
             border-bottom: 1px solid #eceff1;
             padding: 4px 5px;
-            font-size: 8px;
+            font-size: 10px;
             vertical-align: top;
         }
         .items tr {
@@ -181,18 +181,18 @@
             width: 78px;
             text-align: center;
             font-weight: 700;
-            font-size: 8px;
+            font-size: 10px;
         }
         .items .price {
             width: 54px;
             text-align: right;
             white-space: nowrap;
             font-weight: 700;
-            font-size: 8px;
+            font-size: 10px;
         }
         .product-name {
             font-weight: 700;
-            font-size: 8px;
+            font-size: 10px;
         }
         .product-code {
             color: #6b7280;
@@ -201,7 +201,7 @@
         .ticket-footer {
             border-top: 1px solid #9ca3af;
             padding: 5px 6px;
-            font-size: 8px;
+            font-size: 10px;
             text-transform: uppercase;
         }
         .ticket-footer.total {
