@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Asignacion;
 use App\Models\FormaVenta;
 use App\Models\Pedido;
 use App\Models\Producto;
@@ -11,7 +12,10 @@ use App\Models\Venta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Yajra\DataTables\DataTables;
 
 class PedidoAdministradorController extends Controller
@@ -79,7 +83,6 @@ class PedidoAdministradorController extends Controller
                     return '<span class="order-status order-status-pending"><i class="fas fa-clock"></i> Pendiente para despacho</span>';
                 })
                 ->addColumn('acciones', function($pedido){
-                    $ruta=route('administrador.pedidos.administrador.editar', $pedido->numero_pedido);
                     $botones = '<div class="order-actions">';
                     $botones .= '
                     <button type="button" class="btn btn-primary btn-sm order-action-btn" onclick="verPedidoCliente(this)"
@@ -87,12 +90,22 @@ class PedidoAdministradorController extends Controller
                     >
                         <i class="fas fa-eye"></i> Ver
                     </button>
-                    <a
-                        href="' . $ruta . '"
+                    <button
+                        type="button"
                         class="btn btn-warning btn-sm order-action-btn"
+                        onclick="abrirModalEditarPedido(this)"
+                        data-numero-pedido="' . $pedido->numero_pedido . '"
                     >
                         <i class="fas fa-edit"></i> Editar
-                    </a>
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm order-action-btn"
+                        onclick="abrirModalEliminarPedido(this)"
+                        data-numero-pedido="' . $pedido->numero_pedido . '"
+                    >
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
                     ';
                     $botones .= '</div>';
                     return $botones;
@@ -974,6 +987,359 @@ class PedidoAdministradorController extends Controller
         return view('administrador.pedidos.editar_pedido', compact('pedido','suma_pedido'));
     }
 
+    public function obtenerPedidoEdicion(string $id_numero_pedido)
+    {
+        $pedidos = Pedido::with(['cliente.ruta', 'usuario', 'producto', 'formaVenta'])
+            ->where('numero_pedido', $id_numero_pedido)
+            ->whereNull('fecha_entrega')
+            ->where('estado_pedido', false)
+            ->orderBy('id')
+            ->get();
+
+        if ($pedidos->isEmpty()) {
+            return response()->json(['message' => 'Pedido pendiente no encontrado.'], 404);
+        }
+
+        $pedidoBase = $pedidos->first();
+        $cliente = $pedidoBase->cliente;
+        $usuario = $pedidoBase->usuario;
+
+        $items = $pedidos->map(function (Pedido $pedido) {
+            $precioUnitario = (float) ($pedido->precio_unitario ?? $pedido->formaVenta?->precio_venta ?? 0);
+
+            return [
+                'pedido_id' => $pedido->id,
+                'producto_id' => $pedido->id_producto,
+                'producto_texto' => trim(($pedido->producto?->codigo ?? 'N/A').' - '.($pedido->producto?->nombre_producto ?? 'Producto')),
+                'producto_codigo' => $pedido->producto?->codigo,
+                'detalle_cantidad' => $pedido->producto?->detalle_cantidad ?? 'UNIDADES',
+                'stock_actual' => (int) ($pedido->producto?->cantidad ?? 0),
+                'forma_venta_id' => $pedido->id_forma_venta,
+                'cantidad' => (int) $pedido->cantidad,
+                'precio_unitario' => round($precioUnitario, 2),
+                'subtotal' => round($precioUnitario * (int) $pedido->cantidad, 2),
+                'formas_venta' => $this->obtenerFormasVentaParaEdicion((int) $pedido->id_producto, (int) $pedido->id_forma_venta),
+            ];
+        })->values();
+
+        return response()->json([
+            'pedido' => [
+                'numero_pedido' => $pedidoBase->numero_pedido,
+                'id_cliente' => $pedidoBase->id_cliente,
+                'cliente_texto' => trim(($cliente?->codigo_cliente ?? '').' '.($cliente?->nombres ?? '').' '.($cliente?->apellidos ?? '')),
+                'cliente_ruta' => $cliente?->ruta?->nombre_ruta ?? 'Sin ruta',
+                'cliente_direccion' => trim(($cliente?->calle_avenida ?? '').' '.($cliente?->zona_barrio ?? '')),
+                'id_usuario' => $pedidoBase->id_usuario,
+                'preventista_texto' => trim(($usuario?->nombres ?? '').' '.($usuario?->apellido_paterno ?? '').' '.($usuario?->apellido_materno ?? '')),
+                'fecha_pedido' => $pedidoBase->fecha_pedido ? date('Y-m-d\TH:i', strtotime($pedidoBase->fecha_pedido)) : null,
+            ],
+            'items' => $items,
+            'total' => round($items->sum('subtotal'), 2),
+        ], 200);
+    }
+
+    public function actualizarPedidoCompleto(Request $request, string $id_numero_pedido)
+    {
+        $data = $request->validate([
+            'id_cliente' => 'required|exists:clientes,id',
+            'id_usuario' => 'required|exists:users,id',
+            'fecha_pedido' => 'required|date',
+            'items' => 'required|array|min:1',
+            'items.*.pedido_id' => 'nullable|integer',
+            'items.*.producto_id' => 'required|exists:productos,id',
+            'items.*.tipo_venta_id' => 'required|exists:forma_ventas,id',
+            'items.*.cantidad' => 'required|integer|min:1',
+        ]);
+
+        try {
+            $resultado = DB::transaction(function () use ($data, $id_numero_pedido) {
+                $pedidosExistentes = Pedido::with('formaVenta')
+                    ->where('numero_pedido', $id_numero_pedido)
+                    ->whereNull('fecha_entrega')
+                    ->where('estado_pedido', false)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if ($pedidosExistentes->isEmpty()) {
+                    abort(404, 'Pedido pendiente no encontrado.');
+                }
+
+                if (! User::role('vendedor')->whereKey($data['id_usuario'])->exists()) {
+                    throw ValidationException::withMessages([
+                        'id_usuario' => 'El preventista seleccionado no es valido para pedidos pendientes.',
+                    ]);
+                }
+
+                $pedidoIdsSolicitados = collect($data['items'])
+                    ->pluck('pedido_id')
+                    ->filter(fn ($value) => ! is_null($value))
+                    ->values();
+
+                if ($pedidoIdsSolicitados->duplicates()->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'items' => 'No puedes repetir la misma linea del pedido varias veces en la actualizacion.',
+                    ]);
+                }
+
+                foreach ($pedidoIdsSolicitados as $pedidoIdSolicitado) {
+                    if (! $pedidosExistentes->has((int) $pedidoIdSolicitado)) {
+                        throw ValidationException::withMessages([
+                            'items' => 'Se intento actualizar una linea que no pertenece a este pedido.',
+                        ]);
+                    }
+                }
+
+                $productosIds = $pedidosExistentes->pluck('id_producto')
+                    ->merge(collect($data['items'])->pluck('producto_id'))
+                    ->unique()
+                    ->values();
+
+                $productos = Producto::whereIn('id', $productosIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($pedidosExistentes as $pedidoExistente) {
+                    $formaVentaOriginal = $pedidoExistente->formaVenta;
+                    $productoOriginal = $productos->get($pedidoExistente->id_producto);
+
+                    if (! $formaVentaOriginal || ! $productoOriginal) {
+                        throw ValidationException::withMessages([
+                            'items' => 'No se pudo reconstruir el stock original del pedido para editarlo.',
+                        ]);
+                    }
+
+                    $productoOriginal->cantidad += ((int) $pedidoExistente->cantidad * (int) $formaVentaOriginal->equivalencia_cantidad);
+                }
+
+                $idsConservados = [];
+
+                foreach ($data['items'] as $index => $item) {
+                    $producto = $productos->get((int) $item['producto_id']);
+                    $formaVenta = FormaVenta::whereKey($item['tipo_venta_id'])
+                        ->where('id_producto', $item['producto_id'])
+                        ->first();
+
+                    if (! $producto || $producto->estado_de_baja) {
+                        throw ValidationException::withMessages([
+                            "items.$index.producto_id" => 'El producto seleccionado no esta disponible para pedidos.',
+                        ]);
+                    }
+
+                    if (! $formaVenta) {
+                        throw ValidationException::withMessages([
+                            "items.$index.tipo_venta_id" => 'La forma de venta no corresponde al producto seleccionado.',
+                        ]);
+                    }
+
+                    $cantidadSolicitada = (int) $item['cantidad'];
+                    $cantidadEnUnidades = $cantidadSolicitada * (int) $formaVenta->equivalencia_cantidad;
+
+                    if ($producto->cantidad < $cantidadEnUnidades) {
+                        throw ValidationException::withMessages([
+                            "items.$index.cantidad" => 'Stock insuficiente para '.$producto->nombre_producto.'. Disponible: '.$producto->cantidad.' '.$producto->detalle_cantidad.'.',
+                        ]);
+                    }
+
+                    $producto->cantidad -= $cantidadEnUnidades;
+
+                    $pedidoId = isset($item['pedido_id']) ? (int) $item['pedido_id'] : null;
+                    $pedidoExistente = $pedidoId ? $pedidosExistentes->get($pedidoId) : null;
+
+                    $precioUnitario = (float) $formaVenta->precio_venta;
+                    $promocion = (bool) ($producto->promocion ?? false);
+                    $descuento = $producto->descripcion_descuento_porcentaje ?? null;
+                    $regalo = $producto->descripcion_regalo ?? null;
+
+                    if (
+                        $pedidoExistente
+                        && (int) $pedidoExistente->id_producto === (int) $item['producto_id']
+                        && (int) $pedidoExistente->id_forma_venta === (int) $item['tipo_venta_id']
+                    ) {
+                        $precioUnitario = (float) ($pedidoExistente->precio_unitario ?? $formaVenta->precio_venta);
+                        $promocion = (bool) $pedidoExistente->promocion;
+                        $descuento = $pedidoExistente->descripcion_descuento_porcentaje;
+                        $regalo = $pedidoExistente->descripcion_regalo;
+                    }
+
+                    if ($pedidoExistente) {
+                        $pedidoExistente->update([
+                            'id_usuario' => $data['id_usuario'],
+                            'id_cliente' => $data['id_cliente'],
+                            'id_producto' => $item['producto_id'],
+                            'id_forma_venta' => $item['tipo_venta_id'],
+                            'precio_unitario' => $precioUnitario,
+                            'fecha_pedido' => $data['fecha_pedido'],
+                            'cantidad' => $cantidadSolicitada,
+                            'promocion' => $promocion,
+                            'descripcion_descuento_porcentaje' => $descuento,
+                            'descripcion_regalo' => $regalo,
+                        ]);
+
+                        $idsConservados[] = $pedidoExistente->id;
+                        continue;
+                    }
+
+                    $nuevoPedido = Pedido::create([
+                        'id_usuario' => $data['id_usuario'],
+                        'id_cliente' => $data['id_cliente'],
+                        'id_producto' => $item['producto_id'],
+                        'id_forma_venta' => $item['tipo_venta_id'],
+                        'precio_unitario' => $precioUnitario,
+                        'numero_pedido' => $id_numero_pedido,
+                        'fecha_pedido' => $data['fecha_pedido'],
+                        'fecha_entrega' => null,
+                        'cantidad' => $cantidadSolicitada,
+                        'estado_pedido' => false,
+                        'promocion' => $promocion,
+                        'descripcion_descuento_porcentaje' => $descuento,
+                        'descripcion_regalo' => $regalo,
+                    ]);
+
+                    $idsConservados[] = $nuevoPedido->id;
+                }
+
+                $idsAEliminar = $pedidosExistentes->keys()->diff($idsConservados);
+
+                if ($idsAEliminar->isNotEmpty()) {
+                    Pedido::whereIn('id', $idsAEliminar->all())->delete();
+                }
+
+                foreach ($productos as $producto) {
+                    if ($producto->isDirty('cantidad')) {
+                        if ($producto->cantidad < 0) {
+                            throw ValidationException::withMessages([
+                                'items' => 'La actualizacion dejaria stock negativo en '.$producto->nombre_producto.'.',
+                            ]);
+                        }
+
+                        $producto->save();
+                    }
+                }
+
+                $total = Pedido::where('numero_pedido', $id_numero_pedido)
+                    ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+                    ->whereNull('pedidos.fecha_entrega')
+                    ->where('pedidos.estado_pedido', false)
+                    ->sum(DB::raw('pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)'));
+
+                return [
+                    'items' => count($data['items']),
+                    'total' => round((float) $total, 2),
+                ];
+            }, 3);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Error al actualizar pedido pendiente desde modal.', [
+                'numero_pedido' => $id_numero_pedido,
+                'request' => $request->all(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Ocurrio un error al actualizar el pedido. Revisa el log para mas detalle.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pedido actualizado correctamente.',
+            'items' => $resultado['items'],
+            'total' => $resultado['total'],
+        ], 200);
+    }
+
+    public function eliminarPedidoCompletoPendiente(string $id_numero_pedido)
+    {
+        try {
+            $resultado = DB::transaction(function () use ($id_numero_pedido) {
+                $pedidos = Pedido::with('formaVenta')
+                    ->where('numero_pedido', $id_numero_pedido)
+                    ->whereNull('fecha_entrega')
+                    ->where('estado_pedido', false)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($pedidos->isEmpty()) {
+                    abort(404, 'El pedido ya fue eliminado, despachado o no existe como pendiente.');
+                }
+
+                $primerPedido = $pedidos->first();
+                $productos = Producto::whereIn('id', $pedidos->pluck('id_producto')->unique()->all())
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                $unidadesDevueltas = 0;
+
+                foreach ($pedidos as $pedido) {
+                    $formaVenta = $pedido->formaVenta;
+                    $producto = $productos->get($pedido->id_producto);
+
+                    if (! $formaVenta || ! $producto) {
+                        throw ValidationException::withMessages([
+                            'pedido' => 'No se pudo resolver el producto o la forma de venta para devolver inventario.',
+                        ]);
+                    }
+
+                    $cantidadEnUnidades = (int) $pedido->cantidad * (int) $formaVenta->equivalencia_cantidad;
+                    $producto->cantidad += $cantidadEnUnidades;
+                    $unidadesDevueltas += $cantidadEnUnidades;
+                }
+
+                foreach ($productos as $producto) {
+                    if ($producto->isDirty('cantidad')) {
+                        $producto->save();
+                    }
+                }
+
+                Pedido::whereIn('id', $pedidos->pluck('id')->all())->delete();
+
+                $asignacion = Asignacion::where('id_usuario', $primerPedido->id_usuario)
+                    ->where('id_cliente', $primerPedido->id_cliente)
+                    ->where('numero_pedido', $id_numero_pedido)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($asignacion) {
+                    $asignacion->numero_pedido = null;
+                    $asignacion->estado_pedido = false;
+                    $asignacion->atencion_fecha_hora = $asignacion->atencion_fecha_hora ?: now();
+                    $asignacion->save();
+                }
+
+                return [
+                    'items' => $pedidos->count(),
+                    'unidades' => $unidadesDevueltas,
+                ];
+            }, 3);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Error al eliminar pedido pendiente completo desde visualizacion.', [
+                'numero_pedido' => $id_numero_pedido,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Ocurrio un error al eliminar el pedido. Revisa el log para mas detalle.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pedido eliminado correctamente. Se devolvio el inventario reservado.',
+            'productos_eliminados' => $resultado['items'],
+            'unidades_devueltas' => $resultado['unidades'],
+        ], 200);
+    }
+
 
     public function agregarProductoPedido(Request $request, string $id_numero_pedido)
     {
@@ -1431,6 +1797,291 @@ class PedidoAdministradorController extends Controller
         return view('administrador.pedidos.editar_pedido_contabilizado', compact('pedido','suma_pedido'));
     }
 
+    public function obtenerPedidoContabilizadoEdicion(string $id_numero_pedido)
+    {
+        $pedidos = Pedido::with(['cliente.ruta', 'usuario', 'producto', 'formaVenta'])
+            ->where('numero_pedido', $id_numero_pedido)
+            ->whereNotNull('fecha_entrega')
+            ->where('estado_pedido', true)
+            ->orderBy('id')
+            ->get();
+
+        if ($pedidos->isEmpty()) {
+            return response()->json(['message' => 'Pedido contabilizado no encontrado.'], 404);
+        }
+
+        $pedidoBase = $pedidos->first();
+        $cliente = $pedidoBase->cliente;
+        $usuario = $pedidoBase->usuario;
+        $fechaContabilizacion = Venta::where('numero_pedido', $id_numero_pedido)->min('fecha_contabilizacion');
+
+        $items = $pedidos->map(function (Pedido $pedido) {
+            $precioUnitario = (float) ($pedido->precio_unitario ?? $pedido->formaVenta?->precio_venta ?? 0);
+
+            return [
+                'pedido_id' => $pedido->id,
+                'producto_id' => $pedido->id_producto,
+                'producto_texto' => trim(($pedido->producto?->codigo ?? 'N/A').' - '.($pedido->producto?->nombre_producto ?? 'Producto')),
+                'producto_codigo' => $pedido->producto?->codigo,
+                'detalle_cantidad' => $pedido->producto?->detalle_cantidad ?? 'UNIDADES',
+                'stock_actual' => (int) ($pedido->producto?->cantidad ?? 0),
+                'forma_venta_id' => $pedido->id_forma_venta,
+                'cantidad' => (int) $pedido->cantidad,
+                'precio_unitario' => round($precioUnitario, 2),
+                'subtotal' => round($precioUnitario * (int) $pedido->cantidad, 2),
+                'formas_venta' => $this->obtenerFormasVentaParaEdicion((int) $pedido->id_producto, (int) $pedido->id_forma_venta),
+            ];
+        })->values();
+
+        return response()->json([
+            'pedido' => [
+                'numero_pedido' => $pedidoBase->numero_pedido,
+                'id_cliente' => $pedidoBase->id_cliente,
+                'cliente_texto' => trim(($cliente?->codigo_cliente ?? '').' '.($cliente?->nombres ?? '').' '.($cliente?->apellidos ?? '')),
+                'cliente_ruta' => $cliente?->ruta?->nombre_ruta ?? 'Sin ruta',
+                'cliente_direccion' => trim(($cliente?->calle_avenida ?? '').' '.($cliente?->zona_barrio ?? '')),
+                'id_usuario' => $pedidoBase->id_usuario,
+                'preventista_texto' => trim(($usuario?->nombres ?? '').' '.($usuario?->apellido_paterno ?? '').' '.($usuario?->apellido_materno ?? '')),
+                'fecha_pedido' => $pedidoBase->fecha_pedido ? date('Y-m-d\TH:i', strtotime($pedidoBase->fecha_pedido)) : null,
+                'fecha_entrega' => $pedidoBase->fecha_entrega ? date('d/m/Y H:i', strtotime($pedidoBase->fecha_entrega)) : 'N/A',
+                'fecha_contabilizacion' => $fechaContabilizacion ? date('d/m/Y H:i', strtotime($fechaContabilizacion)) : 'N/A',
+            ],
+            'items' => $items,
+            'total' => round($items->sum('subtotal'), 2),
+        ], 200);
+    }
+
+    public function actualizarPedidoContabilizadoCompleto(Request $request, string $id_numero_pedido)
+    {
+        $data = $request->validate([
+            'id_cliente' => 'required|exists:clientes,id',
+            'id_usuario' => 'required|exists:users,id',
+            'fecha_pedido' => 'required|date',
+            'items' => 'required|array|min:1',
+            'items.*.pedido_id' => 'nullable|integer',
+            'items.*.producto_id' => 'required|exists:productos,id',
+            'items.*.tipo_venta_id' => 'required|exists:forma_ventas,id',
+            'items.*.cantidad' => 'required|integer|min:1',
+        ]);
+
+        try {
+            $resultado = DB::transaction(function () use ($data, $id_numero_pedido) {
+                $pedidosExistentes = Pedido::with('formaVenta')
+                    ->where('numero_pedido', $id_numero_pedido)
+                    ->whereNotNull('fecha_entrega')
+                    ->where('estado_pedido', true)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if ($pedidosExistentes->isEmpty()) {
+                    abort(404, 'Pedido contabilizado no encontrado.');
+                }
+
+                if (! User::role('vendedor')->whereKey($data['id_usuario'])->exists()) {
+                    throw ValidationException::withMessages([
+                        'id_usuario' => 'El preventista seleccionado no es valido para pedidos contabilizados.',
+                    ]);
+                }
+
+                $pedidoIdsSolicitados = collect($data['items'])
+                    ->pluck('pedido_id')
+                    ->filter(fn ($value) => ! is_null($value))
+                    ->values();
+
+                if ($pedidoIdsSolicitados->duplicates()->isNotEmpty()) {
+                    throw ValidationException::withMessages([
+                        'items' => 'No puedes repetir la misma linea del pedido varias veces en la actualizacion.',
+                    ]);
+                }
+
+                foreach ($pedidoIdsSolicitados as $pedidoIdSolicitado) {
+                    if (! $pedidosExistentes->has((int) $pedidoIdSolicitado)) {
+                        throw ValidationException::withMessages([
+                            'items' => 'Se intento actualizar una linea que no pertenece a este pedido contabilizado.',
+                        ]);
+                    }
+                }
+
+                $productosIds = $pedidosExistentes->pluck('id_producto')
+                    ->merge(collect($data['items'])->pluck('producto_id'))
+                    ->unique()
+                    ->values();
+
+                $productos = Producto::whereIn('id', $productosIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($pedidosExistentes as $pedidoExistente) {
+                    $formaVentaOriginal = $pedidoExistente->formaVenta;
+                    $productoOriginal = $productos->get($pedidoExistente->id_producto);
+
+                    if (! $formaVentaOriginal || ! $productoOriginal) {
+                        throw ValidationException::withMessages([
+                            'items' => 'No se pudo reconstruir el stock original del pedido contabilizado para editarlo.',
+                        ]);
+                    }
+
+                    $productoOriginal->cantidad += ((int) $pedidoExistente->cantidad * (int) $formaVentaOriginal->equivalencia_cantidad);
+                }
+
+                $idsConservados = [];
+                $fechaEntrega = $pedidosExistentes->first()->fecha_entrega;
+                $fechaContabilizacion = $this->obtenerFechaContabilizacionBloqueada($id_numero_pedido);
+
+                foreach ($data['items'] as $index => $item) {
+                    $producto = $productos->get((int) $item['producto_id']);
+                    $formaVenta = FormaVenta::whereKey($item['tipo_venta_id'])
+                        ->where('id_producto', $item['producto_id'])
+                        ->first();
+
+                    if (! $producto || $producto->estado_de_baja) {
+                        throw ValidationException::withMessages([
+                            "items.$index.producto_id" => 'El producto seleccionado no esta disponible para pedidos contabilizados.',
+                        ]);
+                    }
+
+                    if (! $formaVenta) {
+                        throw ValidationException::withMessages([
+                            "items.$index.tipo_venta_id" => 'La forma de venta no corresponde al producto seleccionado.',
+                        ]);
+                    }
+
+                    $cantidadSolicitada = (int) $item['cantidad'];
+                    $cantidadEnUnidades = $cantidadSolicitada * (int) $formaVenta->equivalencia_cantidad;
+
+                    if ($producto->cantidad < $cantidadEnUnidades) {
+                        throw ValidationException::withMessages([
+                            "items.$index.cantidad" => 'Stock insuficiente para '.$producto->nombre_producto.'. Disponible: '.$producto->cantidad.' '.$producto->detalle_cantidad.'.',
+                        ]);
+                    }
+
+                    $producto->cantidad -= $cantidadEnUnidades;
+
+                    $pedidoId = isset($item['pedido_id']) ? (int) $item['pedido_id'] : null;
+                    $pedidoExistente = $pedidoId ? $pedidosExistentes->get($pedidoId) : null;
+
+                    $precioUnitario = (float) $formaVenta->precio_venta;
+                    $promocion = (bool) ($producto->promocion ?? false);
+                    $descuento = $producto->descripcion_descuento_porcentaje ?? null;
+                    $regalo = $producto->descripcion_regalo ?? null;
+
+                    if (
+                        $pedidoExistente
+                        && (int) $pedidoExistente->id_producto === (int) $item['producto_id']
+                        && (int) $pedidoExistente->id_forma_venta === (int) $item['tipo_venta_id']
+                    ) {
+                        $precioUnitario = (float) ($pedidoExistente->precio_unitario ?? $formaVenta->precio_venta);
+                        $promocion = (bool) $pedidoExistente->promocion;
+                        $descuento = $pedidoExistente->descripcion_descuento_porcentaje;
+                        $regalo = $pedidoExistente->descripcion_regalo;
+                    }
+
+                    if ($pedidoExistente) {
+                        $pedidoExistente->update([
+                            'id_usuario' => $data['id_usuario'],
+                            'id_cliente' => $data['id_cliente'],
+                            'id_producto' => $item['producto_id'],
+                            'id_forma_venta' => $item['tipo_venta_id'],
+                            'precio_unitario' => $precioUnitario,
+                            'fecha_pedido' => $data['fecha_pedido'],
+                            'fecha_entrega' => $fechaEntrega,
+                            'cantidad' => $cantidadSolicitada,
+                            'estado_pedido' => true,
+                            'promocion' => $promocion,
+                            'descripcion_descuento_porcentaje' => $descuento,
+                            'descripcion_regalo' => $regalo,
+                        ]);
+
+                        $idsConservados[] = $pedidoExistente->id;
+                        continue;
+                    }
+
+                    $nuevoPedido = Pedido::create([
+                        'id_usuario' => $data['id_usuario'],
+                        'id_cliente' => $data['id_cliente'],
+                        'id_producto' => $item['producto_id'],
+                        'id_forma_venta' => $item['tipo_venta_id'],
+                        'precio_unitario' => $precioUnitario,
+                        'numero_pedido' => $id_numero_pedido,
+                        'fecha_pedido' => $data['fecha_pedido'],
+                        'fecha_entrega' => $fechaEntrega,
+                        'cantidad' => $cantidadSolicitada,
+                        'estado_pedido' => true,
+                        'promocion' => $promocion,
+                        'descripcion_descuento_porcentaje' => $descuento,
+                        'descripcion_regalo' => $regalo,
+                    ]);
+
+                    $idsConservados[] = $nuevoPedido->id;
+                }
+
+                $idsAEliminar = $pedidosExistentes->keys()->diff($idsConservados);
+
+                if ($idsAEliminar->isNotEmpty()) {
+                    Pedido::whereIn('id', $idsAEliminar->all())->delete();
+                }
+
+                foreach ($productos as $producto) {
+                    if ($producto->isDirty('cantidad')) {
+                        if ($producto->cantidad < 0) {
+                            throw ValidationException::withMessages([
+                                'items' => 'La actualizacion dejaria stock negativo en '.$producto->nombre_producto.'.',
+                            ]);
+                        }
+
+                        $producto->save();
+                    }
+                }
+
+                $this->reconstruirVentasContabilizadas($id_numero_pedido, $fechaContabilizacion);
+
+                $total = Pedido::where('numero_pedido', $id_numero_pedido)
+                    ->join('forma_ventas', 'pedidos.id_forma_venta', '=', 'forma_ventas.id')
+                    ->whereNotNull('pedidos.fecha_entrega')
+                    ->where('pedidos.estado_pedido', true)
+                    ->sum(DB::raw('pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)'));
+
+                $inicioArqueo = \Carbon\Carbon::parse($fechaContabilizacion)->startOfDay();
+                $finArqueo = \Carbon\Carbon::parse($fechaContabilizacion)->endOfDay();
+
+                $totalArqueo = Venta::whereBetween('fecha_contabilizacion', [$inicioArqueo, $finArqueo])
+                    ->sum(DB::raw('cantidad * COALESCE(ventas.precio_unitario, (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta))'));
+
+                return [
+                    'items' => count($data['items']),
+                    'total' => round((float) $total, 2),
+                    'arqueo_total' => round((float) $totalArqueo, 2),
+                    'fecha_arqueo' => $inicioArqueo->format('Y-m-d'),
+                ];
+            }, 3);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Error al actualizar pedido contabilizado desde modal.', [
+                'numero_pedido' => $id_numero_pedido,
+                'request' => $request->all(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Ocurrio un error al actualizar el pedido contabilizado. Revisa el log para mas detalle.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pedido contabilizado actualizado correctamente.',
+            'items' => $resultado['items'],
+            'total' => $resultado['total'],
+            'arqueo_total' => $resultado['arqueo_total'],
+            'fecha_arqueo' => $resultado['fecha_arqueo'],
+        ], 200);
+    }
+
     public function agregarProductoPedidoContabilizado(Request $request, string $id_numero_pedido){
         $request->validate([
             'producto_id' => 'required|exists:productos,id',
@@ -1478,9 +2129,7 @@ class PedidoAdministradorController extends Controller
                 'descripcion_regalo' => $producto->descripcion_regalo ?? null,
             ]);
 
-            $fechaContabilizacion = Venta::where('numero_pedido', $pedidoActual->numero_pedido)
-                ->lockForUpdate()
-                ->value('fecha_contabilizacion');
+            $fechaContabilizacion = $this->obtenerFechaContabilizacionBloqueada($pedidoActual->numero_pedido);
 
             $this->reconstruirVentasContabilizadas($pedidoActual->numero_pedido, $fechaContabilizacion);
         }, 3);
@@ -1505,9 +2154,7 @@ class PedidoAdministradorController extends Controller
             $producto->cantidad += $cantidadEnUnidades;
             $producto->save();
 
-            $fechaContabilizacion = Venta::where('numero_pedido', $numeroPedido)
-                ->lockForUpdate()
-                ->value('fecha_contabilizacion');
+            $fechaContabilizacion = $this->obtenerFechaContabilizacionBloqueada($numeroPedido);
 
             $pedido->delete();
 
@@ -1515,6 +2162,93 @@ class PedidoAdministradorController extends Controller
         }, 3);
 
         return response()->json(['success' => true, 'mensaje' => 'Producto eliminado del pedido correctamente.']);
+    }
+
+    public function eliminarPedidoContabilizadoCompleto(string $id_numero_pedido)
+    {
+        try {
+            $resultado = DB::transaction(function () use ($id_numero_pedido) {
+                $fechaContabilizacion = $this->obtenerFechaContabilizacionBloqueada($id_numero_pedido);
+                $pedidos = Pedido::with('formaVenta')
+                    ->where('numero_pedido', $id_numero_pedido)
+                    ->whereNotNull('fecha_entrega')
+                    ->where('estado_pedido', true)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($pedidos->isEmpty()) {
+                    abort(404, 'El pedido contabilizado ya fue eliminado o no existe.');
+                }
+
+                $productos = Producto::whereIn('id', $pedidos->pluck('id_producto')->unique()->all())
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                Venta::where('numero_pedido', $id_numero_pedido)->lockForUpdate()->get();
+
+                $unidadesDevueltas = 0;
+
+                foreach ($pedidos as $pedido) {
+                    $formaVenta = $pedido->formaVenta;
+                    $producto = $productos->get($pedido->id_producto);
+
+                    if (! $formaVenta || ! $producto) {
+                        throw ValidationException::withMessages([
+                            'pedido' => 'No se pudo resolver el producto o la forma de venta para devolver inventario.',
+                        ]);
+                    }
+
+                    $cantidadEnUnidades = (int) $pedido->cantidad * (int) $formaVenta->equivalencia_cantidad;
+                    $producto->cantidad += $cantidadEnUnidades;
+                    $unidadesDevueltas += $cantidadEnUnidades;
+                }
+
+                foreach ($productos as $producto) {
+                    if ($producto->isDirty('cantidad')) {
+                        $producto->save();
+                    }
+                }
+
+                Venta::where('numero_pedido', $id_numero_pedido)->delete();
+                Pedido::whereIn('id', $pedidos->pluck('id')->all())->delete();
+
+                $inicioArqueo = \Carbon\Carbon::parse($fechaContabilizacion)->startOfDay();
+                $finArqueo = \Carbon\Carbon::parse($fechaContabilizacion)->endOfDay();
+
+                $totalArqueo = Venta::whereBetween('fecha_contabilizacion', [$inicioArqueo, $finArqueo])
+                    ->sum(DB::raw('cantidad * COALESCE(ventas.precio_unitario, (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta))'));
+
+                return [
+                    'items' => $pedidos->count(),
+                    'unidades' => $unidadesDevueltas,
+                    'arqueo_total' => round((float) $totalArqueo, 2),
+                    'fecha_arqueo' => $inicioArqueo->format('Y-m-d'),
+                ];
+            }, 3);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            Log::error('Error al eliminar pedido contabilizado completo desde visualizacion.', [
+                'numero_pedido' => $id_numero_pedido,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Ocurrio un error al eliminar el pedido contabilizado. Revisa el log para mas detalle.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pedido contabilizado eliminado correctamente. El inventario fue restituido.',
+            'productos_eliminados' => $resultado['items'],
+            'unidades_devueltas' => $resultado['unidades'],
+            'arqueo_total' => $resultado['arqueo_total'],
+            'fecha_arqueo' => $resultado['fecha_arqueo'],
+        ], 200);
     }
 
 
@@ -1686,6 +2420,48 @@ class PedidoAdministradorController extends Controller
         }
     }
 
+    private function obtenerFechaContabilizacionBloqueada(string $numeroPedido)
+    {
+        $ventas = Venta::where('numero_pedido', $numeroPedido)
+            ->lockForUpdate()
+            ->orderBy('fecha_contabilizacion')
+            ->get(['id', 'fecha_contabilizacion']);
+
+        if ($ventas->isEmpty()) {
+            throw ValidationException::withMessages([
+                'pedido' => 'No se encontro la contabilizacion asociada al pedido. Revisa la consistencia entre pedidos y ventas.',
+            ]);
+        }
+
+        return $ventas->first()->fecha_contabilizacion;
+    }
+
+    private function obtenerFormasVentaParaEdicion(int $productoId, ?int $formaVentaSeleccionada = null): array
+    {
+        return FormaVenta::query()
+            ->where('id_producto', $productoId)
+            ->when(
+                $formaVentaSeleccionada,
+                fn ($query) => $query->where(function ($subquery) use ($formaVentaSeleccionada) {
+                    $subquery->where('activo', true)
+                        ->orWhere('id', $formaVentaSeleccionada);
+                }),
+                fn ($query) => $query->where('activo', true)
+            )
+            ->orderBy('equivalencia_cantidad')
+            ->get()
+            ->map(fn ($formaVenta) => [
+                'id' => $formaVenta->id,
+                'tipo_venta' => $formaVenta->tipo_venta,
+                'precio_venta' => round((float) $formaVenta->precio_venta, 2),
+                'equivalencia_cantidad' => (int) $formaVenta->equivalencia_cantidad,
+                'activo' => (bool) $formaVenta->activo,
+                'texto' => $formaVenta->tipo_venta.' - Bs '.number_format((float) $formaVenta->precio_venta, 2, '.', ','),
+            ])
+            ->values()
+            ->all();
+    }
+
     private function resumenPedidosFlujo(): array
     {
         $pendientes = $this->basePedidosPendientes();
@@ -1701,4 +2477,3 @@ class PedidoAdministradorController extends Controller
         ];
     }
 }
-

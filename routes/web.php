@@ -130,7 +130,10 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //Pedido administrador Controller
         Route::get('pedidos/administrador/visualizacion', [PedidoAdministradorController::class,'index'])->name('pedidos.administrador.visualizacion');
         Route::get('pedidos/administrador/visualizacion/{id}/editar', [PedidoAdministradorController::class,'editarPedido'])->name('pedidos.administrador.editar');
+        Route::get('pedidos/administrador/visualizacion/{id}/editar/datos', [PedidoAdministradorController::class,'obtenerPedidoEdicion'])->name('pedidos.administrador.editar.datos');
         Route::put('pedidos/administrador/visualizacion/actualizar/{id}', [PedidoAdministradorController::class,'agregarProductoPedido'])->name('pedidos.administrador.agregarProducto');
+        Route::put('pedidos/administrador/visualizacion/actualizar-completo/{id}', [PedidoAdministradorController::class,'actualizarPedidoCompleto'])->name('pedidos.administrador.actualizarCompleto');
+        Route::delete('pedidos/administrador/visualizacion/eliminar-completo/{id}', [PedidoAdministradorController::class,'eliminarPedidoCompletoPendiente'])->name('pedidos.administrador.eliminarCompleto');
         Route::delete('pedidos/administrador/visualizacion/eliminar-producto/{id}', [PedidoAdministradorController::class,'eliminarProductoPedido'])->name('pedidos.administrador.eliminarProducto');
 
 
@@ -156,9 +159,12 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         Route::get('pedidos/administrador/visualizacion-contabilizados/fecha/{fecha}/pedidos', [PedidoAdministradorController::class,'pedidosContabilizadosPorFecha'])->name('pedidos.administrador.contabilizados.fecha.pedidos');
         Route::get('pedidos/administrador/visualizacion-contabilizados/{numero_pedido}/detalle', [PedidoAdministradorController::class,'detallePedidoContabilizado'])->name('pedidos.administrador.contabilizados.detalle');
         Route::get('pedidos/administrador/visualizacion/{id}/editar-contabilizados', [PedidoAdministradorController::class,'editarPedidoContabilizado'])->name('pedidos.administrador.editar.contabilizados');
+        Route::get('pedidos/administrador/visualizacion/{id}/editar-contabilizados/datos', [PedidoAdministradorController::class,'obtenerPedidoContabilizadoEdicion'])->name('pedidos.administrador.editar.contabilizados.datos');
         
         Route::put('pedidos/administrador/visualizacion/actualizar-contabilizado/{id}', [PedidoAdministradorController::class,'agregarProductoPedidoContabilizado'])->name('pedidos.administrador.agregarProducto.contabilizado');
+        Route::put('pedidos/administrador/visualizacion/actualizar-contabilizado-completo/{id}', [PedidoAdministradorController::class,'actualizarPedidoContabilizadoCompleto'])->name('pedidos.administrador.actualizarCompleto.contabilizado');
         Route::delete('pedidos/administrador/visualizacion/eliminar-producto/contabilizado/{id}', [PedidoAdministradorController::class,'eliminarProductoPedidoContabilizado'])->name('pedidos.administrador.eliminarProducto.contabilizado');
+        Route::delete('pedidos/administrador/visualizacion/eliminar-contabilizado-completo/{id}', [PedidoAdministradorController::class,'eliminarPedidoContabilizadoCompleto'])->name('pedidos.administrador.eliminarCompleto.contabilizado');
 
 
         Route::put('pedidos/administrador/recontabilizar-pedido/{numero_pedido}', [PedidoAdministradorController::class,'recontabilizarPedido'])->name('pedidos.administrador.recontabilizarPedido');

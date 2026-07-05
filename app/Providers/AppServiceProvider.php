@@ -27,8 +27,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('mayoristas.panel', function (User $user) {
             return $user->can('administrador.permisos')
-                || $user->can('mayorista.permisos')
-                || $user->can('mayoristas.permisos');
+                || $user->can('mayorista.permisos');
         });
     }
 }

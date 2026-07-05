@@ -337,6 +337,16 @@ class VentaController extends Controller
                 ->orderBy('ventas.numero_pedido', 'asc');
 
             return DataTables::of($query)
+                ->filter(function ($query) use ($request) {
+                    $search = trim((string) data_get($request->input('search'), 'value', ''));
+
+                    if ($search === '') {
+                        return;
+                    }
+
+                    // En esta vista priorizamos la busqueda por numero de pedido.
+                    $query->whereRaw('CAST(ventas.numero_pedido AS TEXT) ILIKE ?', ["%{$search}%"]);
+                }, true)
                 ->addColumn('numero_pedido', function($venta) {
                     return $venta->numero_pedido;
                 })
@@ -387,9 +397,14 @@ class VentaController extends Controller
                     }
                 })
                 ->addColumn('acciones', function($venta) {
-                    return '<a class="btn btn-warning btn-sm" href="'.route('administrador.pedidos.administrador.editar.contabilizados', $venta->numero_pedido ).'">
-                                <i class="fas fa-edit"></i>
-                            </a>';
+                    return '<div class="order-actions">
+                                <button type="button" class="btn btn-warning btn-sm order-action-btn" onclick="abrirModalEditarPedidoContabilizado(this)" data-numero-pedido="'.$venta->numero_pedido.'">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm order-action-btn" onclick="abrirModalEliminarPedidoContabilizado(this)" data-numero-pedido="'.$venta->numero_pedido.'">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>';
                 })
                 ->rawColumns(['acciones'])
                 ->make(true);
@@ -400,7 +415,9 @@ class VentaController extends Controller
             ->selectRaw('SUM(cantidad * COALESCE(ventas.precio_unitario, (SELECT precio_venta FROM forma_ventas WHERE forma_ventas.id = ventas.id_forma_venta))) as total')
             ->value('total');
 
-        return view('administrador.ventas.ver_venta_por_fecha_arqueo', compact('fecha_arqueo','total_monto_contabilizado'));
+        $preventistas = User::role('vendedor')->get();
+
+        return view('administrador.ventas.ver_venta_por_fecha_arqueo', compact('fecha_arqueo','total_monto_contabilizado', 'preventistas'));
 
     }
 
@@ -495,4 +512,3 @@ class VentaController extends Controller
         return response()->json(['message' => 'Venta registrada correctamente'], 200);
     }
 }
-

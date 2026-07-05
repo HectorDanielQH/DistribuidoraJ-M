@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Yajra\DataTables\DataTables;
 
 class PermisosController extends Controller
@@ -49,6 +50,7 @@ class PermisosController extends Controller
         $role = Role::create(['name' => $request->name]);
         $permissions = Permission::create(['name' => $request->name.'.permisos']);
         $permissions->assignRole($role);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return response()->json(['success' => true, 'message' => 'Permiso creado exitosamente.', 'role' => $role]);
     }
@@ -69,6 +71,7 @@ class PermisosController extends Controller
         }
         $role->name = $request->name;
         $role->save();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return response()->json(['success' => true, 'message' => 'Permiso actualizado exitosamente.', 'role' => $role]);
     }
@@ -82,6 +85,7 @@ class PermisosController extends Controller
         }
         $role->permissions()->detach();
         $role->delete();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return response()->json(['success' => true, 'message' => 'Permiso eliminado exitosamente.']);
     }
