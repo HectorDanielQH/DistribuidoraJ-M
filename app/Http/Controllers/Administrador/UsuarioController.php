@@ -266,8 +266,12 @@ class UsuarioController extends Controller
     {
         $usuario = User::findOrFail($id);
 
-        if ($usuario->foto_perfil && Storage::disk('local')->exists($usuario->foto_perfil)) {
-            Storage::disk('local')->delete($usuario->foto_perfil);
+        if ($usuario->foto_perfil) {
+            if (Storage::disk('public')->exists($usuario->foto_perfil)) {
+                Storage::disk('public')->delete($usuario->foto_perfil);
+            } elseif (Storage::disk('local')->exists($usuario->foto_perfil)) {
+                Storage::disk('local')->delete($usuario->foto_perfil);
+            }
         }
 
         $usuario->delete();
@@ -282,10 +286,19 @@ class UsuarioController extends Controller
     public function imagenPerfil(string $id)
     {
         $usuario = User::findOrFail($id);
-        if (!$usuario->foto_perfil || !Storage::disk('local')->exists($usuario->foto_perfil)) {
+
+        if (!$usuario->foto_perfil) {
             abort(404);
         }
 
-        return response()->file(storage_path('app/private/' . $usuario->foto_perfil));
+        if (Storage::disk('public')->exists($usuario->foto_perfil)) {
+            return response()->file(storage_path('app/public/' . $usuario->foto_perfil));
+        }
+
+        if (Storage::disk('local')->exists($usuario->foto_perfil)) {
+            return response()->file(storage_path('app/private/' . $usuario->foto_perfil));
+        }
+
+        abort(404);
     }
 }
