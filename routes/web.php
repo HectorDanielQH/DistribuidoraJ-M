@@ -270,6 +270,7 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
         Route::get('pedidos/administrador/visualizacion-pdf-despachar-pendientes', [PedidoAdministradorController::class,'visualizacionPdfDespacharPendientes'])->name('pedidos.administrador.visualizacionPdfDespachar.pedidosPendientes');
 
         //rendimiento personal Controller
+        Route::get('rendimientopersonal/panel-data', [RendimientoPersonalController::class, 'panelData'])->name('rendimientopersonal.panelData');
         Route::get('rendimientopersonal/obtener-rendimiento-personal/{id}', [RendimientoPersonalController::class, 'rendimientoPersonal'])->name('rendimientopersonal.obtenerRendimientoPersonal');
         //VENTAS----------------------------
         Route::get('ventas/obtener-ventas/fechas', [VentaController::class, 'obtenerVentas'])->name('ventas.obtenerVentas.porfechas');
