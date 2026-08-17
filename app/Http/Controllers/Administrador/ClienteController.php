@@ -3,15 +3,30 @@
 namespace App\Http\Controllers\Administrador;
 
 use App\Http\Controllers\Controller;
+use App\Exports\ClientesReporteExport;
 use App\Imports\ClientesImport;
 use App\Models\Cliente;
 use App\Models\Rutas;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\DataTables;
 
 class ClienteController extends Controller
 {
+    private const COLUMNAS_REPORTE = [
+        'codigo_cliente' => 'Codigo cliente',
+        'cedula_identidad' => 'C.I.',
+        'nombres_completos' => 'Nombre completo',
+        'nombres' => 'Nombres',
+        'apellidos' => 'Apellidos',
+        'celular' => 'Celular',
+        'calle_avenida' => 'Direccion',
+        'zona_barrio' => 'Zona/Barrio',
+        'referencia_direccion' => 'Referencia',
+        'ruta' => 'Ruta',
+    ];
+
     /**
      * Display a listing of the resource.
      */
@@ -70,8 +85,10 @@ class ClienteController extends Controller
                 ->rawColumns(['acciones'])
                 ->toJson();
         }
-        $rutas = Rutas::all();
-        return view('administrador.clientes.index_clientes', compact('rutas'));
+        $rutas = Rutas::orderBy('nombre_ruta')->get();
+        $columnasReporte = self::COLUMNAS_REPORTE;
+
+        return view('administrador.clientes.index_clientes', compact('rutas', 'columnasReporte'));
     }
 
     /**
@@ -226,5 +243,94 @@ class ClienteController extends Controller
             ->get();
 
         return response()->json($clientes_y_rutas);
+    }
+
+    public function exportarReporte(Request $request)
+    {
+        $validated = $request->validate([
+            'ruta_ids' => 'nullable|array',
+            'ruta_ids.*' => 'exists:rutas,id',
+            'columnas' => 'required|array|min:1',
+            'columnas.*' => 'in:' . implode(',', array_keys(self::COLUMNAS_REPORTE)),
+            'formato' => 'required|in:excel,pdf',
+        ], [
+            'columnas.required' => 'Debes seleccionar al menos una columna para el reporte.',
+            'columnas.min' => 'Debes seleccionar al menos una columna para el reporte.',
+            'formato.required' => 'Debes indicar el formato de exportacion.',
+            'formato.in' => 'El formato de exportacion solicitado no es valido.',
+        ]);
+
+        $clientes = $this->clientesReporteQuery($request)->get();
+        $columnas = array_values($validated['columnas']);
+        $encabezados = collect($columnas)
+            ->map(fn ($columna) => self::COLUMNAS_REPORTE[$columna])
+            ->all();
+        $filas = $this->mapearFilasReporte($clientes, $columnas);
+        $rutasSeleccionadas = Rutas::query()
+            ->whereIn('id', collect($validated['ruta_ids'] ?? [])->filter()->all())
+            ->orderBy('nombre_ruta')
+            ->pluck('nombre_ruta')
+            ->all();
+        $nombreBase = 'reporte_clientes_rutas_' . now()->format('Ymd_His');
+
+        if ($validated['formato'] === 'excel') {
+            return Excel::download(
+                new ClientesReporteExport($encabezados, $filas),
+                $nombreBase . '.xlsx'
+            );
+        }
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_clientes_por_rutas', [
+            'titulo' => 'Reporte de clientes por rutas',
+            'encabezados' => $encabezados,
+            'filas' => $filas,
+            'columnas' => $columnas,
+            'rutasSeleccionadas' => $rutasSeleccionadas,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download($nombreBase . '.pdf');
+    }
+
+    private function clientesReporteQuery(Request $request)
+    {
+        $rutaIds = collect((array) $request->input('ruta_ids', []))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return Cliente::query()
+            ->with('ruta:id,nombre_ruta')
+            ->when(!empty($rutaIds), function ($query) use ($rutaIds) {
+                $query->whereIn('ruta_id', $rutaIds);
+            })
+            ->orderBy('ruta_id')
+            ->orderBy('nombres')
+            ->orderBy('apellidos');
+    }
+
+    private function mapearFilasReporte($clientes, array $columnas): array
+    {
+        return $clientes->map(function ($cliente) use ($columnas) {
+            $fila = [];
+
+            foreach ($columnas as $columna) {
+                $fila[] = match ($columna) {
+                    'codigo_cliente' => $cliente->codigo_cliente,
+                    'cedula_identidad' => $cliente->cedula_identidad,
+                    'nombres_completos' => trim($cliente->nombres . ' ' . $cliente->apellidos),
+                    'nombres' => $cliente->nombres,
+                    'apellidos' => $cliente->apellidos,
+                    'celular' => $cliente->celular,
+                    'calle_avenida' => $cliente->calle_avenida,
+                    'zona_barrio' => $cliente->zona_barrio,
+                    'referencia_direccion' => $cliente->referencia_direccion,
+                    'ruta' => optional($cliente->ruta)->nombre_ruta ?: 'No asignada',
+                    default => '',
+                };
+            }
+
+            return $fila;
+        })->all();
     }
 }

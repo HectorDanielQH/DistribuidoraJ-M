@@ -19,6 +19,9 @@
             <button class="btn mx-1" id="boton-excel" data-toggle="modal" data-target="#agregar-archivo-excel" style="background-color: #1abc9c; color: white; font-weight: 600; border-radius: 8px;">
                 <i class="fas fa-file-excel"></i> Cargar clientes de Excel
             </button>
+            <button class="btn mx-1" id="boton-reporte-clientes" data-toggle="modal" data-target="#modal-reporte-clientes" style="background-color: #155e75; color: white; font-weight: 600; border-radius: 8px;">
+                <i class="fas fa-file-export"></i> Reporte por rutas
+            </button>
         </div>
     </div>
 
@@ -251,6 +254,74 @@
     </x-adminlte-modal>
 
 
+    <x-adminlte-modal id="modal-reporte-clientes" size="xl" theme="dark" icon="fas fa-file-export" title="Reporte de clientes por rutas">
+        <div class="modal-body px-4">
+            <div class="report-modal-intro mb-4">
+                <div>
+                    <h3 class="mb-2 text-dark">
+                        <i class="fas fa-route text-success me-2"></i> Exportación por rutas
+                    </h3>
+                    <p class="text-muted mb-0">
+                        Selecciona una o varias rutas, define qué columnas quieres incluir y genera el reporte en Excel o PDF.
+                    </p>
+                </div>
+                <div class="report-card__badge mt-3 mt-lg-0">
+                    <i class="fas fa-file-export"></i>
+                    <span>Exportación flexible</span>
+                </div>
+            </div>
+
+            <form id="form-reporte-clientes" action="{{ route('administrador.clientes.exportarReporte') }}" method="GET" target="_blank">
+                <input type="hidden" name="formato" id="reporte-formato">
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <label for="rutaReporte" class="form-label fw-semibold text-dark">Rutas a incluir</label>
+                        <select name="ruta_ids[]" id="rutaReporte" class="form-control" multiple="multiple">
+                            @foreach ($rutas as $ruta)
+                                <option value="{{ $ruta->id }}">{{ $ruta->nombre_ruta }}</option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted d-block mt-2">
+                            Si no seleccionas ninguna ruta, el reporte incluirá todos los clientes registrados.
+                        </small>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <label class="form-label fw-semibold text-dark">Columnas del reporte</label>
+                        <div class="row g-2 report-columns">
+                            @foreach ($columnasReporte as $clave => $etiqueta)
+                                <div class="col-md-6 col-xl-4">
+                                    <label class="report-column-option">
+                                        <input type="checkbox" name="columnas[]" value="{{ $clave }}" {{ in_array($clave, ['codigo_cliente','nombres_completos','celular','calle_avenida','zona_barrio','ruta']) ? 'checked' : '' }}>
+                                        <span>{{ $etiqueta }}</span>
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="seleccionar-todas-columnas">
+                                <i class="fas fa-check-double"></i> Seleccionar todas
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="limpiar-columnas">
+                                <i class="fas fa-eraser"></i> Limpiar selección
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <x-slot name="footerSlot">
+            <button type="button" class="btn btn-success px-4" id="exportar-excel-clientes">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+            <button type="button" class="btn btn-danger px-4" id="exportar-pdf-clientes">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <x-adminlte-button theme="secondary" label="Cerrar" data-dismiss="modal" icon="fas fa-times" class="rounded-3 px-4 py-2" />
+        </x-slot>
+    </x-adminlte-modal>
+
     <!-- TABLA -->
     <div class="container pb-5">
         <table id="tabla-clientes" class="table table-striped table-bordered dt-responsive" style="width:100%">
@@ -303,6 +374,63 @@
             background: rgba(0,0,0,0.4);
             z-index: 1050;
         }
+        .report-modal-intro {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .report-card__badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(26, 188, 156, 0.12);
+            color: #0f766e;
+            font-weight: 600;
+        }
+        .report-columns {
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .report-column-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 12px 14px;
+            border: 1px solid #d9e4ea;
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #modal-reporte-clientes .modal-content {
+            border-radius: 18px;
+            overflow: hidden;
+        }
+        #modal-reporte-clientes .modal-body {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+        }
+        .report-column-option:hover {
+            border-color: #1abc9c;
+            box-shadow: 0 10px 24px rgba(26, 188, 156, 0.12);
+        }
+        .report-column-option input {
+            accent-color: #1abc9c;
+            transform: scale(1.1);
+        }
+        .report-column-option span {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        @media (max-width: 768px) {
+            .report-modal-intro {
+                flex-direction: column;
+            }
+        }
     </style>
 @stop
 
@@ -322,6 +450,10 @@
             });
             $('#rutaEditar').select2({
                 placeholder: 'Seleccione una ruta',
+                width: '100%'
+            });
+            $('#rutaReporte').select2({
+                placeholder: 'Selecciona una o varias rutas',
                 width: '100%'
             });
 
@@ -348,6 +480,40 @@
                 ],
                 order: [[0, 'asc']],
             });
+        });
+    </script>
+
+    <script>
+        function enviarReporteClientes(formato) {
+            const columnasSeleccionadas = $('#form-reporte-clientes input[name="columnas[]"]:checked');
+
+            if (columnasSeleccionadas.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Selecciona columnas',
+                    text: 'Debes seleccionar al menos una columna para exportar el reporte.'
+                });
+                return;
+            }
+
+            $('#reporte-formato').val(formato);
+            $('#form-reporte-clientes').trigger('submit');
+        }
+
+        $('#seleccionar-todas-columnas').on('click', function () {
+            $('#form-reporte-clientes input[name="columnas[]"]').prop('checked', true);
+        });
+
+        $('#limpiar-columnas').on('click', function () {
+            $('#form-reporte-clientes input[name="columnas[]"]').prop('checked', false);
+        });
+
+        $('#exportar-excel-clientes').on('click', function () {
+            enviarReporteClientes('excel');
+        });
+
+        $('#exportar-pdf-clientes').on('click', function () {
+            enviarReporteClientes('pdf');
         });
     </script>
 

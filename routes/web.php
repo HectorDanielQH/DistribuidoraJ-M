@@ -105,6 +105,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
 
         //rutas de busqueda de clientes
         Route::get('clientes/buscar', [ClienteController::class, 'buscarClientes'])->name('clientes.buscar');
+        Route::get('clientes/exportar/reporte', [ClienteController::class, 'exportarReporte'])->name('clientes.exportarReporte');
 
         //Ruta pdf de clientes no atendidos
         Route::get('noatendidos/pdf', [NoAtendidosController::class, 'pdfNoAtendidos'])->name('noatendidos.pdf');
