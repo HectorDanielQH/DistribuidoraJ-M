@@ -554,20 +554,30 @@ class ProductoController extends Controller
     public function imagenProducto(string $id)
     {
         $producto = Producto::findOrFail($id);
-        if (!$producto->foto_producto || !Storage::disk('local')->exists($producto->foto_producto)) {
-            abort(404);
+
+        if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
+            return response()->file(storage_path('app/private/' . $producto->foto_producto));
         }
 
-        return response()->file(storage_path('app/private/' . $producto->foto_producto));
+        if ($producto->foto_producto && Storage::disk('public')->exists($producto->foto_producto)) {
+            return response()->file(storage_path('app/public/' . $producto->foto_producto));
+        }
+
+        return response()->file(public_path('images/logo_color.webp'));
     }
     public function imagenProductoCodigo(string $codigo)
     {
         $producto = Producto::where('codigo', $codigo)->firstOrFail();
-        if (!$producto->foto_producto || !Storage::disk('local')->exists($producto->foto_producto)) {
-            abort(404);
+
+        if ($producto->foto_producto && Storage::disk('local')->exists($producto->foto_producto)) {
+            return response()->file(storage_path('app/private/' . $producto->foto_producto));
         }
 
-        return response()->file(storage_path('app/private/' . $producto->foto_producto));
+        if ($producto->foto_producto && Storage::disk('public')->exists($producto->foto_producto)) {
+            return response()->file(storage_path('app/public/' . $producto->foto_producto));
+        }
+
+        return response()->file(public_path('images/logo_color.webp'));
     }
     
     public function actualizarCantidadProducto(Request $request, string $id)

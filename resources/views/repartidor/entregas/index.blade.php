@@ -261,6 +261,71 @@
             width: 100%;
         }
 
+        .route-panel {
+            background: #f7fbf8;
+            border-top: 1px solid #edf2ee;
+            padding: 16px 18px 18px;
+        }
+
+        .route-panel-title {
+            align-items: center;
+            color: #173f37;
+            display: flex;
+            font-size: .96rem;
+            font-weight: 900;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .route-panel-empty {
+            color: #697a75;
+            font-size: .9rem;
+            margin: 0;
+        }
+
+        .route-selected-card {
+            background: #fff;
+            border: 1px solid #dfece4;
+            border-radius: 16px;
+            padding: 13px;
+        }
+
+        .route-selected-card strong {
+            color: #123c36;
+            display: block;
+            font-size: 1.08rem;
+            margin-bottom: 4px;
+        }
+
+        .route-selected-card small {
+            color: #697a75;
+            display: block;
+            line-height: 1.35;
+        }
+
+        .route-actions {
+            display: grid;
+            gap: 9px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 12px;
+        }
+
+        .delivery-button-outline {
+            background: #fff;
+            border: 1px solid #cfe2d7;
+            color: #176b57;
+        }
+
+        .delivery-button-danger {
+            background: #15803d;
+            color: #fff;
+        }
+
+        .delivery-button:disabled {
+            cursor: wait;
+            opacity: .72;
+        }
+
         .delivery-list {
             margin-top: 18px;
         }
@@ -306,6 +371,37 @@
         .delivery-badge-warn {
             background: #fff1d0;
             color: #8d5d00;
+        }
+
+        .delivery-badge-done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .delivery-row-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .delivery-mini-btn {
+            border: 0;
+            border-radius: 999px;
+            font-size: .78rem;
+            font-weight: 900;
+            padding: 7px 10px;
+            white-space: nowrap;
+        }
+
+        .delivery-mini-btn-map {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .delivery-mini-btn-done {
+            background: #dcfce7;
+            color: #166534;
         }
 
         .delivery-empty {
@@ -390,6 +486,14 @@
             .delivery-button {
                 min-height: 48px;
                 padding: 13px 14px;
+            }
+
+            .route-panel {
+                padding: 14px;
+            }
+
+            .route-actions {
+                grid-template-columns: 1fr;
             }
 
             .delivery-stats {
@@ -491,6 +595,11 @@
                 color: #123c36;
             }
 
+            .delivery-row-actions {
+                justify-content: flex-end;
+                width: 100%;
+            }
+
             .delivery-empty {
                 display: block !important;
                 padding: 24px 10px !important;
@@ -529,8 +638,24 @@
             <div class="delivery-card-body">
                 <form id="delivery-filter-form" class="delivery-filter">
                     <div class="form-group">
-                        <label for="fecha_entrega">Fecha de despacho</label>
+                        <label for="fecha_entrega">Fecha de reparto</label>
                         <input type="date" id="fecha_entrega" name="fecha_entrega" value="{{ $fechaEntrega }}" class="form-control">
+                        <small class="form-text text-muted">Muestra pendientes programados para ese día y despachos vencidos sin programar.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numero_pedido">Número de pedido</label>
+                        <input type="search" id="numero_pedido" name="numero_pedido" class="form-control" placeholder="Ej. 12855">
+                        <small class="form-text text-muted">Busca y enfoca una entrega por número.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estado_entrega">Estado de entrega</label>
+                        <select id="estado_entrega" name="estado_entrega" class="form-control">
+                            <option value="pendiente" selected>Pendientes por entregar</option>
+                            <option value="entregado">Entregados</option>
+                            <option value="todos">Todos los despachados</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -594,6 +719,25 @@
                 <span class="text-muted small" id="delivery-map-counter">Cargando...</span>
             </div>
             <div id="delivery-map"></div>
+            <div class="route-panel" id="route-panel">
+                <div class="route-panel-title"><i class="fas fa-route"></i> Ruta seleccionada</div>
+                <p class="route-panel-empty" id="route-panel-empty">Elige “Ver ubicación” en un pedido para calcular la ruta desde tu ubicación actual.</p>
+                <div class="route-selected-card d-none" id="route-selected-card">
+                    <strong id="route-order-title">Pedido</strong>
+                    <small id="route-order-detail">Cliente y dirección</small>
+                    <div class="route-actions">
+                        <button type="button" class="delivery-button delivery-button-outline" id="btn-current-location">
+                            <i class="fas fa-location-crosshairs"></i> Mi ubicación
+                        </button>
+                        <a class="delivery-button delivery-button-outline text-center" id="btn-google-maps" href="#" target="_blank" rel="noopener">
+                            <i class="fas fa-map-signs"></i> Abrir Maps
+                        </a>
+                        <button type="button" class="delivery-button delivery-button-danger" id="btn-mark-delivered">
+                            <i class="fas fa-check-circle"></i> Marcar entregado
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -613,14 +757,16 @@
                         <th>Dirección</th>
                         <th>Celular</th>
                         <th>Fecha entrega</th>
+                        <th>Agenda</th>
                         <th>Items</th>
                         <th>Monto estimado</th>
                         <th>GPS</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="delivery-table-body">
                     <tr>
-                        <td colspan="10" class="delivery-empty">Cargando entregas...</td>
+                        <td colspan="12" class="delivery-empty">Cargando entregas...</td>
                     </tr>
                 </tbody>
             </table>
@@ -629,6 +775,7 @@
 @stop
 
 @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -636,7 +783,10 @@
             datos: @json(route('repartidor.entregas.datos')),
             mapa: @json(route('repartidor.entregas.mapa')),
             opciones: @json(route('repartidor.entregas.opciones')),
+            marcarEntregado: @json(route('repartidor.entregas.marcarEntregado', ':numeroPedido')),
+            programarReparto: @json(route('repartidor.entregas.programarReparto', ':numeroPedido')),
         };
+        const csrfToken = @json(csrf_token());
 
         const defaultMapCenter = [-17.7833, -63.1821];
         const map = L.map('delivery-map', {
@@ -650,7 +800,13 @@
         }).addTo(map);
 
         let markerLayer = L.layerGroup().addTo(map);
+        let routeLayer = L.layerGroup().addTo(map);
+        let userLocationLayer = L.layerGroup().addTo(map);
         let syncingFilters = false;
+        let currentPedidos = [];
+        let currentUbicaciones = [];
+        let selectedPedido = null;
+        let currentPosition = null;
 
         function hasSelect2() {
             return window.jQuery && $.fn && $.fn.select2;
@@ -683,7 +839,7 @@
             const fecha = document.getElementById('fecha_entrega').value;
 
             if (fecha) {
-                params.append('fecha_entrega', fecha);
+                params.append('fecha_reparto', fecha);
             }
 
             Array.from(document.getElementById('ruta_id').selectedOptions)
@@ -691,6 +847,17 @@
 
             Array.from(document.getElementById('preventista_id').selectedOptions)
                 .forEach(option => params.append('preventista_id[]', option.value));
+
+            const numeroPedido = document.getElementById('numero_pedido').value.trim();
+            const estadoEntrega = document.getElementById('estado_entrega').value;
+
+            if (numeroPedido) {
+                params.append('numero_pedido', numeroPedido);
+            }
+
+            if (estadoEntrega) {
+                params.append('estado_entrega', estadoEntrega);
+            }
 
             return params.toString();
         }
@@ -723,12 +890,12 @@
             const tbody = document.getElementById('delivery-table-body');
 
             if (!pedidos.length) {
-                tbody.innerHTML = '<tr><td colspan="10" class="delivery-empty">No hay pedidos despachados para estos filtros.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" class="delivery-empty">No hay pedidos despachados para estos filtros.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = pedidos.map(pedido => `
-                <tr>
+                <tr data-numero-pedido="${escapeHtml(pedido.numero_pedido)}">
                     <td data-label="Pedido"><strong>${escapeHtml(pedido.numero_pedido_formateado)}</strong></td>
                     <td data-label="Cliente">${escapeHtml(pedido.cliente || 'N/A')}<br><small class="text-muted">${escapeHtml(pedido.referencia || '')}</small></td>
                     <td data-label="Ruta">${escapeHtml(pedido.ruta)}</td>
@@ -736,6 +903,7 @@
                     <td data-label="Direccion">${escapeHtml(pedido.direccion)}</td>
                     <td data-label="Celular">${escapeHtml(pedido.celular)}</td>
                     <td data-label="Fecha">${escapeHtml(pedido.fecha_entrega)}</td>
+                    <td data-label="Agenda">${escapeHtml(pedido.reparto_programado_texto || 'Sin programar')}</td>
                     <td data-label="Items"><strong>${pedido.items}</strong></td>
                     <td data-label="Monto"><strong>Bs ${money(pedido.monto_estimado)}</strong></td>
                     <td data-label="GPS">
@@ -743,12 +911,29 @@
                             ${pedido.tiene_ubicacion ? 'Con GPS' : 'Sin GPS'}
                         </span>
                     </td>
+                    <td data-label="Acciones">
+                        <div class="delivery-row-actions">
+                            <button type="button" class="delivery-mini-btn delivery-mini-btn-map" data-action="view-route" data-numero-pedido="${escapeHtml(pedido.numero_pedido)}">
+                                <i class="fas fa-map-marker-alt"></i> Ver ubicación
+                            </button>
+                            ${pedido.entregado
+                                ? `<span class="delivery-badge delivery-badge-done"><i class="fas fa-check mr-1"></i> Entregado</span>`
+                                : `<button type="button" class="delivery-mini-btn delivery-mini-btn-done" data-action="mark-delivered" data-numero-pedido="${escapeHtml(pedido.numero_pedido)}">
+                                    <i class="fas fa-check-circle"></i> Entregado
+                                </button>
+                                <button type="button" class="delivery-mini-btn delivery-mini-btn-map" data-action="schedule-delivery" data-numero-pedido="${escapeHtml(pedido.numero_pedido)}">
+                                    <i class="fas fa-calendar-plus"></i> Posponer
+                                </button>`
+                            }
+                        </div>
+                    </td>
                 </tr>
             `).join('');
         }
 
         function renderMap(ubicaciones) {
             markerLayer.clearLayers();
+            routeLayer.clearLayers();
             document.getElementById('delivery-map-counter').textContent = `${ubicaciones.length} ubicaciones`;
 
             if (!ubicaciones.length) {
@@ -770,10 +955,268 @@
                         <small>${item.direccion}</small><br>
                         <small>${item.celular}</small>
                     `)
+                    .on('click', () => focusPedido(item.numero_pedido))
                     .addTo(markerLayer);
             });
 
             map.fitBounds(bounds, { padding: [34, 34], maxZoom: 16 });
+        }
+
+        function findPedido(numeroPedido) {
+            return [...currentUbicaciones, ...currentPedidos].find(item => String(item.numero_pedido) === String(numeroPedido));
+        }
+
+        function setRoutePanel(pedido) {
+            selectedPedido = pedido;
+            document.getElementById('route-panel-empty').classList.add('d-none');
+            document.getElementById('route-selected-card').classList.remove('d-none');
+            document.getElementById('route-order-title').textContent = `${pedido.numero_pedido_formateado} - ${pedido.cliente}`;
+            document.getElementById('route-order-detail').textContent = `${pedido.direccion} | ${pedido.ruta}`;
+            document.getElementById('btn-google-maps').classList.toggle('disabled', !currentPosition);
+            document.getElementById('btn-mark-delivered').classList.toggle('d-none', Boolean(pedido.entregado));
+            updateGoogleMapsLink();
+        }
+
+        function setLoadingButton(button, loading, text = 'Cargando') {
+            if (!button) {
+                return;
+            }
+
+            if (loading) {
+                button.dataset.originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
+                return;
+            }
+
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalHtml || button.innerHTML;
+        }
+
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Este navegador no permite obtener la ubicación actual.'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 18000,
+                    maximumAge: 0,
+                });
+            });
+        }
+
+        async function ensureCurrentPosition(button = null) {
+            if (currentPosition) {
+                return currentPosition;
+            }
+
+            setLoadingButton(button, true, 'Ubicando');
+            try {
+                const position = await getCurrentPosition();
+                currentPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+
+                userLocationLayer.clearLayers();
+                L.circleMarker([currentPosition.lat, currentPosition.lng], {
+                    radius: 9,
+                    color: '#075985',
+                    fillColor: '#0ea5e9',
+                    fillOpacity: .9,
+                    weight: 3,
+                }).bindPopup('<strong>Mi ubicación actual</strong>').addTo(userLocationLayer);
+                updateGoogleMapsLink();
+
+                return currentPosition;
+            } finally {
+                setLoadingButton(button, false);
+            }
+        }
+
+        function updateGoogleMapsLink() {
+            if (!selectedPedido || !selectedPedido.latitud || !selectedPedido.longitud || !currentPosition) {
+                document.getElementById('btn-google-maps').href = '#';
+                return;
+            }
+
+            document.getElementById('btn-google-maps').href =
+                `https://www.google.com/maps/dir/?api=1&origin=${currentPosition.lat},${currentPosition.lng}&destination=${selectedPedido.latitud},${selectedPedido.longitud}&travelmode=driving`;
+        }
+
+        async function drawShortestRoute(pedido, button = null) {
+            const user = await ensureCurrentPosition(button);
+            routeLayer.clearLayers();
+
+            const destination = [pedido.latitud, pedido.longitud];
+            const origin = [user.lat, user.lng];
+            const bounds = [origin, destination];
+
+            try {
+                const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${user.lng},${user.lat};${pedido.longitud},${pedido.latitud}?overview=full&geometries=geojson&steps=false`;
+                const response = await fetch(osrmUrl);
+                const payload = await response.json();
+                const route = payload.routes?.[0];
+
+                if (!route) {
+                    throw new Error('Ruta no disponible');
+                }
+
+                const coordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+                L.polyline(coordinates, {
+                    color: '#176b57',
+                    opacity: .92,
+                    weight: 6,
+                }).addTo(routeLayer);
+
+                map.fitBounds(coordinates, { padding: [34, 34], maxZoom: 17 });
+                document.getElementById('delivery-map-counter').textContent =
+                    `Ruta aprox: ${(route.distance / 1000).toFixed(1)} km | ${Math.ceil(route.duration / 60)} min`;
+            } catch (error) {
+                L.polyline(bounds, {
+                    color: '#f59e0b',
+                    dashArray: '8 8',
+                    opacity: .9,
+                    weight: 5,
+                }).addTo(routeLayer);
+                map.fitBounds(bounds, { padding: [34, 34], maxZoom: 17 });
+                document.getElementById('delivery-map-counter').textContent = 'Ruta aproximada. Abre Google Maps para navegación exacta.';
+            } finally {
+                setLoadingButton(button, false);
+            }
+        }
+
+        async function focusPedido(numeroPedido, button = null) {
+            const pedido = findPedido(numeroPedido);
+
+            if (!pedido) {
+                Swal.fire('No encontrado', 'No se encontró el pedido en la lista actual.', 'warning');
+                return;
+            }
+
+            if (!pedido.latitud || !pedido.longitud) {
+                Swal.fire('Sin ubicación', 'Este cliente no tiene latitud y longitud registradas.', 'warning');
+                return;
+            }
+
+            setRoutePanel(pedido);
+            L.popup()
+                .setLatLng([pedido.latitud, pedido.longitud])
+                .setContent(`<strong>${escapeHtml(pedido.numero_pedido_formateado)}</strong><br>${escapeHtml(pedido.cliente)}<br>${escapeHtml(pedido.direccion)}`)
+                .openOn(map);
+
+            await drawShortestRoute(pedido, button);
+        }
+
+        async function markDelivered(numeroPedido, button = null) {
+            const result = await Swal.fire({
+                title: 'Marcar como entregado',
+                text: `¿Confirmas que entregaste el pedido #${numeroPedido}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, entregado',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#15803d',
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            setLoadingButton(button, true, 'Guardando');
+            const response = await fetch(deliveryRoutes.marcarEntregado.replace(':numeroPedido', encodeURIComponent(numeroPedido)), {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({}),
+            });
+
+            setLoadingButton(button, false);
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                Swal.fire('No se pudo marcar', payload.message || 'Intenta nuevamente.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Pedido entregado',
+                timer: 1300,
+                showConfirmButton: false,
+            });
+
+            selectedPedido = null;
+            document.getElementById('route-selected-card').classList.add('d-none');
+            document.getElementById('route-panel-empty').classList.remove('d-none');
+            await loadDeliveries();
+        }
+
+        async function scheduleDelivery(numeroPedido, button = null) {
+            const pedido = findPedido(numeroPedido);
+            const currentDate = pedido?.reparto_programado_fecha || document.getElementById('fecha_entrega').value || new Date().toISOString().slice(0, 10);
+
+            const result = await Swal.fire({
+                title: 'Programar reparto',
+                text: `Elige cuándo irá el repartidor para el pedido #${numeroPedido}.`,
+                input: 'date',
+                inputValue: currentDate,
+                inputAttributes: {
+                    min: new Date().toISOString().slice(0, 10),
+                },
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Guardar fecha',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#176b57',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Debes elegir una fecha.';
+                    }
+                    return null;
+                },
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            setLoadingButton(button, true, 'Programando');
+            const response = await fetch(deliveryRoutes.programarReparto.replace(':numeroPedido', encodeURIComponent(numeroPedido)), {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    fecha_reparto: result.value,
+                }),
+            });
+
+            setLoadingButton(button, false);
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => ({}));
+                Swal.fire('No se pudo programar', payload.message || 'Intenta nuevamente.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Reparto programado',
+                text: 'El pedido se moverá a la agenda seleccionada.',
+                timer: 1400,
+                showConfirmButton: false,
+            });
+
+            await loadDeliveries();
         }
 
         function selectedValues(selectId) {
@@ -856,10 +1299,12 @@
 
             const datos = await datosResponse.json();
             const mapa = await mapaResponse.json();
+            currentPedidos = datos.pedidos || [];
+            currentUbicaciones = mapa.ubicaciones || [];
 
             updateStats(datos.resumen || {});
-            renderTable(datos.pedidos || []);
-            renderMap(mapa.ubicaciones || []);
+            renderTable(currentPedidos);
+            renderMap(currentUbicaciones);
         }
 
         document.getElementById('delivery-filter-form').addEventListener('submit', event => {
@@ -869,12 +1314,14 @@
                 .then(() => loadDeliveries())
                 .catch(error => {
                 document.getElementById('delivery-map-counter').textContent = 'Error';
-                document.getElementById('delivery-table-body').innerHTML = `<tr><td colspan="10" class="delivery-empty">${error.message}</td></tr>`;
+                document.getElementById('delivery-table-body').innerHTML = `<tr><td colspan="12" class="delivery-empty">${error.message}</td></tr>`;
             });
         });
 
         document.getElementById('delivery-clear').addEventListener('click', () => {
             document.getElementById('fecha_entrega').value = @json(now()->toDateString());
+            document.getElementById('numero_pedido').value = '';
+            document.getElementById('estado_entrega').value = 'pendiente';
             Array.from(document.getElementById('ruta_id').options).forEach(option => option.selected = false);
             Array.from(document.getElementById('preventista_id').options).forEach(option => option.selected = false);
             updateLinkedOptions()
@@ -906,6 +1353,84 @@
             updateLinkedOptions()
                 .then(() => loadDeliveries())
                 .catch(() => loadDeliveries());
+        });
+
+        document.getElementById('estado_entrega').addEventListener('change', () => {
+            updateLinkedOptions()
+                .then(() => loadDeliveries())
+                .catch(() => loadDeliveries());
+        });
+
+        document.getElementById('numero_pedido').addEventListener('input', () => {
+            clearTimeout(window.deliverySearchTimer);
+            window.deliverySearchTimer = setTimeout(() => {
+                updateLinkedOptions()
+                    .then(() => loadDeliveries())
+                    .catch(() => loadDeliveries());
+            }, 450);
+        });
+
+        document.getElementById('delivery-table-body').addEventListener('click', event => {
+            const button = event.target.closest('[data-action]');
+            if (!button) {
+                return;
+            }
+
+            const numeroPedido = button.dataset.numeroPedido;
+
+            if (button.dataset.action === 'view-route') {
+                focusPedido(numeroPedido, button).catch(error => {
+                    setLoadingButton(button, false);
+                    Swal.fire('No se pudo ubicar', error.message || 'Verifica permisos de GPS.', 'warning');
+                });
+            }
+
+            if (button.dataset.action === 'mark-delivered') {
+                markDelivered(numeroPedido, button).catch(error => {
+                    setLoadingButton(button, false);
+                    Swal.fire('No se pudo guardar', error.message || 'Intenta nuevamente.', 'warning');
+                });
+            }
+
+            if (button.dataset.action === 'schedule-delivery') {
+                scheduleDelivery(numeroPedido, button).catch(error => {
+                    setLoadingButton(button, false);
+                    Swal.fire('No se pudo programar', error.message || 'Intenta nuevamente.', 'warning');
+                });
+            }
+        });
+
+        document.getElementById('btn-current-location').addEventListener('click', event => {
+            currentPosition = null;
+            ensureCurrentPosition(event.currentTarget)
+                .then(() => {
+                    if (selectedPedido) {
+                        return drawShortestRoute(selectedPedido, event.currentTarget);
+                    }
+                    map.setView([currentPosition.lat, currentPosition.lng], 16);
+                    return null;
+                })
+                .catch(error => Swal.fire('GPS no disponible', error.message || 'Activa la ubicación del dispositivo.', 'warning'));
+        });
+
+        document.getElementById('btn-mark-delivered').addEventListener('click', event => {
+            if (!selectedPedido) {
+                return;
+            }
+
+            markDelivered(selectedPedido.numero_pedido, event.currentTarget).catch(error => {
+                setLoadingButton(event.currentTarget, false);
+                Swal.fire('No se pudo guardar', error.message || 'Intenta nuevamente.', 'warning');
+            });
+        });
+
+        document.getElementById('btn-google-maps').addEventListener('click', event => {
+            if (!selectedPedido || !currentPosition) {
+                event.preventDefault();
+                ensureCurrentPosition(document.getElementById('btn-current-location'))
+                    .then(() => updateGoogleMapsLink())
+                    .catch(error => Swal.fire('GPS no disponible', error.message || 'Activa la ubicación del dispositivo.', 'warning'));
+            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {

@@ -19,6 +19,10 @@ class Pedido extends Model
         'fecha_entrega',
         'cantidad',
         'estado_pedido',
+        'entregado_repartidor_at',
+        'entregado_repartidor_por',
+        'reparto_programado_fecha',
+        'reparto_programado_por',
         'promocion',
         'descripcion_descuento_porcentaje',
         'descripcion_regalo'

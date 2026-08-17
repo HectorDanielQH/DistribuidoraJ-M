@@ -112,6 +112,7 @@ class AsignacionVendedorController extends Controller
                     $botones = '<div class="assignment-actions">';
                     if(!$asignacion->estado_pedido){
                         $requiereUbicacion = !$asignacion->cliente || blank($asignacion->cliente->latitud) || blank($asignacion->cliente->longitud);
+                        $textoUbicacion = $requiereUbicacion ? 'Registrar localización' : 'Actualizar localización';
                         $botones .= '
                             <button type="button" class="btn btn-success btn-action btn-tomar-pedido"
                                 data-url="'.$ruta.'"
@@ -119,6 +120,11 @@ class AsignacionVendedorController extends Controller
                                 data-requiere-ubicacion="'.($requiereUbicacion ? '1' : '0').'"
                                 onclick="tomarPedidoConGPS(this)">
                                 <i class="fas fa-shopping-cart"></i> Tomar pedido
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-action btn-actualizar-ubicacion"
+                                data-cliente-id="'.$asignacion->id_cliente.'"
+                                data-requiere-ubicacion="'.($requiereUbicacion ? '1' : '0').'">
+                                <i class="fas fa-map-marker-alt"></i> '.$textoUbicacion.'
                             </button>
                             <button type="button" class="btn btn-outline-secondary btn-action btn-sin-pedido" data-id="'.$asignacion->id.'">
                                 <i class="fas fa-user-check"></i> Sin pedido
@@ -308,14 +314,12 @@ class AsignacionVendedorController extends Controller
 
         $cliente = Cliente::where('id', $asignacion->id_cliente)->firstOrFail();
 
-        if (blank($cliente->latitud) || blank($cliente->longitud)) {
-            $cliente->latitud = (float) $request->latitud;
-            $cliente->longitud = (float) $request->longitud;
-            $cliente->save();
-        }
+        $cliente->latitud = (float) $request->latitud;
+        $cliente->longitud = (float) $request->longitud;
+        $cliente->save();
 
         return response()->json([
-            'message' => 'Ubicación GPS registrada correctamente.',
+            'message' => 'Ubicación GPS actualizada correctamente.',
             'latitud' => (float) $cliente->latitud,
             'longitud' => (float) $cliente->longitud,
         ], 200);

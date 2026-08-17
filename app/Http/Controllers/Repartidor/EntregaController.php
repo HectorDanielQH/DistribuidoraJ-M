@@ -8,6 +8,7 @@ use App\Models\Rutas;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EntregaController extends Controller
 {
@@ -79,6 +80,92 @@ class EntregaController extends Controller
         ]);
     }
 
+    public function marcarEntregado(Request $request, string $numeroPedido)
+    {
+        try {
+            $cantidad = DB::transaction(function () use ($numeroPedido) {
+                $pedidos = Pedido::where('numero_pedido', $numeroPedido)
+                    ->whereNotNull('fecha_entrega')
+                    ->where('estado_pedido', false)
+                    ->whereNull('entregado_repartidor_at')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($pedidos->isEmpty()) {
+                    abort(404, 'El pedido no existe, ya fue entregado o ya no esta despachado pendiente.');
+                }
+
+                Pedido::whereIn('id', $pedidos->pluck('id'))->update([
+                    'entregado_repartidor_at' => now(),
+                    'entregado_repartidor_por' => auth()->id(),
+                    'updated_at' => now(),
+                ]);
+
+                return $pedidos->count();
+            });
+
+            return response()->json([
+                'message' => 'Pedido marcado como entregado correctamente.',
+                'items_actualizados' => $cantidad,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error al marcar pedido como entregado por repartidor.', [
+                'numero_pedido' => $numeroPedido,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    public function programarReparto(Request $request, string $numeroPedido)
+    {
+        $data = $request->validate([
+            'fecha_reparto' => ['required', 'date'],
+        ], [
+            'fecha_reparto.required' => 'Debes elegir una fecha para el reparto.',
+            'fecha_reparto.date' => 'La fecha de reparto no es valida.',
+        ]);
+
+        try {
+            $cantidad = DB::transaction(function () use ($numeroPedido, $data) {
+                $pedidos = Pedido::where('numero_pedido', $numeroPedido)
+                    ->whereNotNull('fecha_entrega')
+                    ->where('estado_pedido', false)
+                    ->whereNull('entregado_repartidor_at')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($pedidos->isEmpty()) {
+                    abort(404, 'El pedido no existe, ya fue entregado o ya no esta despachado pendiente.');
+                }
+
+                Pedido::whereIn('id', $pedidos->pluck('id'))->update([
+                    'reparto_programado_fecha' => $data['fecha_reparto'],
+                    'reparto_programado_por' => auth()->id(),
+                    'updated_at' => now(),
+                ]);
+
+                return $pedidos->count();
+            });
+
+            return response()->json([
+                'message' => 'Pedido programado correctamente.',
+                'items_actualizados' => $cantidad,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error al programar pedido para reparto.', [
+                'numero_pedido' => $numeroPedido,
+                'user_id' => auth()->id(),
+                'fecha_reparto' => $data['fecha_reparto'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
     private function normalizarFiltros(Request $request): array
     {
         return [
@@ -90,7 +177,11 @@ class EntregaController extends Controller
                 ->filter(fn ($id) => $id !== null && $id !== '')
                 ->values()
                 ->all(),
-            'fecha_entrega' => $request->filled('fecha_entrega') ? $request->fecha_entrega : null,
+            'fecha_entrega' => $request->filled('fecha_reparto')
+                ? $request->fecha_reparto
+                : ($request->filled('fecha_entrega') ? $request->fecha_entrega : null),
+            'numero_pedido' => $request->filled('numero_pedido') ? trim((string) $request->numero_pedido) : null,
+            'estado_entrega' => $request->input('estado_entrega', 'pendiente'),
         ];
     }
 
@@ -122,6 +213,8 @@ class EntregaController extends Controller
             )
             ->selectRaw('MIN(pedidos.fecha_pedido) AS fecha_pedido')
             ->selectRaw('MAX(pedidos.fecha_entrega) AS fecha_entrega')
+            ->selectRaw('MAX(pedidos.entregado_repartidor_at) AS entregado_repartidor_at')
+            ->selectRaw('MAX(pedidos.reparto_programado_fecha) AS reparto_programado_fecha')
             ->selectRaw('COUNT(*) AS items')
             ->selectRaw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta, 0)) AS monto_estimado')
             ->groupBy(
@@ -150,8 +243,32 @@ class EntregaController extends Controller
             $query->whereIn('pedidos.id_usuario', $filtros['preventista_ids']);
         }
 
-        if (! empty($filtros['fecha_entrega'])) {
-            $query->whereDate('pedidos.fecha_entrega', $filtros['fecha_entrega']);
+        if (! empty($filtros['numero_pedido'])) {
+            $query->whereRaw('CAST(pedidos.numero_pedido AS TEXT) ILIKE ?', ['%'.$filtros['numero_pedido'].'%']);
+        }
+
+        if (($filtros['estado_entrega'] ?? 'pendiente') === 'pendiente') {
+            $query->whereNull('pedidos.entregado_repartidor_at');
+            if (! empty($filtros['fecha_entrega'])) {
+                $query->where(function ($q) use ($filtros) {
+                    $q->whereDate('pedidos.reparto_programado_fecha', $filtros['fecha_entrega'])
+                        ->orWhere(function ($sinProgramar) use ($filtros) {
+                            $sinProgramar->whereNull('pedidos.reparto_programado_fecha')
+                                ->whereDate('pedidos.fecha_entrega', '<=', $filtros['fecha_entrega']);
+                        });
+                });
+            }
+        } elseif (($filtros['estado_entrega'] ?? null) === 'entregado') {
+            $query->whereNotNull('pedidos.entregado_repartidor_at');
+            if (! empty($filtros['fecha_entrega'])) {
+                $query->whereDate('pedidos.entregado_repartidor_at', $filtros['fecha_entrega']);
+            }
+        } elseif (! empty($filtros['fecha_entrega'])) {
+            $query->where(function ($q) use ($filtros) {
+                $q->whereDate('pedidos.reparto_programado_fecha', $filtros['fecha_entrega'])
+                    ->orWhereDate('pedidos.fecha_entrega', $filtros['fecha_entrega'])
+                    ->orWhereDate('pedidos.entregado_repartidor_at', $filtros['fecha_entrega']);
+            });
         }
 
         return $query;
@@ -172,8 +289,32 @@ class EntregaController extends Controller
             $query->whereIn('pedidos.id_usuario', $filtros['preventista_ids']);
         }
 
-        if (! empty($filtros['fecha_entrega'])) {
-            $query->whereDate('pedidos.fecha_entrega', $filtros['fecha_entrega']);
+        if (! empty($filtros['numero_pedido'])) {
+            $query->whereRaw('CAST(pedidos.numero_pedido AS TEXT) ILIKE ?', ['%'.$filtros['numero_pedido'].'%']);
+        }
+
+        if (($filtros['estado_entrega'] ?? 'pendiente') === 'pendiente') {
+            $query->whereNull('pedidos.entregado_repartidor_at');
+            if (! empty($filtros['fecha_entrega'])) {
+                $query->where(function ($q) use ($filtros) {
+                    $q->whereDate('pedidos.reparto_programado_fecha', $filtros['fecha_entrega'])
+                        ->orWhere(function ($sinProgramar) use ($filtros) {
+                            $sinProgramar->whereNull('pedidos.reparto_programado_fecha')
+                                ->whereDate('pedidos.fecha_entrega', '<=', $filtros['fecha_entrega']);
+                        });
+                });
+            }
+        } elseif (($filtros['estado_entrega'] ?? null) === 'entregado') {
+            $query->whereNotNull('pedidos.entregado_repartidor_at');
+            if (! empty($filtros['fecha_entrega'])) {
+                $query->whereDate('pedidos.entregado_repartidor_at', $filtros['fecha_entrega']);
+            }
+        } elseif (! empty($filtros['fecha_entrega'])) {
+            $query->where(function ($q) use ($filtros) {
+                $q->whereDate('pedidos.reparto_programado_fecha', $filtros['fecha_entrega'])
+                    ->orWhereDate('pedidos.fecha_entrega', $filtros['fecha_entrega'])
+                    ->orWhereDate('pedidos.entregado_repartidor_at', $filtros['fecha_entrega']);
+            });
         }
 
         return $query;
@@ -257,6 +398,12 @@ class EntregaController extends Controller
             'items' => (int) $pedido->items,
             'monto_estimado' => (float) $pedido->monto_estimado,
             'tiene_ubicacion' => $pedido->latitud !== null && $pedido->longitud !== null,
+            'latitud' => $pedido->latitud !== null ? (float) $pedido->latitud : null,
+            'longitud' => $pedido->longitud !== null ? (float) $pedido->longitud : null,
+            'entregado' => $pedido->entregado_repartidor_at !== null,
+            'entregado_repartidor_at' => $pedido->entregado_repartidor_at ? date('d/m/Y H:i', strtotime($pedido->entregado_repartidor_at)) : null,
+            'reparto_programado_fecha' => $pedido->reparto_programado_fecha ? date('Y-m-d', strtotime($pedido->reparto_programado_fecha)) : null,
+            'reparto_programado_texto' => $pedido->reparto_programado_fecha ? date('d/m/Y', strtotime($pedido->reparto_programado_fecha)) : 'Sin programar',
         ];
     }
 }

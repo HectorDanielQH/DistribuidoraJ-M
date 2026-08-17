@@ -314,6 +314,8 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
         Route::get('entregas/datos', [RepartidorEntregaController::class, 'datos'])->name('entregas.datos');
         Route::get('entregas/mapa', [RepartidorEntregaController::class, 'mapa'])->name('entregas.mapa');
         Route::get('entregas/opciones', [RepartidorEntregaController::class, 'opciones'])->name('entregas.opciones');
+        Route::post('entregas/{numeroPedido}/marcar-entregado', [RepartidorEntregaController::class, 'marcarEntregado'])->name('entregas.marcarEntregado');
+        Route::post('entregas/{numeroPedido}/programar-reparto', [RepartidorEntregaController::class, 'programarReparto'])->name('entregas.programarReparto');
     });
 
     Route::prefix('api/admin')->middleware('can:administrador.permisos')->group(function () {

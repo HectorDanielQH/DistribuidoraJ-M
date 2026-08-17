@@ -412,6 +412,26 @@
       gap: 7px;
     }
 
+    .btn-action.is-loading {
+      cursor: wait;
+      opacity: .78;
+      pointer-events: none;
+    }
+
+    .gps-loader-note {
+      align-items: center;
+      background: #ecfdf5;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      color: #166534;
+      display: flex;
+      font-size: .88rem;
+      font-weight: 800;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 10px 12px;
+    }
+
     div.dataTables_wrapper div.dataTables_filter input,
     div.dataTables_wrapper div.dataTables_length select {
       border-radius: 8px;
@@ -681,20 +701,166 @@
   <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
 
   <script>
+    function mensajeErrorGPS(error) {
+      if (error.code === 1) {
+        return 'Debes permitir el acceso a tu ubicación y encender el GPS para continuar.';
+      }
+
+      if (error.code === 2) {
+        return 'No se encontró una posición válida. Verifica que el GPS esté encendido.';
+      }
+
+      if (error.code === 3) {
+        return 'La captura tardó demasiado. Verifica el GPS y vuelve a intentarlo.';
+      }
+
+      return 'No se pudo capturar la ubicación actual.';
+    }
+
+    function setButtonLoading($button, loading, text = 'Cargando') {
+      if (!$button || !$button.length) {
+        return;
+      }
+
+      if (loading) {
+        $button.data('original-html', $button.html());
+        $button.prop('disabled', true)
+          .addClass('is-loading')
+          .html(`<i class="fas fa-spinner fa-spin"></i> ${text}`);
+        return;
+      }
+
+      $button.prop('disabled', false)
+        .removeClass('is-loading')
+        .html($button.data('original-html') || $button.html());
+    }
+
+    function capturarYGuardarUbicacion(clienteId, opciones = {}) {
+      const redirigirManualUrl = opciones.redirigirManualUrl || null;
+      const $button = opciones.button ? $(opciones.button) : $();
+      setButtonLoading($button, true, opciones.textoBotonCarga || 'Capturando GPS');
+
+      if (!navigator.geolocation) {
+        return Swal.fire({
+          title: 'GPS no disponible',
+          text: redirigirManualUrl
+            ? 'Este navegador no permite capturar GPS en esta pantalla. Se abrirá el pedido para marcar la ubicación manualmente en el mapa.'
+            : 'Este navegador no permite capturar GPS. Intenta desde un celular con ubicación activada.',
+          icon: 'info',
+          confirmButtonText: redirigirManualUrl ? 'Ir a captura manual' : 'Entendido'
+        }).then(() => {
+          setButtonLoading($button, false);
+          if (redirigirManualUrl) {
+            window.location.href = `${redirigirManualUrl}?capturar_ubicacion=1`;
+          }
+        });
+      }
+
+      Swal.fire({
+        title: opciones.tituloCarga || 'Capturando ubicación',
+        html: `
+          <div>Activa el GPS del dispositivo y acepta el permiso del navegador para recuperar latitud y longitud.</div>
+          <div class="gps-loader-note"><i class="fas fa-satellite-dish fa-pulse"></i> Esperando señal GPS...</div>
+        `,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      navigator.geolocation.getCurrentPosition(function (position) {
+        $.ajax({
+          url: "{{ route('asignacionvendedor.registrarUbicacionCliente', ':idCliente') }}".replace(':idCliente', clienteId),
+          type: 'PUT',
+          headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+          },
+          data: {
+            latitud: position.coords.latitude,
+            longitud: position.coords.longitude
+          },
+          success: function () {
+            setButtonLoading($button, false);
+            Swal.fire({
+              icon: 'success',
+              title: opciones.tituloExito || 'Ubicación actualizada',
+              text: opciones.mensajeExito || 'La latitud y longitud fueron guardadas correctamente.',
+              confirmButtonText: opciones.textoConfirmarExito || 'Continuar'
+            }).then(() => {
+              $('#tabla-asignaciones').DataTable().ajax.reload(null, false);
+
+              if (typeof opciones.onSuccess === 'function') {
+                opciones.onSuccess();
+              }
+            });
+          },
+          error: function (xhr) {
+            setButtonLoading($button, false);
+            Swal.fire({
+              title: 'No se pudo guardar',
+              text: xhr.responseJSON?.message || 'Ocurrió un error al guardar la ubicación GPS del cliente.',
+              icon: 'warning',
+              confirmButtonText: redirigirManualUrl ? 'Ir a captura manual' : 'Entendido'
+            }).then(() => {
+              if (redirigirManualUrl) {
+                window.location.href = `${redirigirManualUrl}?capturar_ubicacion=1`;
+              }
+            });
+          }
+        });
+      }, function (error) {
+        const mensaje = mensajeErrorGPS(error);
+        setButtonLoading($button, false);
+
+        Swal.fire({
+          title: redirigirManualUrl ? 'Ubicación obligatoria' : 'No se pudo actualizar',
+          text: redirigirManualUrl
+            ? `${mensaje} Si el GPS no responde, abriremos la captura manual en mapa.`
+            : mensaje,
+          icon: 'warning',
+          confirmButtonText: redirigirManualUrl ? 'Ir a captura manual' : 'Entendido'
+        }).then(() => {
+          if (redirigirManualUrl) {
+            window.location.href = `${redirigirManualUrl}?capturar_ubicacion=1`;
+          }
+        });
+      }, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      });
+    }
+
     function tomarPedidoConGPS(button) {
       const boton = $(button);
       const url = boton.data('url');
       const clienteId = boton.data('cliente-id');
       const requiereUbicacion = String(boton.data('requiere-ubicacion')) === '1';
 
+      if (!requiereUbicacion) {
+        Swal.fire({
+          title: 'Tomar pedido',
+          text: 'Este cliente ya tiene ubicación registrada. Puedes continuar al pedido o actualizar la localización desde su botón correspondiente.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Continuar al pedido',
+          cancelButtonText: 'Cancelar',
+          allowOutsideClick: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.href = url;
+          }
+        });
+        return;
+      }
+
       Swal.fire({
-        title: 'Capturar ubicación actual GPS',
-        text: requiereUbicacion
-          ? 'Para tomar este pedido debes encender el GPS del dispositivo y permitir la ubicación actual. Se recuperarán la latitud y longitud para el repartidor.'
-          : 'Este cliente ya tiene ubicación registrada. ¿Deseas continuar al pedido?',
+        title: 'Ubicación requerida',
+        text: 'Este cliente no tiene geolocalización registrada. Para tomar el pedido debes capturar la ubicación actual GPS.',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: requiereUbicacion ? 'Encender GPS y continuar' : 'Continuar al pedido',
+        confirmButtonText: 'Obtener GPS y continuar',
         cancelButtonText: 'Cancelar',
         allowOutsideClick: false
       }).then((result) => {
@@ -702,89 +868,15 @@
           return;
         }
 
-        if (!requiereUbicacion) {
-          window.location.href = url;
-          return;
-        }
-
-        if (!navigator.geolocation) {
-          Swal.fire({
-            title: 'GPS no disponible',
-            text: 'Este navegador no permite capturar GPS en esta pantalla. Se abrirá el pedido para que marques la ubicación manualmente en el mapa.',
-            icon: 'info',
-            confirmButtonText: 'Ir a captura manual'
-          }).then(() => {
-            window.location.href = `${url}?capturar_ubicacion=1`;
-          });
-          return;
-        }
-
-        Swal.fire({
-          title: 'Capturando ubicación',
-          html: 'Activa el GPS del dispositivo y acepta el permiso del navegador para recuperar latitud y longitud.',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          didOpen: () => {
-            Swal.showLoading();
+        capturarYGuardarUbicacion(clienteId, {
+          button,
+          textoBotonCarga: 'Capturando GPS',
+          redirigirManualUrl: url,
+          tituloExito: 'Ubicación capturada',
+          mensajeExito: 'La latitud y longitud fueron guardadas correctamente. Ahora puedes tomar el pedido.',
+          onSuccess: () => {
+            window.location.href = url;
           }
-        });
-
-        navigator.geolocation.getCurrentPosition(function (position) {
-          $.ajax({
-            url: "{{ route('asignacionvendedor.registrarUbicacionCliente', ':idCliente') }}".replace(':idCliente', clienteId),
-            type: 'PUT',
-            headers: {
-              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            data: {
-              latitud: position.coords.latitude,
-              longitud: position.coords.longitude
-            },
-            success: function () {
-              Swal.fire({
-                icon: 'success',
-                title: 'Ubicación capturada',
-                text: 'La latitud y longitud fueron guardadas correctamente. Ahora puedes tomar el pedido.',
-                confirmButtonText: 'Continuar'
-              }).then(() => {
-                $('#tabla-asignaciones').DataTable().ajax.reload(null, false);
-                window.location.href = url;
-              });
-            },
-            error: function (xhr) {
-              Swal.fire({
-                title: 'No se pudo guardar',
-                text: xhr.responseJSON?.message || 'Ocurrió un error al guardar la ubicación GPS del cliente. Puedes continuar y marcarla manualmente.',
-                icon: 'warning',
-                confirmButtonText: 'Ir a captura manual'
-              }).then(() => {
-                window.location.href = `${url}?capturar_ubicacion=1`;
-              });
-            }
-          });
-        }, function (error) {
-          let mensaje = 'No se pudo capturar la ubicación actual.';
-
-          if (error.code === 1) {
-            mensaje = 'Debes permitir el acceso a tu ubicación y encender el GPS para continuar con el pedido.';
-          } else if (error.code === 2) {
-            mensaje = 'No se encontró una posición válida. Verifica que el GPS esté encendido.';
-          } else if (error.code === 3) {
-            mensaje = 'La captura tardó demasiado. Verifica el GPS y vuelve a intentarlo.';
-          }
-
-          Swal.fire({
-            title: 'Ubicación obligatoria',
-            text: `${mensaje} Si el GPS no responde, abriremos la captura manual en mapa.`,
-            icon: 'warning',
-            confirmButtonText: 'Ir a captura manual'
-          }).then(() => {
-            window.location.href = `${url}?capturar_ubicacion=1`;
-          });
-        }, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
         });
       });
     }
@@ -892,6 +984,39 @@
               title: 'No se pudo registrar',
               text: xhr.responseJSON?.message || 'Intenta nuevamente.'
             });
+          });
+        });
+      });
+
+      $(document).on('click', '.btn-actualizar-ubicacion', function () {
+        const boton = $(this);
+        const clienteId = boton.data('cliente-id');
+        const requiereUbicacion = String(boton.data('requiere-ubicacion')) === '1';
+
+        Swal.fire({
+          title: requiereUbicacion ? 'Registrar localización' : 'Actualizar localización',
+          text: requiereUbicacion
+            ? 'Este cliente no tiene ubicación. Se capturará el GPS actual para registrar su punto.'
+            : 'Se reemplazará la latitud y longitud guardadas por el GPS actual del dispositivo.',
+          icon: requiereUbicacion ? 'warning' : 'question',
+          showCancelButton: true,
+          confirmButtonText: requiereUbicacion ? 'Obtener GPS' : 'Actualizar punto GPS',
+          cancelButtonText: 'Cancelar',
+          allowOutsideClick: false
+        }).then((result) => {
+          if (!result.isConfirmed) {
+            return;
+          }
+
+          capturarYGuardarUbicacion(clienteId, {
+            button: this,
+            textoBotonCarga: requiereUbicacion ? 'Registrando GPS' : 'Actualizando GPS',
+            tituloCarga: requiereUbicacion ? 'Registrando localización' : 'Actualizando localización',
+            tituloExito: requiereUbicacion ? 'Localización registrada' : 'Localización actualizada',
+            mensajeExito: requiereUbicacion
+              ? 'El punto GPS del cliente fue registrado correctamente.'
+              : 'El punto GPS del cliente fue actualizado correctamente.',
+            textoConfirmarExito: 'Listo'
           });
         });
       });

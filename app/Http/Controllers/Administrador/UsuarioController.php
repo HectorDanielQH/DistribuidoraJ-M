@@ -290,9 +290,10 @@ class UsuarioController extends Controller
     public function imagenPerfil(string $id)
     {
         $usuario = User::findOrFail($id);
+        $fallback = public_path('images/logo_profile.webp');
 
         if (!$usuario->foto_perfil) {
-            abort(404);
+            return response()->file($fallback);
         }
 
         if (Storage::disk('public')->exists($usuario->foto_perfil)) {
@@ -303,6 +304,6 @@ class UsuarioController extends Controller
             return response()->file(storage_path('app/private/' . $usuario->foto_perfil));
         }
 
-        abort(404);
+        return response()->file($fallback);
     }
 }
