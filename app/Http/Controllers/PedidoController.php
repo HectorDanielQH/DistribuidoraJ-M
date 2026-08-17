@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asignacion;
+use App\Models\Cliente;
 use App\Models\FormaVenta;
 use App\Models\Pedido;
 use App\Models\Producto;
@@ -76,7 +77,9 @@ class PedidoController extends Controller
         $asignacion = Asignacion::where('id_cliente',$id_asignacion)
             ->where('id_usuario', auth()->id())
             ->firstOrFail();
-        return view('vendedor.pedidos.index_pedidos', compact('asignacion','productos'));
+        $requiereCapturaUbicacion = blank($asignacion->cliente?->latitud) || blank($asignacion->cliente?->longitud);
+
+        return view('vendedor.pedidos.index_pedidos', compact('asignacion','productos', 'requiereCapturaUbicacion'));
     }
 
     public function ObtenerProductoParaPedido(string $id_producto, Request $request, RestriccionVendedorService $restriccionService){
@@ -258,10 +261,14 @@ class PedidoController extends Controller
         $request->validate([
             'asignacion_id' => 'required|exists:asignacions,id',
             'productos' => 'required',
+            'latitud_cliente' => 'nullable|numeric|between:-90,90',
+            'longitud_cliente' => 'nullable|numeric|between:-180,180',
         ], [
             'asignacion_id.required' => 'El campo id_asignacion es obligatorio.',
             'asignacion_id.exists' => 'La asignación especificada no existe.',
             'productos.required' => 'El campo productos es obligatorio.',
+            'latitud_cliente.numeric' => 'La latitud enviada no es valida.',
+            'longitud_cliente.numeric' => 'La longitud enviada no es valida.',
         ]);
 
         // Si 'productos' llega como string JSON, decodifícalo
@@ -279,6 +286,18 @@ class PedidoController extends Controller
                     ->where('id', $request->asignacion_id)
                     ->lockForUpdate()
                     ->firstOrFail();
+
+                $cliente = Cliente::where('id', $asignacion->id_cliente)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ((blank($cliente->latitud) || blank($cliente->longitud))
+                    && $request->filled('latitud_cliente')
+                    && $request->filled('longitud_cliente')) {
+                    $cliente->latitud = (float) $request->latitud_cliente;
+                    $cliente->longitud = (float) $request->longitud_cliente;
+                    $cliente->save();
+                }
 
                 $numero_pedido = $asignacion->numero_pedido;
 

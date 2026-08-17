@@ -31,6 +31,18 @@
             <small>{{ $asignacion->cliente->zona_barrio ?: 'Sin zona' }} - {{ $asignacion->cliente->calle_avenida ?: 'Sin direccion' }}</small>
         </div>
     </section>
+    @if($requiereCapturaUbicacion)
+    <section class="location-capture-banner" id="location-capture-banner">
+        <div class="location-capture-banner__icon"><i class="fas fa-map-marker-alt"></i></div>
+        <div class="location-capture-banner__content">
+            <strong>Ubicación pendiente para reparto</strong>
+            <p>Captura la latitud y longitud de este cliente. Luego el repartidor podrá verlo correctamente en mapa.</p>
+        </div>
+        <button type="button" class="btn btn-success" id="btn-capturar-ubicacion" data-toggle="modal" data-target="#modalCapturarUbicacion">
+            <i class="fas fa-location-arrow"></i> Capturar ubicación
+        </button>
+    </section>
+    @endif
     <section class="quick-action-box">
         <div>
             <h2>1. Agrega productos</h2>
@@ -77,6 +89,35 @@
         </div>
         <x-slot name="footerSlot">
             <x-adminlte-button class="mr-auto btn-modal-add" theme="success" label="Agregar al pedido" icon="fas fa-plus" onclick="registrarTabla(this)"/>
+            <x-adminlte-button theme="secondary" label="Cerrar" data-dismiss="modal"/>
+        </x-slot>
+    </x-adminlte-modal>
+
+    <x-adminlte-modal id="modalCapturarUbicacion" title="Capturar ubicación para el repartidor" size="xl" theme="info" icon="fas fa-map-marked-alt" v-centered static-backdrop scrollable>
+        <div class="location-modal-shell">
+            <div class="location-modal-intro">
+                <strong>Usa la ubicación del dispositivo o marca manualmente el punto en el mapa.</strong>
+                <span>Solo se guardará si este cliente aún no tiene coordenadas registradas.</span>
+            </div>
+            <div class="location-modal-actions">
+                <button type="button" class="btn btn-primary" id="btn-usar-mi-ubicacion">
+                    <i class="fas fa-crosshairs"></i> Usar mi ubicación actual
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="btn-centrar-bolivia">
+                    <i class="fas fa-globe-americas"></i> Centrar mapa
+                </button>
+            </div>
+            <div class="location-status" id="location-status-box">
+                <span>Aún no se capturó una ubicación.</span>
+            </div>
+            <div id="mapa-captura-cliente" class="leaflet-capture-map"></div>
+            <input type="hidden" id="latitud-cliente-captura" value="{{ $asignacion->cliente->latitud }}">
+            <input type="hidden" id="longitud-cliente-captura" value="{{ $asignacion->cliente->longitud }}">
+        </div>
+        <x-slot name="footerSlot">
+            <button type="button" class="btn btn-success" id="btn-guardar-ubicacion-cliente">
+                <i class="fas fa-save"></i> Guardar ubicación para el pedido
+            </button>
             <x-adminlte-button theme="secondary" label="Cerrar" data-dismiss="modal"/>
         </x-slot>
     </x-adminlte-modal>
@@ -149,6 +190,7 @@
 
 @section('css')
     <link rel="stylesheet" href="https://unpkg.com/nprogress@0.2.0/nprogress.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
         /* Fuente y colores base */
@@ -572,6 +614,93 @@
             padding-bottom: 180px;
         }
 
+        .location-capture-banner {
+            display: grid;
+            grid-template-columns: 52px 1fr auto;
+            gap: 14px;
+            align-items: center;
+            padding: 16px;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+        }
+
+        .location-capture-banner__icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 1.4rem;
+        }
+
+        .location-capture-banner__content strong {
+            display: block;
+            color: var(--order-text);
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .location-capture-banner__content p {
+            margin: 4px 0 0;
+            color: var(--order-muted);
+            font-weight: 700;
+        }
+
+        .location-modal-shell {
+            display: grid;
+            gap: 14px;
+        }
+
+        .location-modal-intro {
+            display: grid;
+            gap: 4px;
+            color: var(--order-text);
+        }
+
+        .location-modal-intro span {
+            color: var(--order-muted);
+            font-weight: 700;
+        }
+
+        .location-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .location-status {
+            border: 1px solid #dbe7e2;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 800;
+        }
+
+        .location-status.is-ready {
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .location-status.is-warning {
+            border-color: #fde68a;
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        .leaflet-capture-map {
+            width: 100%;
+            min-height: 360px;
+            border: 1px solid #dbe7e2;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
         .client-box,
         .quick-action-box,
         .modern-card {
@@ -811,6 +940,10 @@
                 padding-bottom: 250px;
             }
 
+            .location-capture-banner {
+                grid-template-columns: 1fr;
+            }
+
             .total-bar {
                 margin-bottom: 190px;
             }
@@ -876,6 +1009,7 @@
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         let idProducto_para_tabla="";
@@ -887,6 +1021,13 @@
         let intervaloStock = null;
         let temporizadorBusqueda = null;
         let pasoActual = 1;
+        let requiereCapturaUbicacion = @json($requiereCapturaUbicacion);
+        let mapaCapturaCliente = null;
+        let marcadorCapturaCliente = null;
+        let ubicacionListaParaGuardar = !requiereCapturaUbicacion;
+        let continuarRegistroLuegoDeUbicacion = false;
+        const centroBolivia = [-16.5200, -68.1500];
+        const abrirCapturaUbicacion = @json(request()->boolean('capturar_ubicacion'));
 
         function generarClaveCarrito() {
             return `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -896,6 +1037,16 @@
             actualizarPasoVisual(1);
             actualizarAccionesPedido();
             buscarProductosPedido('');
+            actualizarEstadoUbicacionCliente();
+
+            if (abrirCapturaUbicacion) {
+                setTimeout(function () {
+                    $('#modalCapturarUbicacion').modal('show');
+                    actualizarEstadoUbicacionCliente('Marca manualmente la ubicación del cliente o usa tu GPS actual.', 'warning');
+                }, 400);
+            } else if (requiereCapturaUbicacion) {
+                setTimeout(mostrarPromptUbicacionInicial, 500);
+            }
 
             // Carga inicial de pedidos pendientes
             Swal.fire({
@@ -964,7 +1115,214 @@
                 reiniciarModalProducto();
                 actualizarPasoVisual(tablaProductos.length ? 2 : 1);
             });
+
+            $('#modalCapturarUbicacion').on('shown.bs.modal', function () {
+                inicializarMapaCapturaCliente();
+                setTimeout(function () {
+                    if (mapaCapturaCliente) {
+                        mapaCapturaCliente.invalidateSize();
+                    }
+                }, 200);
+            });
+
+            $('#btn-usar-mi-ubicacion').on('click', capturarUbicacionActual);
+            $('#btn-centrar-bolivia').on('click', function () {
+                if (mapaCapturaCliente) {
+                    mapaCapturaCliente.setView(centroBolivia, 13);
+                }
+            });
+            $('#btn-guardar-ubicacion-cliente').on('click', guardarUbicacionCapturada);
         });
+
+        function mostrarPromptUbicacionInicial() {
+            Swal.fire({
+                title: 'Capturar ubicacion para el repartidor?',
+                text: 'Este cliente aun no tiene coordenadas registradas. Puedes capturarlas ahora o hacerlo antes de registrar el pedido.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Capturar ahora',
+                cancelButtonText: 'Mas tarde'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $('#modalCapturarUbicacion').modal('show');
+                }
+            });
+        }
+
+        function inicializarMapaCapturaCliente() {
+            if (!mapaCapturaCliente) {
+                mapaCapturaCliente = L.map('mapa-captura-cliente').setView(centroBolivia, 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(mapaCapturaCliente);
+
+                mapaCapturaCliente.on('click', function (event) {
+                    fijarMarcadorCliente(event.latlng.lat, event.latlng.lng, true);
+                });
+            }
+
+            const latitudActual = Number($('#latitud-cliente-captura').val() || 0);
+            const longitudActual = Number($('#longitud-cliente-captura').val() || 0);
+
+            if (latitudActual && longitudActual) {
+                fijarMarcadorCliente(latitudActual, longitudActual, false);
+            }
+        }
+
+        function capturarUbicacionActual() {
+            if (!navigator.geolocation) {
+                actualizarEstadoUbicacionCliente('Tu navegador no soporta geolocalizacion. Marca el punto manualmente en el mapa.', 'warning');
+                return;
+            }
+
+            actualizarEstadoUbicacionCliente('Solicitando ubicacion del dispositivo...', 'warning');
+
+            navigator.geolocation.getCurrentPosition(function (position) {
+                fijarMarcadorCliente(position.coords.latitude, position.coords.longitude, true);
+            }, function (error) {
+                let mensaje = 'No se pudo obtener la ubicacion.';
+                if (error.code === 1) {
+                    mensaje = 'Se denego el permiso de ubicacion. Marca el punto manualmente en el mapa.';
+                } else if (error.code === 2) {
+                    mensaje = 'No se pudo determinar la ubicacion del dispositivo. Usa el mapa manualmente.';
+                } else if (error.code === 3) {
+                    mensaje = 'La ubicacion tardo demasiado en responder. Usa el mapa manualmente si lo prefieres.';
+                }
+
+                actualizarEstadoUbicacionCliente(mensaje, 'warning');
+            }, {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            });
+        }
+
+        function fijarMarcadorCliente(latitud, longitud, centrar) {
+            $('#latitud-cliente-captura').val(Number(latitud).toFixed(7));
+            $('#longitud-cliente-captura').val(Number(longitud).toFixed(7));
+
+            if (!mapaCapturaCliente) {
+                return;
+            }
+
+            if (!marcadorCapturaCliente) {
+                marcadorCapturaCliente = L.marker([latitud, longitud], { draggable: true }).addTo(mapaCapturaCliente);
+                marcadorCapturaCliente.on('dragend', function (event) {
+                    const point = event.target.getLatLng();
+                    fijarMarcadorCliente(point.lat, point.lng, false);
+                });
+            } else {
+                marcadorCapturaCliente.setLatLng([latitud, longitud]);
+            }
+
+            if (centrar) {
+                mapaCapturaCliente.setView([latitud, longitud], 17);
+            }
+
+            actualizarEstadoUbicacionCliente(`Ubicacion lista: ${Number(latitud).toFixed(6)}, ${Number(longitud).toFixed(6)}`, 'ready');
+        }
+
+        function actualizarEstadoUbicacionCliente(mensaje = null, tipo = null) {
+            const $box = $('#location-status-box');
+            if (!$box.length) {
+                return;
+            }
+
+            $box.removeClass('is-ready is-warning');
+
+            if (tipo === 'ready') {
+                $box.addClass('is-ready');
+            } else if (tipo === 'warning') {
+                $box.addClass('is-warning');
+            }
+
+            if (mensaje) {
+                $box.html(`<span>${mensaje}</span>`);
+            }
+        }
+
+        function guardarUbicacionCapturada() {
+            const latitud = $('#latitud-cliente-captura').val();
+            const longitud = $('#longitud-cliente-captura').val();
+
+            if (!latitud || !longitud) {
+                actualizarEstadoUbicacionCliente('Primero captura la ubicacion actual o marca manualmente el punto en el mapa.', 'warning');
+                return;
+            }
+
+            ubicacionListaParaGuardar = true;
+            requiereCapturaUbicacion = false;
+            $('#location-capture-banner').remove();
+            actualizarEstadoUbicacionCliente('Ubicacion preparada para guardarse junto con el pedido.', 'ready');
+            $('#modalCapturarUbicacion').modal('hide');
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Ubicacion lista',
+                text: 'La ubicacion se guardara cuando registres el pedido.',
+                timer: 1400,
+                showConfirmButton: false
+            });
+
+            if (continuarRegistroLuegoDeUbicacion) {
+                continuarRegistroLuegoDeUbicacion = false;
+                confirmarRegistroPedido();
+            }
+        }
+
+        function confirmarRegistroPedido() {
+            actualizarPasoVisual(3);
+
+            Swal.fire({
+                title: 'Confirmar Pedido',
+                text: "¿Estás seguro de que deseas registrar este pedido?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, registrar pedido',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const $boton = $('#btn-registrar-pedido');
+                    $boton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Registrando');
+
+                    refrescarStockProductos(false).always(function () {
+                        $.ajax({
+                            url: "{{ route('pedidos.vendedor.registrarPedido') }}",
+                            type: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                asignacion_id: '{{ $asignacion->id }}',
+                                productos: JSON.stringify(tablaProductos),
+                                latitud_cliente: $('#latitud-cliente-captura').val() || null,
+                                longitud_cliente: $('#longitud-cliente-captura').val() || null,
+                            },
+                            beforeSend: function() {
+                                Swal.fire({ title: 'Registrando...', text: 'Verificando inventario actualizado', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                            },
+                            success: function() {
+                                if (intervaloStock) {
+                                    clearInterval(intervaloStock);
+                                }
+                                Swal.fire({ icon: 'success', title: 'Pedido registrado', text: 'Inventario actualizado correctamente.', timer: 1500, showConfirmButton: false })
+                                    .then(() => window.location.href = "{{ route('asignacionvendedor.index') }}");
+                            },
+                            error: function(xhr) {
+                                $boton.prop('disabled', false).html('<i class="fas fa-check-circle"></i> 3. Registrar pedido');
+                                actualizarPasoVisual(2);
+                                refrescarStockProductos(true);
+                                Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: xhr.responseJSON?.message || 'El inventario cambio. Revisa el pedido e intenta nuevamente.' });
+                            }
+                        });
+                    });
+                } else {
+                    actualizarPasoVisual(tablaProductos.length ? 2 : 1);
+                }
+            });
+        }
 
         function actualizarPasoVisual(paso) {
             pasoActual = paso;
@@ -1594,53 +1952,14 @@
                 return Swal.fire({ icon: 'warning', title: 'Primero agrega productos', text: 'El paso 1 debe completarse antes de registrar el pedido.' });
             }
 
-            actualizarPasoVisual(3);
+            if (requiereCapturaUbicacion && !ubicacionListaParaGuardar) {
+                continuarRegistroLuegoDeUbicacion = true;
+                $('#modalCapturarUbicacion').modal('show');
+                actualizarEstadoUbicacionCliente('Antes de registrar el pedido, captura o marca la ubicacion del cliente.', 'warning');
+                return;
+            }
 
-            Swal.fire({
-                title: 'Confirmar Pedido',
-                text: "¿Estás seguro de que deseas registrar este pedido?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sí, registrar pedido',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const $boton = $('#btn-registrar-pedido');
-                    $boton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Registrando');
-
-                    refrescarStockProductos(false).always(function () {
-                        $.ajax({
-                            url: "{{ route('pedidos.vendedor.registrarPedido') }}",
-                            type: 'POST',
-                            data: {
-                                _token: '{{ csrf_token() }}',
-                                asignacion_id: '{{ $asignacion->id }}',
-                                productos: JSON.stringify(tablaProductos),
-                            },
-                            beforeSend: function() {
-                                Swal.fire({ title: 'Registrando...', text: 'Verificando inventario actualizado', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                            },
-                            success: function() {
-                                if (intervaloStock) {
-                                    clearInterval(intervaloStock);
-                                }
-                                Swal.fire({ icon: 'success', title: 'Pedido registrado', text: 'Inventario actualizado correctamente.', timer: 1500, showConfirmButton: false })
-                                    .then(() => window.location.href = "{{ route('asignacionvendedor.index') }}");
-                            },
-                            error: function(xhr) {
-                                $boton.prop('disabled', false).html('<i class="fas fa-check-circle"></i> 3. Registrar pedido');
-                                actualizarPasoVisual(2);
-                                refrescarStockProductos(true);
-                                Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: xhr.responseJSON?.message || 'El inventario cambio. Revisa el pedido e intenta nuevamente.' });
-                            }
-                        });
-                    });
-                } else {
-                    actualizarPasoVisual(tablaProductos.length ? 2 : 1);
-                }
-            });
+            confirmarRegistroPedido();
         }
 
         function totalNormalizadoActualProducto(productoId) {

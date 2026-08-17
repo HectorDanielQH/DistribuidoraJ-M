@@ -681,6 +681,114 @@
   <script src="https://cdn.datatables.net/v/bs4/jszip-3.10.1/dt-2.3.3/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cc-1.0.7/fc-5.0.4/fh-4.0.3/r-3.0.6/rg-1.5.2/sc-2.4.3/sb-1.8.3/sp-2.3.5/datatables.min.js" integrity="sha384-SY2UJyI2VomTkRZaMzHTGWoCHGjNh2V7w+d6ebcRmybnemfWfy9nffyAuIG4GJvd" crossorigin="anonymous"></script>
 
   <script>
+    function tomarPedidoConGPS(button) {
+      const boton = $(button);
+      const url = boton.data('url');
+      const clienteId = boton.data('cliente-id');
+      const requiereUbicacion = String(boton.data('requiere-ubicacion')) === '1';
+
+      Swal.fire({
+        title: 'Capturar ubicación actual GPS',
+        text: requiereUbicacion
+          ? 'Para tomar este pedido debes encender el GPS del dispositivo y permitir la ubicación actual. Se recuperarán la latitud y longitud para el repartidor.'
+          : 'Este cliente ya tiene ubicación registrada. ¿Deseas continuar al pedido?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: requiereUbicacion ? 'Encender GPS y continuar' : 'Continuar al pedido',
+        cancelButtonText: 'Cancelar',
+        allowOutsideClick: false
+      }).then((result) => {
+        if (!result.isConfirmed) {
+          return;
+        }
+
+        if (!requiereUbicacion) {
+          window.location.href = url;
+          return;
+        }
+
+        if (!navigator.geolocation) {
+          Swal.fire({
+            title: 'GPS no disponible',
+            text: 'Este navegador no permite capturar GPS en esta pantalla. Se abrirá el pedido para que marques la ubicación manualmente en el mapa.',
+            icon: 'info',
+            confirmButtonText: 'Ir a captura manual'
+          }).then(() => {
+            window.location.href = `${url}?capturar_ubicacion=1`;
+          });
+          return;
+        }
+
+        Swal.fire({
+          title: 'Capturando ubicación',
+          html: 'Activa el GPS del dispositivo y acepta el permiso del navegador para recuperar latitud y longitud.',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+          $.ajax({
+            url: "{{ route('asignacionvendedor.registrarUbicacionCliente', ':idCliente') }}".replace(':idCliente', clienteId),
+            type: 'PUT',
+            headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+              latitud: position.coords.latitude,
+              longitud: position.coords.longitude
+            },
+            success: function () {
+              Swal.fire({
+                icon: 'success',
+                title: 'Ubicación capturada',
+                text: 'La latitud y longitud fueron guardadas correctamente. Ahora puedes tomar el pedido.',
+                confirmButtonText: 'Continuar'
+              }).then(() => {
+                $('#tabla-asignaciones').DataTable().ajax.reload(null, false);
+                window.location.href = url;
+              });
+            },
+            error: function (xhr) {
+              Swal.fire({
+                title: 'No se pudo guardar',
+                text: xhr.responseJSON?.message || 'Ocurrió un error al guardar la ubicación GPS del cliente. Puedes continuar y marcarla manualmente.',
+                icon: 'warning',
+                confirmButtonText: 'Ir a captura manual'
+              }).then(() => {
+                window.location.href = `${url}?capturar_ubicacion=1`;
+              });
+            }
+          });
+        }, function (error) {
+          let mensaje = 'No se pudo capturar la ubicación actual.';
+
+          if (error.code === 1) {
+            mensaje = 'Debes permitir el acceso a tu ubicación y encender el GPS para continuar con el pedido.';
+          } else if (error.code === 2) {
+            mensaje = 'No se encontró una posición válida. Verifica que el GPS esté encendido.';
+          } else if (error.code === 3) {
+            mensaje = 'La captura tardó demasiado. Verifica el GPS y vuelve a intentarlo.';
+          }
+
+          Swal.fire({
+            title: 'Ubicación obligatoria',
+            text: `${mensaje} Si el GPS no responde, abriremos la captura manual en mapa.`,
+            icon: 'warning',
+            confirmButtonText: 'Ir a captura manual'
+          }).then(() => {
+            window.location.href = `${url}?capturar_ubicacion=1`;
+          });
+        }, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        });
+      });
+    }
+
     $(document).ready(function () {
       const filtros = $('#filtros-asignaciones');
 

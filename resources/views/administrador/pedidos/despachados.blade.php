@@ -10,6 +10,9 @@
             <p>Productos que ya salieron con el repartidor. Todavia no son venta hasta contabilizar.</p>
         </div>
         <div class="dispatch-actions">
+            <button type="button" class="btn btn-outline-success dispatch-main-btn" id="btn-mapa-entregas">
+                <i class="fas fa-map-marked-alt"></i> Mapa de entregas
+            </button>
             <button type="button" class="btn btn-info dispatch-main-btn" id="btn-pdf-despacho">
                 <i class="fas fa-file-pdf"></i> PDF para despacho
             </button>
@@ -27,6 +30,19 @@
 @stop
 
 @section('content')
+    <x-adminlte-modal id="modalMapaEntregas" title="Mapa de entregas para reparto" size="xl" theme="success" icon="fas fa-map-marked-alt" v-centered scrollable>
+        <div class="dispatch-map-shell">
+            <div class="dispatch-map-summary" id="dispatch-map-summary">
+                Cargando ubicaciones de entrega...
+            </div>
+            <div id="mapa-entregas-despacho" class="dispatch-leaflet-map"></div>
+            <div class="dispatch-map-list" id="dispatch-map-list"></div>
+        </div>
+        <x-slot name="footerSlot">
+            <x-adminlte-button theme="secondary" label="Cerrar" data-dismiss="modal" icon="fas fa-times"/>
+        </x-slot>
+    </x-adminlte-modal>
+
     <section class="dispatch-summary">
         <article>
             <span>Despachados</span>
@@ -107,6 +123,7 @@
 @section('css')
     <link href="https://cdn.datatables.net/v/bs4/dt-2.3.3/b-3.2.4/b-html5-3.2.4/b-print-3.2.4/r-3.0.6/datatables.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         .content-wrapper { background: #eef3f1; }
         .dispatch-header, .dispatch-summary, .dispatch-filters, .dispatch-table-shell {
@@ -262,6 +279,47 @@
             border-radius: 8px;
             padding: 12px;
         }
+        .dispatch-map-shell {
+            display: grid;
+            gap: 14px;
+        }
+        .dispatch-map-summary {
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 800;
+        }
+        .dispatch-leaflet-map {
+            width: 100%;
+            min-height: 430px;
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .dispatch-map-list {
+            display: grid;
+            gap: 10px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .dispatch-map-point {
+            border: 1px solid #d7e4df;
+            border-radius: 8px;
+            padding: 12px;
+            background: #ffffff;
+        }
+        .dispatch-map-point strong {
+            display: block;
+            color: #17211d;
+        }
+        .dispatch-map-point span {
+            display: block;
+            color: #64748b;
+            font-weight: 700;
+            margin-top: 3px;
+        }
         @media (max-width: 767.98px) {
             .dispatch-header, .dispatch-actions { flex-direction: column; }
             .dispatch-main-btn, .dispatch-action { width: 100%; }
@@ -276,8 +334,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/v/bs4/dt-2.3.3/b-3.2.4/b-html5-3.2.4/b-print-3.2.4/r-3.0.6/datatables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+        let mapaEntregas = null;
+        let capaMarcadoresEntrega = null;
+
         $(document).ready(function () {
             $('#filtro-ruta').select2({
                 closeOnSelect: false,
@@ -413,7 +475,103 @@
                 tabla.page.len(10);
                 tabla.ajax.reload();
             });
+
+            $('#btn-mapa-entregas').on('click', function () {
+                $('#modalMapaEntregas').modal('show');
+                cargarMapaEntregas();
+            });
+
+            $('#modalMapaEntregas').on('shown.bs.modal', function () {
+                inicializarMapaEntregas();
+                setTimeout(function () {
+                    if (mapaEntregas) {
+                        mapaEntregas.invalidateSize();
+                    }
+                }, 200);
+            });
         });
+
+        function inicializarMapaEntregas() {
+            if (mapaEntregas) {
+                return;
+            }
+
+            mapaEntregas = L.map('mapa-entregas-despacho').setView([-16.5200, -68.1500], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapaEntregas);
+
+            capaMarcadoresEntrega = L.layerGroup().addTo(mapaEntregas);
+        }
+
+        function cargarMapaEntregas() {
+            $.ajax({
+                url: "{{ route('pedidos.administrador.visualizacionDespachados.mapa') }}",
+                type: 'GET',
+                data: {
+                    ruta_id: $('#filtro-ruta').val(),
+                    preventista_id: $('#filtro-preventista').val(),
+                    fecha_entrega: $('#filtro-fecha-entrega').val()
+                },
+                beforeSend: function () {
+                    $('#dispatch-map-summary').text('Cargando ubicaciones de entrega...');
+                    $('#dispatch-map-list').html('');
+                },
+                success: function (response) {
+                    inicializarMapaEntregas();
+                    capaMarcadoresEntrega.clearLayers();
+
+                    const ubicaciones = response.ubicaciones || [];
+                    if (!ubicaciones.length) {
+                        $('#dispatch-map-summary').text('No hay pedidos despachados con coordenadas para los filtros actuales.');
+                        $('#dispatch-map-list').html('<div class="dispatch-map-point">No se encontraron ubicaciones registradas.</div>');
+                        mapaEntregas.setView([-16.5200, -68.1500], 12);
+                        return;
+                    }
+
+                    const bounds = [];
+                    const listado = ubicaciones.map(function (item) {
+                        const popup = `
+                            <strong>Pedido #${item.numero_pedido}</strong><br>
+                            ${item.cliente}<br>
+                            Ruta: ${item.ruta}<br>
+                            Preventista: ${item.preventista || 'N/A'}<br>
+                            Dirección: ${item.direccion}<br>
+                            Ref: ${item.referencia}
+                        `;
+
+                        const marker = L.marker([item.latitud, item.longitud]).bindPopup(popup);
+                        marker.addTo(capaMarcadoresEntrega);
+                        bounds.push([item.latitud, item.longitud]);
+
+                        return `
+                            <div class="dispatch-map-point">
+                                <strong>Pedido #${item.numero_pedido} · ${item.cliente}</strong>
+                                <span>${item.direccion}</span>
+                                <span>Ruta: ${item.ruta} · Preventista: ${item.preventista || 'N/A'}</span>
+                                <span>Celular: ${item.celular}</span>
+                                <span>Coordenadas: ${Number(item.latitud).toFixed(6)}, ${Number(item.longitud).toFixed(6)}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    $('#dispatch-map-summary').text(`${ubicaciones.length} pedidos despachados listos para ubicarse en mapa.`);
+                    $('#dispatch-map-list').html(listado);
+
+                    if (bounds.length === 1) {
+                        mapaEntregas.setView(bounds[0], 16);
+                    } else {
+                        mapaEntregas.fitBounds(bounds, { padding: [30, 30] });
+                    }
+                },
+                error: function () {
+                    $('#dispatch-map-summary').text('No se pudo cargar el mapa de entregas.');
+                    $('#dispatch-map-list').html('<div class="dispatch-map-point">Ocurrió un error cargando las ubicaciones.</div>');
+                }
+            });
+        }
 
         function verPedidosDespachadosPorProducto(e) {
             const idProducto = e.getAttribute('id-producto');

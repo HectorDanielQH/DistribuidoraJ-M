@@ -27,6 +27,7 @@ use App\Http\Controllers\PedidoAdministradorController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\PreVentista\VentasVendedorController;
 use App\Http\Controllers\RendimientoPersonalController;
+use App\Http\Controllers\Repartidor\EntregaController as RepartidorEntregaController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\VendedorRestriccionController;
 use Illuminate\Support\Facades\Auth;
@@ -239,6 +240,7 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
 
         //pedido administrador Controller--producto despachado
         Route::get('pedidos/administrador/visualizacion-despachados', [PedidoAdministradorController::class,'visualizacionDespachados'])->name('pedidos.administrador.visualizacionDespachados');
+        Route::get('pedidos/administrador/visualizacion-despachados/mapa-ubicaciones', [PedidoAdministradorController::class,'ubicacionesDespachoMapa'])->name('pedidos.administrador.visualizacionDespachados.mapa');
         Route::get('pedidos/administrador/despachados/producto/{id_producto}', [PedidoAdministradorController::class,'pedidosDespachadosPorProducto'])->name('pedidos.administrador.despachadosPorProducto');
 
         Route::get('pedidos/administrador/visualizacion-para-despachado', [PedidoAdministradorController::class,'visualizacionParaDespachado'])->name('pedidos.administrador.visualizacionParaDespachado');
@@ -289,6 +291,7 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
         Route::get('asignacionVendedores/actualizar', [AsignacionVendedorController::class, 'index'])->name('asignacionvendedor.index');
 
         Route::put('asignacionVendedores/registrar-atencion/{id}', [AsignacionVendedorController::class, 'registrarAtencion'])->name('registrarAtencion.sinpedido');
+        Route::put('asignacionVendedores/cliente/{idCliente}/registrar-ubicacion', [AsignacionVendedorController::class, 'registrarUbicacionCliente'])->name('asignacionvendedor.registrarUbicacionCliente');
 
         //Crear pedidos desdee vendedor
         Route::get('pedidos/vendedor/buscar-productos', [PedidoController::class, 'buscarProductosPedido'])->name('pedidos.vendedor.buscarProductos');
@@ -304,6 +307,13 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
 
         //pdf vendedor
         Route::get('pedidos/vendedor/obtener-pdf-rutas', [PedidoController::class, 'obtenerPdfRutas'])->name('pedidos.vendedor.obtenerPdfRutas');
+    });
+
+    Route::prefix('repartidor')->name('repartidor.')->middleware('can:reparto.panel')->group(function () {
+        Route::get('entregas', [RepartidorEntregaController::class, 'index'])->name('entregas.index');
+        Route::get('entregas/datos', [RepartidorEntregaController::class, 'datos'])->name('entregas.datos');
+        Route::get('entregas/mapa', [RepartidorEntregaController::class, 'mapa'])->name('entregas.mapa');
+        Route::get('entregas/opciones', [RepartidorEntregaController::class, 'opciones'])->name('entregas.opciones');
     });
 
     Route::prefix('api/admin')->middleware('can:administrador.permisos')->group(function () {

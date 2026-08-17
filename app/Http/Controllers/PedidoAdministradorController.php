@@ -409,6 +409,88 @@ class PedidoAdministradorController extends Controller
         return $pdf->stream('productosDespachados.pdf');  
     }
 
+    public function ubicacionesDespachoMapa(Request $request)
+    {
+        $rutaIds = collect((array) $request->input('ruta_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+        $preventistaIds = collect((array) $request->input('preventista_id', []))
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->values();
+
+        $query = Pedido::query()
+            ->join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
+            ->leftJoin('rutas', 'clientes.ruta_id', '=', 'rutas.id')
+            ->leftJoin('users', 'pedidos.id_usuario', '=', 'users.id')
+            ->whereNotNull('pedidos.fecha_entrega')
+            ->where('pedidos.estado_pedido', false)
+            ->whereNotNull('clientes.latitud')
+            ->whereNotNull('clientes.longitud')
+            ->select(
+                'pedidos.numero_pedido',
+                'pedidos.id_cliente',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'clientes.referencia_direccion',
+                'clientes.latitud',
+                'clientes.longitud',
+                'rutas.nombre_ruta',
+                'users.nombres as preventista_nombres',
+                'users.apellido_paterno as preventista_apellido_paterno',
+                'users.apellido_materno as preventista_apellido_materno'
+            )
+            ->groupBy(
+                'pedidos.numero_pedido',
+                'pedidos.id_cliente',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'clientes.referencia_direccion',
+                'clientes.latitud',
+                'clientes.longitud',
+                'rutas.nombre_ruta',
+                'users.nombres',
+                'users.apellido_paterno',
+                'users.apellido_materno'
+            )
+            ->orderBy('pedidos.numero_pedido', 'asc');
+
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $query->whereIn('pedidos.id_usuario', $preventistaIds);
+        }
+
+        if ($request->filled('fecha_entrega')) {
+            $query->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        }
+
+        $ubicaciones = $query->get()->map(function ($item) {
+            return [
+                'numero_pedido' => $item->numero_pedido,
+                'cliente' => trim(($item->nombres ?? '') . ' ' . ($item->apellidos ?? '')),
+                'celular' => $item->celular ?: 'Sin celular',
+                'direccion' => trim(($item->calle_avenida ?? 'Sin direccion') . ' - ' . ($item->zona_barrio ?? 'Sin zona')),
+                'referencia' => $item->referencia_direccion ?: 'Sin referencia',
+                'ruta' => $item->nombre_ruta ?: 'Sin ruta',
+                'preventista' => trim(($item->preventista_nombres ?? '') . ' ' . ($item->preventista_apellido_paterno ?? '') . ' ' . ($item->preventista_apellido_materno ?? '')),
+                'latitud' => (float) $item->latitud,
+                'longitud' => (float) $item->longitud,
+            ];
+        })->values();
+
+        return response()->json([
+            'ubicaciones' => $ubicaciones,
+        ]);
+    }
+
 
 
     public function visualizacionPdfDespacharPendientes(){

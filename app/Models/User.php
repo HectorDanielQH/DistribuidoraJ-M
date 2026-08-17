@@ -8,7 +8,6 @@ use Illuminate\Container\Attributes\Auth;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -61,11 +60,9 @@ class User extends Authenticatable
     public function adminlte_image()
     {
         if (auth()->user()->foto_perfil) {
-            return Storage::url(auth()->user()->foto_perfil);
+            return route('usuarios.imagenperfil', auth()->id());
         } else {
-            return 'https://ui-avatars.com/api/?name=' 
-                . urlencode(auth()->user()->nombres . ' ' . auth()->user()->apellidos)
-                . '&color=7F9CF5&background=EBF4FF';
+            return asset('images/logo_profile.webp');
         
         }
     }

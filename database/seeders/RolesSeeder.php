@@ -21,11 +21,13 @@ class RolesSeeder extends Seeder
         $rol_vendedor = Role::firstOrCreate(['name' => 'vendedor']);
         $rol_contador = Role::firstOrCreate(['name' => 'contador']);
         $rol_mayorista = Role::firstOrCreate(['name' => 'mayorista']);
+        $rol_repartidor = Role::firstOrCreate(['name' => 'repartidor']);
 
         $permisos_admin = Permission::firstOrCreate(['name' => 'administrador.permisos']);
         $permisos_vendedor = Permission::firstOrCreate(['name' => 'vendedor.permisos']);
         $permisos_contador = Permission::firstOrCreate(['name' => 'contador.permisos']);
         $permisos_mayorista = Permission::firstOrCreate(['name' => 'mayorista.permisos']);
+        $permisos_repartidor = Permission::firstOrCreate(['name' => 'repartidor.permisos']);
         $permisos_productos_imagenes = Permission::firstOrCreate(['name' => 'productos.imagenes']);
         $permisos_productos_catalogo = Permission::firstOrCreate(['name' => 'productos.catalogo']);
 
@@ -33,9 +35,11 @@ class RolesSeeder extends Seeder
         $permisos_vendedor->assignRole($rol_vendedor);
         $permisos_contador->assignRole($rol_contador);
         $permisos_mayorista->assignRole($rol_mayorista);
+        $permisos_repartidor->assignRole($rol_repartidor);
         $permisos_productos_imagenes->assignRole($rol_admin);
         $permisos_productos_imagenes->assignRole($rol_vendedor);
         $permisos_productos_imagenes->assignRole($rol_mayorista);
+        $permisos_productos_imagenes->assignRole($rol_repartidor);
         $permisos_productos_catalogo->assignRole($rol_admin);
         $permisos_productos_catalogo->assignRole($rol_vendedor);
         $permisos_productos_catalogo->assignRole($rol_mayorista);

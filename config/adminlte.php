@@ -502,7 +502,16 @@ return [
             'can' => 'vendedor.permisos',
         ],
 
-
+        [
+            'header'=> '.:: REPARTO ::.',
+            'can' => 'reparto.panel',
+        ],
+        [
+            'text' => 'Entregas despachadas',
+            'route' => 'repartidor.entregas.index',
+            'icon' => 'fas fa-fw fa-truck-loading',
+            'can' => 'reparto.panel',
+        ],
         
         [
             'header'=> '.:: PEDIDOS MAYORISTAS ::.',

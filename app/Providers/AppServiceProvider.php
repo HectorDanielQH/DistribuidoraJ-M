@@ -29,5 +29,10 @@ class AppServiceProvider extends ServiceProvider
             return $user->can('administrador.permisos')
                 || $user->can('mayorista.permisos');
         });
+
+        Gate::define('reparto.panel', function (User $user) {
+            return $user->can('administrador.permisos')
+                || $user->can('repartidor.permisos');
+        });
     }
 }

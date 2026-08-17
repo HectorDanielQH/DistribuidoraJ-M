@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asignacion;
+use App\Models\Cliente;
 use App\Models\FormaVenta;
 use App\Models\Pedido;
 use App\Models\Producto;
@@ -110,10 +111,15 @@ class AsignacionVendedorController extends Controller
                     $ruta=route('preventistas.registrar.pedido', ['id' => $asignacion->id_cliente]);
                     $botones = '<div class="assignment-actions">';
                     if(!$asignacion->estado_pedido){
+                        $requiereUbicacion = !$asignacion->cliente || blank($asignacion->cliente->latitud) || blank($asignacion->cliente->longitud);
                         $botones .= '
-                            <a href="'.$ruta.'" class="btn btn-success btn-action">
+                            <button type="button" class="btn btn-success btn-action btn-tomar-pedido"
+                                data-url="'.$ruta.'"
+                                data-cliente-id="'.$asignacion->id_cliente.'"
+                                data-requiere-ubicacion="'.($requiereUbicacion ? '1' : '0').'"
+                                onclick="tomarPedidoConGPS(this)">
                                 <i class="fas fa-shopping-cart"></i> Tomar pedido
-                            </a>
+                            </button>
                             <button type="button" class="btn btn-outline-secondary btn-action btn-sin-pedido" data-id="'.$asignacion->id.'">
                                 <i class="fas fa-user-check"></i> Sin pedido
                             </button>
@@ -283,6 +289,35 @@ class AsignacionVendedorController extends Controller
             ->get();
         return response()->json([
             'pedidos' => $pedidos,
+        ], 200);
+    }
+
+    public function registrarUbicacionCliente(Request $request, string $idCliente)
+    {
+        $request->validate([
+            'latitud' => 'required|numeric|between:-90,90',
+            'longitud' => 'required|numeric|between:-180,180',
+        ], [
+            'latitud.required' => 'La latitud es obligatoria para registrar la ubicación.',
+            'longitud.required' => 'La longitud es obligatoria para registrar la ubicación.',
+        ]);
+
+        $asignacion = Asignacion::where('id_usuario', auth()->id())
+            ->where('id_cliente', $idCliente)
+            ->firstOrFail();
+
+        $cliente = Cliente::where('id', $asignacion->id_cliente)->firstOrFail();
+
+        if (blank($cliente->latitud) || blank($cliente->longitud)) {
+            $cliente->latitud = (float) $request->latitud;
+            $cliente->longitud = (float) $request->longitud;
+            $cliente->save();
+        }
+
+        return response()->json([
+            'message' => 'Ubicación GPS registrada correctamente.',
+            'latitud' => (float) $cliente->latitud,
+            'longitud' => (float) $cliente->longitud,
         ], 200);
     }
 }

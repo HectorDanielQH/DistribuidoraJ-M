@@ -45,7 +45,11 @@ class UsuarioController extends Controller
                 })
                 ->addColumn('foto_perfil', function ($usuario) {
                     if ($usuario->foto_perfil && Storage::disk('public')->exists($usuario->foto_perfil)) {
-                        return '<img src="' . Storage::url($usuario->foto_perfil) . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
+                        return '<img src="' . route('usuarios.imagenperfil', ['id' => $usuario->id]) . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
+                    }
+
+                    if ($usuario->foto_perfil && Storage::disk('local')->exists($usuario->foto_perfil)) {
+                        return '<img src="' . route('usuarios.imagenperfil', ['id' => $usuario->id]) . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
                     }
 
                     return '<img src="' . asset('images/logo_profile.webp') . '" class="img-thumbnail" style="width: 50px; height: 50px;">';
