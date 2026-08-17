@@ -783,8 +783,8 @@
             datos: @json(route('repartidor.entregas.datos')),
             mapa: @json(route('repartidor.entregas.mapa')),
             opciones: @json(route('repartidor.entregas.opciones')),
-            marcarEntregado: @json(route('repartidor.entregas.marcarEntregado', ':numeroPedido')),
-            programarReparto: @json(route('repartidor.entregas.programarReparto', ':numeroPedido')),
+            marcarEntregado: @json(url('repartidor/entregas/:numeroPedido/marcar-entregado')),
+            programarReparto: @json(url('repartidor/entregas/:numeroPedido/programar-reparto')),
         };
         const csrfToken = @json(csrf_token());
 
