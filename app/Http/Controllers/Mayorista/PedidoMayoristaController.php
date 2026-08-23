@@ -8,8 +8,11 @@ use App\Models\FormaVenta;
 use App\Models\Producto;
 use App\Models\VentaMayorista;
 use Illuminate\Http\Request;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\DataTables;
+use Throwable;
 
 class PedidoMayoristaController extends Controller
 {
@@ -166,8 +169,8 @@ class PedidoMayoristaController extends Controller
             ->when(! $this->puedeAdministrar(), function ($query) {
                 $query->where('ventas_mayoristas.id_usuario', auth()->id());
             })
-            ->selectRaw('ventas_mayoristas.numero_venta AS numero_pedido')
             ->select('ventas_mayoristas.id_cliente', 'ventas_mayoristas.id_usuario')
+            ->selectRaw('ventas_mayoristas.numero_venta AS numero_pedido')
             ->selectRaw('DATE(MIN(ventas_mayoristas.fecha_venta)) AS fecha_pedido')
             ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
             ->selectRaw("COALESCE(clientes.celular, 'N/A') AS celular")
@@ -184,9 +187,14 @@ class PedidoMayoristaController extends Controller
             ->editColumn('unidades', fn ($row) => (float) $row->unidades)
             ->editColumn('total', fn ($row) => round((float) $row->total, 2))
             ->addColumn('acciones', function ($row) {
-                return '<button type="button" class="btn btn-info btn-sm wholesale-action-btn btn-editar-mayorista" data-pedido="' . $row->numero_pedido . '">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>';
+                return '<div class="wholesale-row-actions">
+                            <button type="button" class="btn btn-info btn-sm wholesale-action-btn btn-editar-mayorista" data-pedido="' . $row->numero_pedido . '">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm wholesale-action-btn btn-eliminar-mayorista" data-pedido="' . $row->numero_pedido . '" onclick="eliminarPedidoMayorista(this.getAttribute(\'data-pedido\'))">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </div>';
             })
             ->rawColumns(['acciones'])
             ->make(true);
@@ -262,123 +270,168 @@ class PedidoMayoristaController extends Controller
             return response()->json(['message' => 'Debes agregar al menos un producto valido.'], 422);
         }
 
-        $resultado = DB::transaction(function () use ($request, $productos) {
-            $numeroVentaEditar = $request->input('numero_pedido');
-            $cliente = Cliente::findOrFail($request->cliente_id);
-            $usuarioVenta = auth()->id();
-            $fechaVenta = now();
+        try {
+            $resultado = DB::transaction(function () use ($request, $productos) {
+                $numeroVentaEditar = $request->input('numero_pedido');
+                $cliente = Cliente::findOrFail($request->cliente_id);
+                $usuarioVenta = auth()->id();
+                $fechaVenta = now();
 
-            if ($numeroVentaEditar) {
-                $anteriores = $this->ventasVisibles()
-                    ->where('numero_venta', $numeroVentaEditar)
-                    ->lockForUpdate()
-                    ->get();
+                if ($numeroVentaEditar) {
+                    $anteriores = $this->ventasVisibles()
+                        ->where('numero_venta', $numeroVentaEditar)
+                        ->lockForUpdate()
+                        ->get();
 
-                if ($anteriores->isEmpty()) {
-                    abort(response()->json(['message' => 'La venta mayorista ya no esta disponible para edicion.'], 404));
+                    if ($anteriores->isEmpty()) {
+                        abort(response()->json(['message' => 'La venta mayorista ya no esta disponible para edicion.'], 404));
+                    }
+
+                    $usuarioVenta = (int) $anteriores->first()->id_usuario;
+                    $fechaVenta = $anteriores->first()->fecha_venta ?? now();
+
+                    $this->reincorporarStockVentasMayoristas($anteriores);
+
+                    VentaMayorista::query()
+                        ->whereIn('id', $anteriores->pluck('id'))
+                        ->delete();
+
+                    $numeroVenta = $numeroVentaEditar;
+                } else {
+                    DB::select('SELECT pg_advisory_xact_lock(?)', [23042026]);
+                    $numeroVenta = ((int) VentaMayorista::query()->max('numero_venta')) + 1;
                 }
 
-                $usuarioVenta = (int) $anteriores->first()->id_usuario;
-                $fechaVenta = $anteriores->first()->fecha_venta ?? now();
+                $productosAgrupados = collect($productos)
+                    ->map(function ($producto) {
+                        return [
+                            'id_producto' => (int) ($producto['id_producto'] ?? 0),
+                            'id_forma_venta' => (int) ($producto['id_forma_venta'] ?? 0),
+                            'cantidad' => (int) ($producto['cantidad'] ?? 0),
+                            'precio_venta' => round((float) ($producto['precio_venta'] ?? 0), 2),
+                        ];
+                    })
+                    ->groupBy(fn ($producto) => $producto['id_producto'] . '-' . $producto['id_forma_venta'] . '-' . $producto['precio_venta'])
+                    ->map(function ($items) {
+                        $base = $items->first();
+                        $base['cantidad'] = $items->sum('cantidad');
+                        return $base;
+                    })
+                    ->values();
 
-                foreach ($anteriores as $anterior) {
-                    $formaAnterior = FormaVenta::findOrFail($anterior->id_forma_venta);
-                    $productoAnterior = Producto::query()->lockForUpdate()->findOrFail($anterior->id_producto);
-                    $productoAnterior->cantidad += ($anterior->cantidad * $formaAnterior->equivalencia_cantidad);
-                    $productoAnterior->save();
+                foreach ($productosAgrupados as $productoPedido) {
+                    if ($productoPedido['cantidad'] <= 0) {
+                        abort(response()->json(['message' => 'La cantidad debe ser mayor a cero.'], 422));
+                    }
+
+                    if ($productoPedido['precio_venta'] <= 0) {
+                        abort(response()->json(['message' => 'El precio de venta debe ser mayor a cero.'], 422));
+                    }
+
+                    $formaVenta = FormaVenta::query()
+                        ->where('id', $productoPedido['id_forma_venta'])
+                        ->where('id_producto', $productoPedido['id_producto'])
+                        ->where('activo', true)
+                        ->firstOrFail();
+
+                    $productoModel = Producto::query()
+                        ->where('id', $productoPedido['id_producto'])
+                        ->where('estado_de_baja', false)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $cantidadInventario = $productoPedido['cantidad'] * $formaVenta->equivalencia_cantidad;
+
+                    if ($productoModel->cantidad < $cantidadInventario) {
+                        abort(response()->json([
+                            'message' => 'Stock insuficiente para ' . $productoModel->nombre_producto . '. Disponible: ' . $productoModel->cantidad . ' ' . $productoModel->detalle_cantidad . '.',
+                            'producto_id' => $productoModel->id,
+                            'stock_disponible' => $productoModel->cantidad,
+                        ], 409));
+                    }
                 }
 
-                $this->ventasVisibles()
-                    ->where('numero_venta', $numeroVentaEditar)
-                    ->delete();
+                foreach ($productosAgrupados as $productoPedido) {
+                    $formaVenta = FormaVenta::query()
+                        ->where('id', $productoPedido['id_forma_venta'])
+                        ->where('id_producto', $productoPedido['id_producto'])
+                        ->where('activo', true)
+                        ->firstOrFail();
 
-                $numeroVenta = $numeroVentaEditar;
-            } else {
-                DB::select('SELECT pg_advisory_xact_lock(?)', [23042026]);
-                $numeroVenta = ((int) VentaMayorista::query()->max('numero_venta')) + 1;
-            }
+                    $productoModel = Producto::query()->lockForUpdate()->findOrFail($productoPedido['id_producto']);
 
-            $productosAgrupados = collect($productos)
-                ->map(function ($producto) {
-                    return [
-                        'id_producto' => (int) ($producto['id_producto'] ?? 0),
-                        'id_forma_venta' => (int) ($producto['id_forma_venta'] ?? 0),
-                        'cantidad' => (int) ($producto['cantidad'] ?? 0),
-                        'precio_venta' => round((float) ($producto['precio_venta'] ?? 0), 2),
-                    ];
-                })
-                ->groupBy(fn ($producto) => $producto['id_producto'] . '-' . $producto['id_forma_venta'] . '-' . $producto['precio_venta'])
-                ->map(function ($items) {
-                    $base = $items->first();
-                    $base['cantidad'] = $items->sum('cantidad');
-                    return $base;
-                })
-                ->values();
+                    VentaMayorista::create([
+                        'id_usuario' => $usuarioVenta,
+                        'id_cliente' => $cliente->id,
+                        'id_producto' => $productoModel->id,
+                        'id_forma_venta' => $formaVenta->id,
+                        'precio_unitario' => $productoPedido['precio_venta'],
+                        'numero_venta' => $numeroVenta,
+                        'fecha_venta' => $fechaVenta,
+                        'cantidad' => $productoPedido['cantidad'],
+                        'observaciones' => null,
+                    ]);
 
-            foreach ($productosAgrupados as $productoPedido) {
-                if ($productoPedido['cantidad'] <= 0) {
-                    abort(response()->json(['message' => 'La cantidad debe ser mayor a cero.'], 422));
+                    $productoModel->cantidad -= ($productoPedido['cantidad'] * $formaVenta->equivalencia_cantidad);
+                    $productoModel->save();
                 }
 
-                if ($productoPedido['precio_venta'] <= 0) {
-                    abort(response()->json(['message' => 'El precio de venta debe ser mayor a cero.'], 422));
-                }
+                return $numeroVenta;
+            }, 3);
+        } catch (HttpResponseException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::error('Error al guardar venta mayorista desde panel.', [
+                'numero_pedido' => $request->input('numero_pedido'),
+                'cliente_id' => $request->input('cliente_id'),
+                'error' => $exception->getMessage(),
+            ]);
 
-                $formaVenta = FormaVenta::query()
-                    ->where('id', $productoPedido['id_forma_venta'])
-                    ->where('id_producto', $productoPedido['id_producto'])
-                    ->where('activo', true)
-                    ->firstOrFail();
-
-                $productoModel = Producto::query()
-                    ->where('id', $productoPedido['id_producto'])
-                    ->where('estado_de_baja', false)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                $cantidadInventario = $productoPedido['cantidad'] * $formaVenta->equivalencia_cantidad;
-
-                if ($productoModel->cantidad < $cantidadInventario) {
-                    abort(response()->json([
-                        'message' => 'Stock insuficiente para ' . $productoModel->nombre_producto . '. Disponible: ' . $productoModel->cantidad . ' ' . $productoModel->detalle_cantidad . '.',
-                        'producto_id' => $productoModel->id,
-                        'stock_disponible' => $productoModel->cantidad,
-                    ], 409));
-                }
-            }
-
-            foreach ($productosAgrupados as $productoPedido) {
-                $formaVenta = FormaVenta::query()
-                    ->where('id', $productoPedido['id_forma_venta'])
-                    ->where('id_producto', $productoPedido['id_producto'])
-                    ->where('activo', true)
-                    ->firstOrFail();
-
-                $productoModel = Producto::query()->lockForUpdate()->findOrFail($productoPedido['id_producto']);
-
-                VentaMayorista::create([
-                    'id_usuario' => $usuarioVenta,
-                    'id_cliente' => $cliente->id,
-                    'id_producto' => $productoModel->id,
-                    'id_forma_venta' => $formaVenta->id,
-                    'precio_unitario' => $productoPedido['precio_venta'],
-                    'numero_venta' => $numeroVenta,
-                    'fecha_venta' => $fechaVenta,
-                    'cantidad' => $productoPedido['cantidad'],
-                    'observaciones' => null,
-                ]);
-
-                $productoModel->cantidad -= ($productoPedido['cantidad'] * $formaVenta->equivalencia_cantidad);
-                $productoModel->save();
-            }
-
-            return $numeroVenta;
-        }, 3);
+            throw $exception;
+        }
 
         return response()->json([
             'message' => 'Venta mayorista guardada correctamente.',
             'numero_pedido' => $resultado,
         ], 201);
+    }
+
+    public function eliminarPedido(string $numeroPedido)
+    {
+        try {
+            DB::transaction(function () use ($numeroPedido) {
+                $ventas = $this->ventasVisibles()
+                    ->where('numero_venta', $numeroPedido)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($ventas->isEmpty()) {
+                    abort(response()->json(['message' => 'La venta mayorista ya no esta disponible o ya fue eliminada.'], 404));
+                }
+
+                $this->reincorporarStockVentasMayoristas($ventas);
+
+                VentaMayorista::query()
+                    ->whereIn('id', $ventas->pluck('id'))
+                    ->delete();
+            }, 3);
+
+            return response()->json([
+                'message' => 'Venta mayorista eliminada correctamente. El stock fue reincorporado al inventario.',
+            ], 200);
+        } catch (HttpResponseException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::error('Error al eliminar venta mayorista y reincorporar stock.', [
+                'numero_pedido' => $numeroPedido,
+                'usuario_id' => auth()->id(),
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'No se pudo eliminar la venta mayorista. No se realizaron cambios en el inventario.',
+            ], 500);
+        }
     }
 
     private function puedeAdministrar(): bool
@@ -391,5 +444,23 @@ class PedidoMayoristaController extends Controller
         return VentaMayorista::query()->when(! $this->puedeAdministrar(), function ($query) {
             $query->where('id_usuario', auth()->id());
         });
+    }
+
+    private function reincorporarStockVentasMayoristas($ventas): void
+    {
+        foreach ($ventas as $venta) {
+            $formaVenta = FormaVenta::query()
+                ->where('id', $venta->id_forma_venta)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $producto = Producto::query()
+                ->where('id', $venta->id_producto)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $producto->cantidad += ((int) $venta->cantidad * (float) $formaVenta->equivalencia_cantidad);
+            $producto->save();
+        }
     }
 }

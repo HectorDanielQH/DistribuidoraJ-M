@@ -256,6 +256,45 @@
             border-radius: 8px;
             font-weight: 900;
         }
+        .wholesale-row-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .wholesale-loading-state {
+            align-items: center;
+            background: linear-gradient(135deg, #f8fffb, #eef8f2);
+            border: 1px dashed #b8d8c4;
+            border-radius: 8px;
+            color: #166534;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding: 12px;
+            text-align: center;
+            font-weight: 900;
+        }
+        .wholesale-loading-state small {
+            color: #64748b;
+            display: block;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .btn-loading {
+            opacity: .82;
+            pointer-events: none;
+        }
+        .wholesale-table.dataTable + .dt-processing,
+        div.dt-processing {
+            background: rgba(255, 255, 255, .96) !important;
+            border: 1px solid #d7e4df !important;
+            border-radius: 10px !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, .12) !important;
+            color: #166534 !important;
+            font-weight: 900 !important;
+            padding: 14px 18px !important;
+        }
         .wholesale-section, .wholesale-panel { padding: 18px; margin-bottom: 16px; }
         .step-grid, .form-grid, .kpi-stack {
             display: grid;
@@ -381,6 +420,7 @@
         let pedidoActual = null;
         let lineasPedido = [];
         let stockActual = {};
+        let stockOriginalPedido = {};
         let debounceCliente = null;
         let debounceProducto = null;
         let intervaloStock = null;
@@ -398,6 +438,74 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        function loaderHtml(titulo, detalle = '') {
+            return `
+                <div class="wholesale-loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <div>
+                        ${escapeHtml(titulo)}
+                        ${detalle ? `<small>${escapeHtml(detalle)}</small>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function setButtonLoading(selector, cargando, texto = 'Procesando...') {
+            const $btn = $(selector);
+            if (!$btn.length) {
+                return;
+            }
+
+            if (cargando) {
+                $btn.each(function () {
+                    const $item = $(this);
+                    if (!$item.data('original-html')) {
+                        $item.data('original-html', $item.html());
+                    }
+                    $item.prop('disabled', true)
+                        .addClass('btn-loading')
+                        .html(`<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(texto)}`);
+                });
+                return;
+            }
+
+            $btn.each(function () {
+                const $item = $(this);
+                $item.prop('disabled', false)
+                    .removeClass('btn-loading')
+                    .html($item.data('original-html') || $item.html());
+            });
+        }
+
+        function unidadesLineaMayorista(item) {
+            return Number(item.cantidad || 0) * Number(item.equivalencia_cantidad || 1);
+        }
+
+        function unidadesEnCarritoProducto(productoId) {
+            return lineasPedido.reduce(function (sum, item) {
+                return Number(item.id_producto) === Number(productoId)
+                    ? sum + unidadesLineaMayorista(item)
+                    : sum;
+            }, 0);
+        }
+
+        function registrarStockOriginalPedido(items) {
+            stockOriginalPedido = {};
+            (items || []).forEach(function (item) {
+                const productoId = Number(item.id_producto);
+                stockOriginalPedido[productoId] = Number(stockOriginalPedido[productoId] || 0) + unidadesLineaMayorista(item);
+            });
+        }
+
+        function stockBaseProducto(productoId) {
+            const stockServidor = Number(stockActual[productoId] ?? productoSeleccionado?.cantidad ?? 0);
+            return stockServidor + Number(stockOriginalPedido[productoId] || 0);
+        }
+
+        function stockDisponibleProducto(productoId) {
+            return Math.max(0, stockBaseProducto(productoId) - unidadesEnCarritoProducto(productoId));
         }
 
         function actualizarResumenPedido() {
@@ -467,8 +575,9 @@
         function actualizarStockRelacionadoForma() {
             const $selected = $('#formaVentaMayorista').find(':selected');
             const equivalencia = Number($selected.data('equivalencia') || 1);
-            const stock = Number(productoSeleccionado?.cantidad || 0);
-            const disponible = equivalencia > 0 ? Math.floor(stock / equivalencia) : 0;
+            const productoId = Number(productoSeleccionado?.id || 0);
+            const disponibleUnidades = productoId ? stockDisponibleProducto(productoId) : 0;
+            const disponible = equivalencia > 0 ? Math.floor(disponibleUnidades / equivalencia) : 0;
             const tipoVenta = $selected.text() && $selected.val() ? $selected.text() : 'forma';
 
             $('#unidadesRealesMayorista').val(`${disponible} ${tipoVenta}`);
@@ -477,6 +586,7 @@
         function limpiarPedidoMayorista() {
             pedidoActual = null;
             lineasPedido = [];
+            stockOriginalPedido = {};
             clienteSeleccionado = null;
             $('#estadoPedidoMayorista').text('Nueva venta');
             $('#clienteSeleccionadoCard').addClass('d-none');
@@ -502,7 +612,7 @@
                 return;
             }
 
-            $resultados.html('<div class="text-center text-muted py-2"><i class="fas fa-spinner fa-spin"></i> Buscando clientes...</div>');
+            $resultados.html(loaderHtml('Buscando clientes...', 'Revisando nombre, codigo y celular.'));
 
             $.get("{{ route('mayoristas.clientes.buscar') }}", { q: termino }, function (response) {
                 const clientes = response.clientes || [];
@@ -540,7 +650,7 @@
                 return;
             }
 
-            $resultados.html('<div class="text-center text-muted py-2"><i class="fas fa-spinner fa-spin"></i> Buscando productos...</div>');
+            $resultados.html(loaderHtml('Buscando productos...', 'Cargando stock y formas de venta disponibles.'));
 
             $.get("{{ route('mayoristas.productos.buscar') }}", { q: termino }, function (response) {
                 const productos = response.productos || [];
@@ -570,7 +680,7 @@
             const cantidad = Number($('#cantidadMayorista').val() || 0);
             const precio = Number($('#precioNegociadoMayorista').val() || 0);
             const equivalencia = Number($('#formaVentaMayorista').find(':selected').data('equivalencia') || 1);
-            const stock = Number(productoSeleccionado?.cantidad || 0);
+            const stock = stockDisponibleProducto(productoSeleccionado?.id);
             const unidades = cantidad * equivalencia;
             actualizarStockRelacionadoForma();
 
@@ -578,7 +688,7 @@
                 $('#cantidadMayorista').val(0);
                 actualizarStockRelacionadoForma();
                 $('#subtotalMayorista').val('0.00');
-                Swal.fire('Stock insuficiente', `Solo hay ${stock} ${productoSeleccionado.detalle_cantidad || 'unidades'} disponibles para este producto.`, 'warning');
+                Swal.fire('Stock insuficiente', `Ya tienes unidades reservadas en el carrito. Disponible para agregar: ${stock} ${productoSeleccionado.detalle_cantidad || 'unidades'}.`, 'warning');
                 return;
             }
 
@@ -586,6 +696,9 @@
         }
 
         function cargarProductoMayorista(productoId) {
+            $('#resultadoProductosMayorista').html(loaderHtml('Preparando producto...', 'Consultando precios, equivalencias y stock actual.'));
+            $('#productoMayoristaCard').addClass('d-none');
+
             $.get("{{ route('mayoristas.productos.detalle', ':id') }}".replace(':id', productoId), function (response) {
                 productoSeleccionado = response.producto;
                 stockActual[productoSeleccionado.id] = Number(productoSeleccionado.cantidad || 0);
@@ -615,6 +728,8 @@
                 if ((response.formasVenta || []).length) {
                     $formas.val(String(response.formasVenta[0].id)).trigger('change');
                 }
+            }).fail(function () {
+                $('#resultadoProductosMayorista').html('<div class="alert alert-danger mb-0">No se pudo cargar el producto seleccionado.</div>');
             });
         }
 
@@ -645,6 +760,49 @@
                 return;
             }
 
+            const unidadesAgregar = cantidad * equivalencia;
+            const disponibleUnidades = stockDisponibleProducto(productoSeleccionado.id);
+
+            if (unidadesAgregar > disponibleUnidades) {
+                Swal.fire(
+                    'Stock insuficiente',
+                    `Este producto ya tiene ${unidadesEnCarritoProducto(productoSeleccionado.id)} ${productoSeleccionado.detalle_cantidad || 'unidades'} reservadas en el carrito. Disponible para agregar: ${disponibleUnidades} ${productoSeleccionado.detalle_cantidad || 'unidades'}.`,
+                    'warning'
+                );
+                actualizarStockRelacionadoForma();
+                return;
+            }
+
+            const lineaExistente = lineasPedido.find(function (item) {
+                return Number(item.id_producto) === Number(productoSeleccionado.id)
+                    && Number(item.id_forma_venta) === Number(formaId)
+                    && Number(item.precio_venta).toFixed(2) === Number(precio).toFixed(2);
+            });
+
+            const mismaFormaOtroPrecio = lineasPedido.find(function (item) {
+                return Number(item.id_producto) === Number(productoSeleccionado.id)
+                    && Number(item.id_forma_venta) === Number(formaId)
+                    && Number(item.precio_venta).toFixed(2) !== Number(precio).toFixed(2);
+            });
+
+            if (mismaFormaOtroPrecio) {
+                Swal.fire(
+                    'Producto ya agregado',
+                    `Este producto ya esta en el carrito con la forma ${mismaFormaOtroPrecio.tipo_venta} y precio ${money(mismaFormaOtroPrecio.precio_venta)}. Para cambiar el precio, quita esa linea y agregala nuevamente.`,
+                    'warning'
+                );
+                return;
+            }
+
+            if (lineaExistente) {
+                lineaExistente.cantidad = Number(lineaExistente.cantidad || 0) + cantidad;
+                lineaExistente.sub_total = Number((lineaExistente.cantidad * Number(lineaExistente.precio_venta || 0)).toFixed(2));
+                actualizarResumenPedido();
+                limpiarProductoSeleccionado();
+                Swal.fire({ icon: 'success', title: 'Cantidad actualizada', text: 'El producto ya existia en el carrito, se sumo a la misma linea.', timer: 1600, showConfirmButton: false });
+                return;
+            }
+
             lineasPedido.push({
                 id_producto: productoSeleccionado.id,
                 codigo_producto: productoSeleccionado.codigo,
@@ -665,6 +823,7 @@
         function eliminarLineaMayorista(index) {
             lineasPedido.splice(index, 1);
             actualizarResumenPedido();
+            actualizarStockRelacionadoForma();
         }
 
         function guardarPedidoMayorista() {
@@ -688,7 +847,14 @@
                     productos: JSON.stringify(lineasPedido),
                 },
                 beforeSend: function () {
-                    Swal.fire({ title: 'Guardando venta...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    setButtonLoading('#btnGuardarPedidoMayorista', true, pedidoActual ? 'Actualizando...' : 'Guardando...');
+                    setButtonLoading('#btnNuevoPedidoMayorista', true, 'Espere...');
+                    Swal.fire({
+                        title: pedidoActual ? 'Actualizando venta...' : 'Guardando venta...',
+                        text: 'Validando stock y registrando movimientos de forma segura.',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
                 },
                 success: function (response) {
                     Swal.fire({ icon: 'success', title: 'Venta guardada', text: response.message, timer: 1400, showConfirmButton: false });
@@ -697,20 +863,88 @@
                 },
                 error: function (xhr) {
                     Swal.fire('No se pudo guardar', xhr.responseJSON?.message || 'Revisa la venta e intenta nuevamente.', 'error');
+                },
+                complete: function () {
+                    setButtonLoading('#btnGuardarPedidoMayorista', false);
+                    setButtonLoading('#btnNuevoPedidoMayorista', false);
                 }
             });
         }
 
         function cargarPedidoMayorista(numeroPedido) {
+            if (!numeroPedido) {
+                Swal.fire('Pedido no identificado', 'No se pudo identificar el numero de venta para editar. Recarga la tabla e intenta nuevamente.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Cargando venta...',
+                text: `Preparando la venta #${numeroPedido} para edicion.`,
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
             $.get("{{ route('mayoristas.pedidos.detalle', ':numero') }}".replace(':numero', numeroPedido), function (response) {
+                Swal.close();
                 pedidoActual = response.numero_pedido;
                 $('#estadoPedidoMayorista').text(`Editando venta #${pedidoActual}`);
                 seleccionarCliente(response.cliente);
                 lineasPedido = response.items || [];
+                registrarStockOriginalPedido(lineasPedido);
                 actualizarResumenPedido();
                 $('html, body').animate({ scrollTop: 0 }, 250);
             }).fail(function () {
                 Swal.fire('No disponible', 'No se pudo abrir ese pedido para edicion.', 'error');
+            });
+        }
+
+        function eliminarPedidoMayorista(numeroPedido) {
+            if (!numeroPedido) {
+                Swal.fire('Pedido no identificado', 'No se pudo identificar el numero de venta para eliminar. Recarga la tabla e intenta nuevamente.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                icon: 'warning',
+                title: `Eliminar venta #${numeroPedido}`,
+                text: 'Esta accion devolvera los productos al inventario y no se podra deshacer.',
+                showCancelButton: true,
+                confirmButtonText: 'Si, eliminar pedido',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                reverseButtons: true,
+            }).then(function (result) {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ url('mayoristas/pedidos/:numero/eliminar') }}".replace(':numero', numeroPedido),
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        _method: 'DELETE',
+                    },
+                    beforeSend: function () {
+                        setButtonLoading(`.btn-eliminar-mayorista[data-pedido="${numeroPedido}"]`, true, 'Eliminando...');
+                        setButtonLoading(`.btn-editar-mayorista[data-pedido="${numeroPedido}"]`, true, 'Espere...');
+                        Swal.fire({ title: 'Eliminando venta...', text: 'Reincorporando stock al inventario.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    },
+                    success: function (response) {
+                        Swal.fire({ icon: 'success', title: 'Venta eliminada', text: response.message, timer: 1800, showConfirmButton: false });
+                        if (String(pedidoActual) === String(numeroPedido)) {
+                            limpiarPedidoMayorista();
+                        }
+                        tablaPedidos.ajax.reload(null, false);
+                    },
+                    error: function (xhr) {
+                        Swal.fire('No se pudo eliminar', xhr.responseJSON?.message || 'No se pudo eliminar la venta. Revisa el pedido e intenta nuevamente.', 'error');
+                    },
+                    complete: function () {
+                        setButtonLoading(`.btn-eliminar-mayorista[data-pedido="${numeroPedido}"]`, false);
+                        setButtonLoading(`.btn-editar-mayorista[data-pedido="${numeroPedido}"]`, false);
+                    }
+                });
             });
         }
 
@@ -790,6 +1024,7 @@
 
             tablaPedidos = $('#tablaPedidosMayorista').DataTable({
                 ajax: "{{ route('mayoristas.pedidos.listado') }}",
+                processing: true,
                 responsive: true,
                 autoWidth: false,
                 pageLength: 10,
@@ -808,7 +1043,7 @@
             });
 
             $('#tablaPedidosMayorista').on('click', '.btn-editar-mayorista', function () {
-                cargarPedidoMayorista($(this).data('pedido'));
+                cargarPedidoMayorista($(this).attr('data-pedido'));
             });
 
             $('#tablaPedidosMayorista').on('error.dt', function (e, settings, techNote, message) {

@@ -231,6 +231,7 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
         Route::get('pedidos/listado', [PedidoMayoristaController::class, 'listadoPedidos'])->name('pedidos.listado');
         Route::get('pedidos/{numero}/detalle', [PedidoMayoristaController::class, 'detallePedido'])->name('pedidos.detalle');
         Route::post('pedidos/guardar', [PedidoMayoristaController::class, 'guardarPedido'])->name('pedidos.guardar');
+        Route::delete('pedidos/{numero}/eliminar', [PedidoMayoristaController::class, 'eliminarPedido'])->name('pedidos.eliminar');
     });
     Route::middleware('can:administrador.permisos')->group(function () {
         Route::get('asignaciones/rutasnoasignadosavendedores', [AsignacionController::class, 'RutasNoAsignadosAVendedores'])->name('asignacionclientes.getRutasNoAsignados');
