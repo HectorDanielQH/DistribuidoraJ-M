@@ -214,10 +214,10 @@ class PedidoMayoristaController extends Controller
             ->join('forma_ventas', 'ventas_mayoristas.id_forma_venta', '=', 'forma_ventas.id')
             ->where('ventas_mayoristas.numero_venta', $numeroPedido)
             ->select(
-                'ventas_mayoristas.id_producto',
-                'ventas_mayoristas.id_forma_venta',
-                'ventas_mayoristas.cantidad',
-                'ventas_mayoristas.precio_unitario',
+                'ventas_mayoristas.id_producto AS venta_id_producto',
+                'ventas_mayoristas.id_forma_venta AS venta_id_forma_venta',
+                'ventas_mayoristas.cantidad AS venta_cantidad',
+                'ventas_mayoristas.precio_unitario AS venta_precio_unitario',
                 'productos.codigo',
                 'productos.nombre_producto',
                 'productos.detalle_cantidad',
@@ -227,17 +227,18 @@ class PedidoMayoristaController extends Controller
             ->orderBy('productos.nombre_producto')
             ->get()
             ->map(function ($item) {
-                $precio = (float) $item->precio_unitario;
+                $precio = (float) $item->venta_precio_unitario;
+                $cantidad = (int) $item->venta_cantidad;
                 return [
-                    'id_producto' => $item->id_producto,
-                    'id_forma_venta' => $item->id_forma_venta,
+                    'id_producto' => (int) $item->venta_id_producto,
+                    'id_forma_venta' => (int) $item->venta_id_forma_venta,
                     'codigo_producto' => $item->codigo,
                     'texto_producto' => $item->nombre_producto,
                     'tipo_venta' => $item->tipo_venta,
                     'precio_venta' => round($precio, 2),
-                    'cantidad' => (int) $item->cantidad,
+                    'cantidad' => $cantidad,
                     'equivalencia_cantidad' => (int) $item->equivalencia_cantidad,
-                    'sub_total' => round($precio * (int) $item->cantidad, 2),
+                    'sub_total' => round($precio * $cantidad, 2),
                 ];
             });
 
@@ -276,6 +277,8 @@ class PedidoMayoristaController extends Controller
                 $cliente = Cliente::findOrFail($request->cliente_id);
                 $usuarioVenta = auth()->id();
                 $fechaVenta = now();
+                $lineasOriginales = collect();
+                $cantidadesOriginales = collect();
 
                 if ($numeroVentaEditar) {
                     $anteriores = $this->ventasVisibles()
@@ -289,6 +292,13 @@ class PedidoMayoristaController extends Controller
 
                     $usuarioVenta = (int) $anteriores->first()->id_usuario;
                     $fechaVenta = $anteriores->first()->fecha_venta ?? now();
+                    $lineasOriginales = $anteriores
+                        ->map(fn ($venta) => (int) $venta->id_producto . '-' . (int) $venta->id_forma_venta)
+                        ->unique()
+                        ->values();
+                    $cantidadesOriginales = $anteriores
+                        ->groupBy(fn ($venta) => (int) $venta->id_producto . '-' . (int) $venta->id_forma_venta)
+                        ->map(fn ($ventas) => (int) $ventas->sum('cantidad'));
 
                     $this->reincorporarStockVentasMayoristas($anteriores);
 
@@ -320,6 +330,12 @@ class PedidoMayoristaController extends Controller
                     ->values();
 
                 foreach ($productosAgrupados as $productoPedido) {
+                    if ($productoPedido['id_producto'] <= 0 || $productoPedido['id_forma_venta'] <= 0) {
+                        abort(response()->json([
+                            'message' => 'Hay una linea con producto o forma de venta invalida. Vuelve a cargar el pedido e intenta nuevamente.',
+                        ], 422));
+                    }
+
                     if ($productoPedido['cantidad'] <= 0) {
                         abort(response()->json(['message' => 'La cantidad debe ser mayor a cero.'], 422));
                     }
@@ -328,17 +344,41 @@ class PedidoMayoristaController extends Controller
                         abort(response()->json(['message' => 'El precio de venta debe ser mayor a cero.'], 422));
                     }
 
+                    $esLineaOriginal = $lineasOriginales->contains($productoPedido['id_producto'] . '-' . $productoPedido['id_forma_venta']);
+
                     $formaVenta = FormaVenta::query()
                         ->where('id', $productoPedido['id_forma_venta'])
                         ->where('id_producto', $productoPedido['id_producto'])
-                        ->where('activo', true)
-                        ->firstOrFail();
+                        ->when(! $esLineaOriginal, fn ($query) => $query->where('activo', true))
+                        ->first();
+
+                    if (! $formaVenta) {
+                        abort(response()->json([
+                            'message' => 'Una forma de venta ya no esta disponible para el producto seleccionado. Quita esa linea y agregala nuevamente.',
+                        ], 422));
+                    }
 
                     $productoModel = Producto::query()
                         ->where('id', $productoPedido['id_producto'])
-                        ->where('estado_de_baja', false)
+                        ->when(! $esLineaOriginal, fn ($query) => $query->where('estado_de_baja', false))
                         ->lockForUpdate()
-                        ->firstOrFail();
+                        ->first();
+
+                    if (! $productoModel) {
+                        abort(response()->json([
+                            'message' => 'Uno de los productos del pedido ya no existe o fue dado de baja. Quita esa linea y vuelve a agregar un producto activo.',
+                        ], 422));
+                    }
+
+                    if (
+                        $esLineaOriginal
+                        && ((! (bool) $formaVenta->activo) || (bool) $productoModel->estado_de_baja)
+                        && $productoPedido['cantidad'] > (int) $cantidadesOriginales->get($productoPedido['id_producto'] . '-' . $productoPedido['id_forma_venta'], 0)
+                    ) {
+                        abort(response()->json([
+                            'message' => 'Este producto o forma de venta ya no esta activo. Puedes conservar o reducir la cantidad original, pero no aumentarla.',
+                        ], 422));
+                    }
 
                     $cantidadInventario = $productoPedido['cantidad'] * $formaVenta->equivalencia_cantidad;
 
@@ -352,10 +392,12 @@ class PedidoMayoristaController extends Controller
                 }
 
                 foreach ($productosAgrupados as $productoPedido) {
+                    $esLineaOriginal = $lineasOriginales->contains($productoPedido['id_producto'] . '-' . $productoPedido['id_forma_venta']);
+
                     $formaVenta = FormaVenta::query()
                         ->where('id', $productoPedido['id_forma_venta'])
                         ->where('id_producto', $productoPedido['id_producto'])
-                        ->where('activo', true)
+                        ->when(! $esLineaOriginal, fn ($query) => $query->where('activo', true))
                         ->firstOrFail();
 
                     $productoModel = Producto::query()->lockForUpdate()->findOrFail($productoPedido['id_producto']);
@@ -384,10 +426,17 @@ class PedidoMayoristaController extends Controller
             Log::error('Error al guardar venta mayorista desde panel.', [
                 'numero_pedido' => $request->input('numero_pedido'),
                 'cliente_id' => $request->input('cliente_id'),
+                'productos' => collect($productos)->map(fn ($producto) => [
+                    'id_producto' => $producto['id_producto'] ?? null,
+                    'id_forma_venta' => $producto['id_forma_venta'] ?? null,
+                    'cantidad' => $producto['cantidad'] ?? null,
+                ])->values()->all(),
                 'error' => $exception->getMessage(),
             ]);
 
-            throw $exception;
+            return response()->json([
+                'message' => 'No se pudo guardar la venta mayorista. No se realizaron cambios en el inventario. Revisa si algun producto fue dado de baja o ya no existe.',
+            ], 500);
         }
 
         return response()->json([
