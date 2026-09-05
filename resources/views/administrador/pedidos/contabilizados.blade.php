@@ -362,7 +362,7 @@
             });
 
             $('#btn-hoja-contabilizados').on('click', function () {
-                abrirPdfContabilizados("{{ route('administrador.pedidos.administrador.contabilizados.pdf.hojaPedidos') }}", true);
+                abrirPdfContabilizados("{{ url('/administrador/pedidos/administrador/visualizacion-contabilizados/pdf/hoja-pedidos') }}", true);
             });
         });
 
