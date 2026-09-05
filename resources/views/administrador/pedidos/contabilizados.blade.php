@@ -9,9 +9,17 @@
             <h1>Pedidos contabilizados</h1>
             <p>Primero revisa el cierre por fecha y entra al dia para administrar sus pedidos.</p>
         </div>
-        <a href="{{ route('pedidos.administrador.visualizacionDespachados') }}" class="btn btn-outline-secondary closed-main-btn">
-            <i class="fas fa-arrow-left"></i> Volver a despachados
-        </a>
+        <div class="closed-header-actions">
+            <button type="button" class="btn btn-info closed-main-btn" id="btn-pdf-contabilizados">
+                <i class="fas fa-file-pdf"></i> PDF consolidado
+            </button>
+            <button type="button" class="btn btn-outline-info closed-main-btn" id="btn-hoja-contabilizados">
+                <i class="fas fa-file-alt"></i> Hoja de pedidos
+            </button>
+            <a href="{{ route('pedidos.administrador.visualizacionDespachados') }}" class="btn btn-outline-secondary closed-main-btn">
+                <i class="fas fa-arrow-left"></i> Volver a despachados
+            </a>
+        </div>
     </div>
 @stop
 
@@ -49,18 +57,16 @@
             <input type="date" id="fecha-hasta" class="form-control closed-filter">
         </label>
         <label>
-            Ruta
-            <select id="filtro-ruta" class="form-control closed-filter">
-                <option value="">Todas las rutas</option>
+            Rutas
+            <select id="filtro-ruta" class="form-control closed-filter closed-select2" multiple>
                 @foreach($rutas as $ruta)
                     <option value="{{ $ruta->id }}">{{ $ruta->nombre_ruta }}</option>
                 @endforeach
             </select>
         </label>
         <label>
-            Preventista
-            <select id="filtro-preventista" class="form-control closed-filter">
-                <option value="">Todos</option>
+            Preventistas
+            <select id="filtro-preventista" class="form-control closed-filter closed-select2" multiple>
                 @foreach($preventistas as $preventista)
                     <option value="{{ $preventista->id }}">{{ trim($preventista->nombres.' '.$preventista->apellido_paterno.' '.$preventista->apellido_materno) }}</option>
                 @endforeach
@@ -90,6 +96,7 @@
 
 @section('css')
     <link href="https://cdn.datatables.net/v/bs4/dt-2.3.3/r-3.0.6/datatables.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
     <style>
         .content-wrapper { background: #eef3f1; }
         .closed-header, .closed-summary, .closed-filters, .closed-table-shell {
@@ -102,6 +109,13 @@
             justify-content: space-between;
             gap: 16px;
             padding: 18px;
+        }
+        .closed-header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
         }
         .closed-header span, .closed-summary span {
             color: #0f766e;
@@ -159,6 +173,25 @@
             margin: 0;
             color: #475569;
             font-weight: 900;
+        }
+        .select2-container { width: 100% !important; }
+        .select2-container--default .select2-selection--multiple {
+            min-height: 42px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 3px 6px;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--multiple {
+            border-color: #0f766e;
+            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .15);
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background: #e8f2ee;
+            border: 1px solid #b8d5ca;
+            border-radius: 8px;
+            color: #17211d;
+            font-weight: 800;
+            margin-top: 4px;
         }
         .closed-table-shell {
             padding: 14px;
@@ -239,7 +272,7 @@
             flex-wrap: wrap;
         }
         @media (max-width: 767.98px) {
-            .closed-header { flex-direction: column; }
+            .closed-header, .closed-header-actions { flex-direction: column; align-items: stretch; }
             .closed-summary, .closed-filters { grid-template-columns: 1fr; }
             .closed-main-btn, .closed-action { width: 100%; }
             .closed-actions, .closed-order-card-actions { flex-direction: column; }
@@ -251,11 +284,27 @@
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.datatables.net/v/bs4/dt-2.3.3/r-3.0.6/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         let tablaContabilizados;
 
         $(document).ready(function () {
+            $('.closed-select2').select2({
+                closeOnSelect: false,
+                allowClear: true,
+                placeholder: 'Todos',
+                width: '100%',
+                language: {
+                    noResults: function () {
+                        return 'Sin resultados';
+                    },
+                    searching: function () {
+                        return 'Buscando...';
+                    }
+                }
+            });
+
             tablaContabilizados = $('#tablaPedidosContabilizados').DataTable({
                 processing: true,
                 serverSide: true,
@@ -304,9 +353,62 @@
 
             $('#limpiar-filtros').on('click', function () {
                 $('.closed-filter').val('');
+                $('.closed-select2').val(null).trigger('change');
                 tablaContabilizados.ajax.reload();
             });
+
+            $('#btn-pdf-contabilizados').on('click', function () {
+                abrirPdfContabilizados("{{ route('pedidos.administrador.consolidadoDespacho.pdf', 'contabilizados') }}");
+            });
+
+            $('#btn-hoja-contabilizados').on('click', function () {
+                abrirPdfContabilizados("{{ route('administrador.pedidos.administrador.contabilizados.pdf.hojaPedidos') }}", true);
+            });
         });
+
+        function filtrosContabilizadosUrl(baseUrl) {
+            const url = new URL(baseUrl, window.location.origin);
+            const desde = $('#fecha-desde').val();
+            const hasta = $('#fecha-hasta').val();
+
+            if (desde) {
+                url.searchParams.set('fecha_desde', desde);
+            }
+
+            if (hasta) {
+                url.searchParams.set('fecha_hasta', hasta);
+            }
+
+            ($('#filtro-ruta').val() || []).forEach((id) => {
+                url.searchParams.append('ruta_id[]', id);
+            });
+
+            ($('#filtro-preventista').val() || []).forEach((id) => {
+                url.searchParams.append('preventista_id[]', id);
+            });
+
+            return url;
+        }
+
+        function abrirPdfContabilizados(baseUrl, requiereFechas = false) {
+            const url = filtrosContabilizadosUrl(baseUrl);
+
+            if (requiereFechas && (!$('#fecha-desde').val() || !$('#fecha-hasta').val())) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Seleccione fechas',
+                    text: 'Para generar la hoja de pedidos debe elegir fecha desde y fecha hasta.'
+                });
+
+                return;
+            }
+
+            const ventanaPdf = window.open(url.toString(), '_blank');
+
+            if (!ventanaPdf) {
+                window.location.href = url.toString();
+            }
+        }
 
         function verPedidosDeFecha(button) {
             const fecha = button.getAttribute('data-fecha');

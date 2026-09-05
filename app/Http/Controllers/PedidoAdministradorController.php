@@ -160,7 +160,7 @@ class PedidoAdministradorController extends Controller
 
     public function visualizacionPdfConsolidadoDespacho(Request $request, string $estado)
     {
-        if (! in_array($estado, ['pendientes', 'despachados'], true)) {
+        if (! in_array($estado, ['pendientes', 'despachados', 'contabilizados'], true)) {
             abort(404);
         }
 
@@ -197,6 +197,7 @@ class PedidoAdministradorController extends Controller
             ? Rutas::whereIn('id', $rutaIds)->orderBy('nombre_ruta')->get()
             : collect();
         $fechaDespacho = $this->fechaDespachoFiltro($request);
+        $rangoContable = $this->rangoFechaContabilizacionFiltro($request);
 
         $filtros = [
             'ruta' => $rutasFiltro->isNotEmpty()
@@ -206,6 +207,8 @@ class PedidoAdministradorController extends Controller
                 ? $preventistasFiltro->map(fn ($user) => trim($user->nombres.' '.$user->apellido_paterno.' '.$user->apellido_materno))->implode(', ')
                 : 'Todos los preventistas',
             'fecha_entrega' => $fechaDespacho ? date('d/m/Y', strtotime($fechaDespacho)) : null,
+            'fecha_desde' => $rangoContable['desde'] ? date('d/m/Y', strtotime($rangoContable['desde'])) : null,
+            'fecha_hasta' => $rangoContable['hasta'] ? date('d/m/Y', strtotime($rangoContable['hasta'])) : null,
         ];
 
         $resumen = [
@@ -401,6 +404,126 @@ class PedidoAdministradorController extends Controller
         $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos'));
         $pdf->setPaper('letter', 'portrait');
         return $pdf->stream('productosDespachados.pdf');  
+    }
+
+    public function visualizacionPdfPedidosContabilizados(Request $request)
+    {
+        $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
+        $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
+        $rangoContable = $this->rangoFechaContabilizacionFiltro($request);
+
+        if (! $rangoContable['desde'] || ! $rangoContable['hasta']) {
+            return response(
+                '<h2>Seleccione un rango de fechas</h2><p>Para generar la hoja de pedidos contabilizados debe indicar fecha desde y fecha hasta.</p>',
+                422
+            );
+        }
+
+        $lista_de_pedidos = Venta::leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->select(
+                'ventas.numero_pedido',
+                'ventas.id_usuario as id_vendedor',
+                DB::raw('DATE(MIN(ventas.fecha_contabilizacion)) AS fecha_pedido'),
+                DB::raw("COALESCE(clientes.nombres, 'Cliente') AS nombres"),
+                DB::raw("COALESCE(clientes.apellidos, 'no disponible') AS apellidos"),
+                DB::raw("COALESCE(clientes.celular, 'N/A') AS celular"),
+                DB::raw("COALESCE(clientes.calle_avenida, 'N/A') AS calle_avenida"),
+                DB::raw("COALESCE(clientes.zona_barrio, 'N/A') AS zona_barrio"),
+                DB::raw("COALESCE(clientes.referencia_direccion, 'N/A') AS referencia_direccion"),
+                'clientes.ruta_id AS ruta_id'
+            )
+            ->whereNotNull('ventas.fecha_contabilizacion');
+
+        if ($rutaIds->isNotEmpty()) {
+            $lista_de_pedidos->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $lista_de_pedidos->whereIn('ventas.id_usuario', $preventistaIds);
+        }
+
+        if ($rangoContable['desde']) {
+            $lista_de_pedidos->whereDate('ventas.fecha_contabilizacion', '>=', $rangoContable['desde']);
+        }
+
+        if ($rangoContable['hasta']) {
+            $lista_de_pedidos->whereDate('ventas.fecha_contabilizacion', '<=', $rangoContable['hasta']);
+        }
+
+        $lista_de_pedidos = $lista_de_pedidos
+            ->groupBy(
+                'ventas.numero_pedido',
+                'ventas.id_usuario',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'clientes.referencia_direccion',
+                'clientes.ruta_id'
+            )
+            ->orderBy('ventas.id_usuario', 'asc')
+            ->orderBy('ventas.numero_pedido', 'asc')
+            ->get();
+
+        $pedidos = Venta::leftJoin('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+            ->leftJoin('productos', 'ventas.id_producto', '=', 'productos.id')
+            ->leftJoin('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+            ->select(
+                DB::raw('COALESCE(productos.id, ventas.id_producto) AS id_producto'),
+                DB::raw("COALESCE(productos.codigo, 'N/A') AS codigo"),
+                DB::raw("COALESCE(productos.nombre_producto, 'Producto no disponible') AS nombre_producto"),
+                DB::raw('COALESCE(productos.cantidad, 0) AS cantidad_stock'),
+                DB::raw("COALESCE(productos.detalle_cantidad, 'unidades') AS detalle_cantidad"),
+                DB::raw("COALESCE(forma_ventas.tipo_venta, 'N/A') AS tipo_venta"),
+                DB::raw('COALESCE(ventas.precio_unitario, forma_ventas.precio_venta, 0) AS precio_venta'),
+                'ventas.id as id_pedido',
+                'ventas.id_usuario as id_vendedor',
+                'ventas.numero_pedido',
+                'ventas.cantidad as cantidad_pedido',
+                DB::raw('COALESCE(ventas.promocion, false) AS promocion'),
+                DB::raw('COALESCE(ventas.descripcion_descuento_porcentaje, 0) AS descripcion_descuento_porcentaje'),
+                DB::raw("COALESCE(ventas.descripcion_regalo, '') AS descripcion_regalo")
+            )
+            ->whereNotNull('ventas.fecha_contabilizacion');
+
+        if ($rutaIds->isNotEmpty()) {
+            $pedidos->whereIn('clientes.ruta_id', $rutaIds);
+        }
+
+        if ($preventistaIds->isNotEmpty()) {
+            $pedidos->whereIn('ventas.id_usuario', $preventistaIds);
+        }
+
+        if ($rangoContable['desde']) {
+            $pedidos->whereDate('ventas.fecha_contabilizacion', '>=', $rangoContable['desde']);
+        }
+
+        if ($rangoContable['hasta']) {
+            $pedidos->whereDate('ventas.fecha_contabilizacion', '<=', $rangoContable['hasta']);
+        }
+
+        $totalLineasHoja = (clone $pedidos)->count('ventas.id');
+
+        if ($totalLineasHoja > 1200) {
+            return response(
+                '<h2>El reporte es demasiado grande</h2><p>Seleccione menos dias, una ruta o un preventista para generar una hoja de pedidos mas liviana.</p>',
+                422
+            );
+        }
+
+        $pedidos = $pedidos
+            ->orderBy('ventas.numero_pedido', 'asc')
+            ->orderBy('ventas.id', 'asc')
+            ->get();
+
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(120);
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', compact('pedidos', 'lista_de_pedidos'));
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('hoja-pedidos-contabilizados.pdf');
     }
 
     public function ubicacionesDespachoMapa(Request $request)
@@ -1618,6 +1741,10 @@ class PedidoAdministradorController extends Controller
 
     public function visualizacionContabilizados(Request $request, DataTables $dataTables){
         if($request->ajax()){
+            $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
+            $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
+            $rangoContable = $this->rangoFechaContabilizacionFiltro($request);
+
             $pedidosFechas = Pedido::query()
                 ->select('numero_pedido')
                 ->selectRaw('MIN(fecha_pedido) AS primera_fecha_pedido')
@@ -1641,20 +1768,20 @@ class PedidoAdministradorController extends Controller
                 ->groupBy(DB::raw('DATE(ventas.fecha_contabilizacion)'))
                 ->orderByDesc(DB::raw('DATE(ventas.fecha_contabilizacion)'));
 
-            if ($request->filled('ruta_id')) {
-                $query->where('clientes.ruta_id', $request->ruta_id);
+            if ($rutaIds->isNotEmpty()) {
+                $query->whereIn('clientes.ruta_id', $rutaIds);
             }
 
-            if ($request->filled('preventista_id')) {
-                $query->where('ventas.id_usuario', $request->preventista_id);
+            if ($preventistaIds->isNotEmpty()) {
+                $query->whereIn('ventas.id_usuario', $preventistaIds);
             }
 
-            if ($request->filled('fecha_desde')) {
-                $query->whereDate('ventas.fecha_contabilizacion', '>=', $request->fecha_desde);
+            if ($rangoContable['desde']) {
+                $query->whereDate('ventas.fecha_contabilizacion', '>=', $rangoContable['desde']);
             }
 
-            if ($request->filled('fecha_hasta')) {
-                $query->whereDate('ventas.fecha_contabilizacion', '<=', $request->fecha_hasta);
+            if ($rangoContable['hasta']) {
+                $query->whereDate('ventas.fecha_contabilizacion', '<=', $rangoContable['hasta']);
             }
 
             return $dataTables->eloquent($query)
@@ -1712,6 +1839,9 @@ class PedidoAdministradorController extends Controller
 
     public function pedidosContabilizadosPorFecha(Request $request, string $fecha)
     {
+        $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
+        $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
+
         $pedidosFechas = Pedido::query()
             ->select('numero_pedido')
             ->selectRaw('MIN(fecha_pedido) AS fecha_pedido')
@@ -1738,12 +1868,12 @@ class PedidoAdministradorController extends Controller
             ->groupBy('ventas.numero_pedido', 'ventas.id_cliente', 'ventas.id_usuario', 'clientes.nombres', 'clientes.apellidos', 'rutas.nombre_ruta', 'users.nombres', 'users.apellido_paterno', 'users.apellido_materno', 'pedidos_fechas.fecha_pedido', 'pedidos_fechas.fecha_entrega')
             ->orderBy('ventas.numero_pedido');
 
-        if ($request->filled('ruta_id')) {
-            $query->where('clientes.ruta_id', $request->ruta_id);
+        if ($rutaIds->isNotEmpty()) {
+            $query->whereIn('clientes.ruta_id', $rutaIds);
         }
 
-        if ($request->filled('preventista_id')) {
-            $query->where('ventas.id_usuario', $request->preventista_id);
+        if ($preventistaIds->isNotEmpty()) {
+            $query->whereIn('ventas.id_usuario', $preventistaIds);
         }
 
         $pedidos = $query->get()->map(function ($pedido) {
@@ -2411,15 +2541,55 @@ class PedidoAdministradorController extends Controller
         return $fecha ? (string) $fecha : null;
     }
 
+    private function rangoFechaContabilizacionFiltro(Request $request): array
+    {
+        return [
+            'desde' => $request->input('fecha_desde') ?: $request->input('desde'),
+            'hasta' => $request->input('fecha_hasta') ?: $request->input('hasta'),
+        ];
+    }
+
     private function consolidadoProductosDespachoQuery(string $estado, Request $request)
     {
-        $query = $estado === 'despachados'
-            ? $this->basePedidosDespachados()
-            : $this->basePedidosPendientes();
-
         $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
         $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
         $fechaDespacho = $this->fechaDespachoFiltro($request);
+        $rangoContable = $this->rangoFechaContabilizacionFiltro($request);
+
+        if ($estado === 'contabilizados') {
+            $query = Venta::query()
+                ->join('forma_ventas', 'ventas.id_forma_venta', '=', 'forma_ventas.id')
+                ->join('clientes', 'ventas.id_cliente', '=', 'clientes.id')
+                ->whereNotNull('ventas.fecha_contabilizacion')
+                ->with('producto')
+                ->select('ventas.id_producto')
+                ->selectRaw('COUNT(DISTINCT ventas.numero_pedido) AS pedidos_involucrados')
+                ->selectRaw('SUM(ventas.cantidad * forma_ventas.equivalencia_cantidad) AS cantidad_despacho')
+                ->selectRaw('SUM(ventas.cantidad * COALESCE(ventas.precio_unitario, forma_ventas.precio_venta)) AS ingreso_estimado')
+                ->groupBy('ventas.id_producto');
+
+            if ($rutaIds->isNotEmpty()) {
+                $query->whereIn('clientes.ruta_id', $rutaIds);
+            }
+
+            if ($preventistaIds->isNotEmpty()) {
+                $query->whereIn('ventas.id_usuario', $preventistaIds);
+            }
+
+            if ($rangoContable['desde']) {
+                $query->whereDate('ventas.fecha_contabilizacion', '>=', $rangoContable['desde']);
+            }
+
+            if ($rangoContable['hasta']) {
+                $query->whereDate('ventas.fecha_contabilizacion', '<=', $rangoContable['hasta']);
+            }
+
+            return $query;
+        }
+
+        $query = $estado === 'despachados'
+            ? $this->basePedidosDespachados()
+            : $this->basePedidosPendientes();
 
         $query->join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
             ->with('producto')

@@ -21,4 +21,24 @@ class Venta extends Model
         'descripcion_descuento_porcentaje',
         'descripcion_regalo'
     ];
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'id_usuario');
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class, 'id_cliente');
+    }
+
+    public function producto()
+    {
+        return $this->belongsTo(Producto::class, 'id_producto');
+    }
+
+    public function formaVenta()
+    {
+        return $this->belongsTo(FormaVenta::class, 'id_forma_venta');
+    }
 }

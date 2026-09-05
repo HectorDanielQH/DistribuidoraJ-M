@@ -159,6 +159,7 @@ Route::middleware(['auth','verificar.estado'])->group(function () {
         //-----------------------PEDIDOS CONTABILIZADOS-----------------------//
         Route::get('pedidos/administrador/visualizacion-contabilizados', [PedidoAdministradorController::class,'visualizacionContabilizados'])->name('pedidos.administrador.visualizacionContabilizados');
         Route::get('pedidos/administrador/visualizacion-contabilizados/fecha/{fecha}/pedidos', [PedidoAdministradorController::class,'pedidosContabilizadosPorFecha'])->name('pedidos.administrador.contabilizados.fecha.pedidos');
+        Route::get('pedidos/administrador/visualizacion-contabilizados/pdf/hoja-pedidos', [PedidoAdministradorController::class,'visualizacionPdfPedidosContabilizados'])->name('pedidos.administrador.contabilizados.pdf.hojaPedidos');
         Route::get('pedidos/administrador/visualizacion-contabilizados/{numero_pedido}/detalle', [PedidoAdministradorController::class,'detallePedidoContabilizado'])->name('pedidos.administrador.contabilizados.detalle');
         Route::get('pedidos/administrador/visualizacion/{id}/editar-contabilizados', [PedidoAdministradorController::class,'editarPedidoContabilizado'])->name('pedidos.administrador.editar.contabilizados');
         Route::get('pedidos/administrador/visualizacion/{id}/editar-contabilizados/datos', [PedidoAdministradorController::class,'obtenerPedidoContabilizadoEdicion'])->name('pedidos.administrador.editar.contabilizados.datos');

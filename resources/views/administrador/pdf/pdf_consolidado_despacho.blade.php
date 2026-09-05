@@ -159,9 +159,11 @@
 </head>
 <body>
     @php
-        $titulo = $estado === 'despachados'
-            ? 'Consolidado de productos despachados'
-            : 'Consolidado para preparar despacho';
+        $titulo = match ($estado) {
+            'despachados' => 'Consolidado de productos despachados',
+            'contabilizados' => 'Consolidado de productos contabilizados',
+            default => 'Consolidado para preparar despacho',
+        };
         $logo = public_path('images/logo_color.webp');
     @endphp
 
@@ -213,6 +215,14 @@
             <tr>
                 <td class="label">Fecha despacho</td>
                 <td colspan="3">{{ $filtros['fecha_entrega'] }}</td>
+            </tr>
+        @endif
+        @if(($filtros['fecha_desde'] ?? null) || ($filtros['fecha_hasta'] ?? null))
+            <tr>
+                <td class="label">Desde</td>
+                <td>{{ $filtros['fecha_desde'] ?? 'Sin inicio' }}</td>
+                <td class="label">Hasta</td>
+                <td>{{ $filtros['fecha_hasta'] ?? 'Sin fin' }}</td>
             </tr>
         @endif
     </table>
