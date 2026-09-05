@@ -187,19 +187,16 @@ class PedidoAdministradorController extends Controller
                 ];
             });
 
-        $preventistaIds = collect((array) $request->input('preventista_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
+        $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
         $preventistasFiltro = $preventistaIds->isNotEmpty()
             ? User::whereIn('id', $preventistaIds)->orderBy('nombres')->get()
             : collect();
 
-        $rutaIds = collect((array) $request->input('ruta_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
+        $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
         $rutasFiltro = $rutaIds->isNotEmpty()
             ? Rutas::whereIn('id', $rutaIds)->orderBy('nombre_ruta')->get()
             : collect();
+        $fechaDespacho = $this->fechaDespachoFiltro($request);
 
         $filtros = [
             'ruta' => $rutasFiltro->isNotEmpty()
@@ -208,7 +205,7 @@ class PedidoAdministradorController extends Controller
             'preventista' => $preventistasFiltro->isNotEmpty()
                 ? $preventistasFiltro->map(fn ($user) => trim($user->nombres.' '.$user->apellido_paterno.' '.$user->apellido_materno))->implode(', ')
                 : 'Todos los preventistas',
-            'fecha_entrega' => $request->filled('fecha_entrega') ? date('d/m/Y', strtotime($request->fecha_entrega)) : null,
+            'fecha_entrega' => $fechaDespacho ? date('d/m/Y', strtotime($fechaDespacho)) : null,
         ];
 
         $resumen = [
@@ -315,12 +312,9 @@ class PedidoAdministradorController extends Controller
     }
 
     public function visualizacionPdfDespachar(Request $request){
-        $rutaIds = collect((array) $request->input('ruta_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
-        $preventistaIds = collect((array) $request->input('preventista_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
+        $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
+        $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
+        $fechaDespacho = $this->fechaDespachoFiltro($request);
 
         $lista_de_pedidos = Pedido::join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
             ->select(
@@ -333,10 +327,10 @@ class PedidoAdministradorController extends Controller
             'clientes.calle_avenida',
             'clientes.zona_barrio',
             'clientes.referencia_direccion',
-            'ruta_id',      
+            'clientes.ruta_id AS ruta_id',
             )
-            ->whereNotNull('fecha_entrega')
-            ->where('estado_pedido', false);
+            ->whereNotNull('pedidos.fecha_entrega')
+            ->where('pedidos.estado_pedido', false);
 
         if ($rutaIds->isNotEmpty()) {
             $lista_de_pedidos->whereIn('clientes.ruta_id', $rutaIds);
@@ -346,8 +340,8 @@ class PedidoAdministradorController extends Controller
             $lista_de_pedidos->whereIn('pedidos.id_usuario', $preventistaIds);
         }
 
-        if ($request->filled('fecha_entrega')) {
-            $lista_de_pedidos->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        if ($fechaDespacho) {
+            $lista_de_pedidos->whereDate('pedidos.fecha_entrega', $fechaDespacho);
         }
 
         $lista_de_pedidos = $lista_de_pedidos
@@ -361,7 +355,7 @@ class PedidoAdministradorController extends Controller
                 'clientes.calle_avenida',
                 'clientes.zona_barrio',
                 'clientes.referencia_direccion',
-                'ruta_id',
+                'clientes.ruta_id',
             )
             ->orderBy('pedidos.id_usuario', 'asc')
             ->get();
@@ -396,8 +390,8 @@ class PedidoAdministradorController extends Controller
             $pedidos->whereIn('pedidos.id_usuario', $preventistaIds);
         }
 
-        if ($request->filled('fecha_entrega')) {
-            $pedidos->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        if ($fechaDespacho) {
+            $pedidos->whereDate('pedidos.fecha_entrega', $fechaDespacho);
         }
 
         $pedidos = $pedidos
@@ -411,12 +405,9 @@ class PedidoAdministradorController extends Controller
 
     public function ubicacionesDespachoMapa(Request $request)
     {
-        $rutaIds = collect((array) $request->input('ruta_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
-        $preventistaIds = collect((array) $request->input('preventista_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
+        $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
+        $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
+        $fechaDespacho = $this->fechaDespachoFiltro($request);
 
         $query = Pedido::query()
             ->join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
@@ -468,8 +459,8 @@ class PedidoAdministradorController extends Controller
             $query->whereIn('pedidos.id_usuario', $preventistaIds);
         }
 
-        if ($request->filled('fecha_entrega')) {
-            $query->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        if ($fechaDespacho) {
+            $query->whereDate('pedidos.fecha_entrega', $fechaDespacho);
         }
 
         $ubicaciones = $query->get()->map(function ($item) {
@@ -2394,39 +2385,60 @@ class PedidoAdministradorController extends Controller
             ->where('pedidos.estado_pedido', false);
     }
 
+    private function normalizarIdsFiltro(Request $request, string $campo)
+    {
+        $valor = $request->input($campo, $request->input($campo.'[]', []));
+
+        if (is_string($valor)) {
+            $valor = str_contains($valor, ',') ? explode(',', $valor) : [$valor];
+        }
+
+        return collect((array) $valor)
+            ->flatten()
+            ->filter(fn ($id) => $id !== null && $id !== '' && strtolower((string) $id) !== 'null')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+    }
+
+    private function fechaDespachoFiltro(Request $request): ?string
+    {
+        $fecha = $request->input('fecha_entrega')
+            ?: $request->input('fecha_despacho')
+            ?: $request->input('fecha_despachado');
+
+        return $fecha ? (string) $fecha : null;
+    }
+
     private function consolidadoProductosDespachoQuery(string $estado, Request $request)
     {
         $query = $estado === 'despachados'
             ? $this->basePedidosDespachados()
             : $this->basePedidosPendientes();
 
-        $query->with('producto')
+        $rutaIds = $this->normalizarIdsFiltro($request, 'ruta_id');
+        $preventistaIds = $this->normalizarIdsFiltro($request, 'preventista_id');
+        $fechaDespacho = $this->fechaDespachoFiltro($request);
+
+        $query->join('clientes', 'pedidos.id_cliente', '=', 'clientes.id')
+            ->with('producto')
             ->select('pedidos.id_producto')
             ->selectRaw('COUNT(DISTINCT pedidos.numero_pedido) AS pedidos_involucrados')
             ->selectRaw('SUM(pedidos.cantidad * forma_ventas.equivalencia_cantidad) AS cantidad_despacho')
             ->selectRaw('SUM(pedidos.cantidad * COALESCE(pedidos.precio_unitario, forma_ventas.precio_venta)) AS ingreso_estimado')
             ->groupBy('pedidos.id_producto');
 
-        $rutaIds = collect((array) $request->input('ruta_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
-
         if ($rutaIds->isNotEmpty()) {
-            $query->whereHas('cliente', function ($query) use ($rutaIds) {
-                $query->whereIn('ruta_id', $rutaIds);
-            });
+            $query->whereIn('clientes.ruta_id', $rutaIds);
         }
-
-        $preventistaIds = collect((array) $request->input('preventista_id', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->values();
 
         if ($preventistaIds->isNotEmpty()) {
             $query->whereIn('pedidos.id_usuario', $preventistaIds);
         }
 
-        if ($estado === 'despachados' && $request->filled('fecha_entrega')) {
-            $query->whereDate('pedidos.fecha_entrega', $request->fecha_entrega);
+        if ($estado === 'despachados' && $fechaDespacho) {
+            $query->whereDate('pedidos.fecha_entrega', $fechaDespacho);
         }
 
         return $query;
