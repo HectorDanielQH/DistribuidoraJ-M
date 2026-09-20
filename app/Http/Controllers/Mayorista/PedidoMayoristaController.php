@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\FormaVenta;
 use App\Models\Producto;
 use App\Models\VentaMayorista;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
@@ -187,7 +188,13 @@ class PedidoMayoristaController extends Controller
             ->editColumn('unidades', fn ($row) => (float) $row->unidades)
             ->editColumn('total', fn ($row) => round((float) $row->total, 2))
             ->addColumn('acciones', function ($row) {
+                $numeroPedido = (int) $row->numero_pedido;
+                $pdfUrl = route('mayoristas.pedidos.pdf', ['numero' => $numeroPedido]);
+
                 return '<div class="wholesale-row-actions">
+                            <a href="' . e($pdfUrl) . '" target="_blank" rel="noopener" class="btn btn-secondary btn-sm wholesale-action-btn btn-pdf-mayorista">
+                                <i class="fas fa-file-pdf"></i> Hoja PDF
+                            </a>
                             <button type="button" class="btn btn-info btn-sm wholesale-action-btn btn-editar-mayorista" data-pedido="' . $row->numero_pedido . '">
                                 <i class="fas fa-edit"></i> Editar
                             </button>
@@ -198,6 +205,74 @@ class PedidoMayoristaController extends Controller
             })
             ->rawColumns(['acciones'])
             ->make(true);
+    }
+
+    public function pdfPedido(string $numeroPedido)
+    {
+        $ventaBase = $this->ventasVisibles()
+            ->where('numero_venta', $numeroPedido)
+            ->firstOrFail();
+
+        $listaDePedidos = VentaMayorista::query()
+            ->leftJoin('clientes', 'ventas_mayoristas.id_cliente', '=', 'clientes.id')
+            ->where('ventas_mayoristas.numero_venta', $ventaBase->numero_venta)
+            ->where('ventas_mayoristas.id_usuario', $ventaBase->id_usuario)
+            ->select(
+                'ventas_mayoristas.numero_venta AS numero_pedido',
+                'ventas_mayoristas.id_usuario AS id_vendedor',
+                DB::raw('DATE(MIN(ventas_mayoristas.fecha_venta)) AS fecha_pedido'),
+                DB::raw("COALESCE(clientes.nombres, 'Cliente') AS nombres"),
+                DB::raw("COALESCE(clientes.apellidos, '') AS apellidos"),
+                DB::raw("COALESCE(clientes.celular, 'N/A') AS celular"),
+                DB::raw("COALESCE(clientes.calle_avenida, 'N/A') AS calle_avenida"),
+                DB::raw("COALESCE(clientes.zona_barrio, 'N/A') AS zona_barrio"),
+                DB::raw("COALESCE(clientes.referencia_direccion, 'N/A') AS referencia_direccion"),
+                'clientes.ruta_id AS ruta_id'
+            )
+            ->groupBy(
+                'ventas_mayoristas.numero_venta',
+                'ventas_mayoristas.id_usuario',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'clientes.referencia_direccion',
+                'clientes.ruta_id'
+            )
+            ->get();
+
+        $pedidos = VentaMayorista::query()
+            ->leftJoin('productos', 'ventas_mayoristas.id_producto', '=', 'productos.id')
+            ->leftJoin('forma_ventas', 'ventas_mayoristas.id_forma_venta', '=', 'forma_ventas.id')
+            ->where('ventas_mayoristas.numero_venta', $ventaBase->numero_venta)
+            ->where('ventas_mayoristas.id_usuario', $ventaBase->id_usuario)
+            ->select(
+                DB::raw('COALESCE(productos.id, ventas_mayoristas.id_producto) AS id_producto'),
+                DB::raw("COALESCE(productos.codigo, 'N/A') AS codigo"),
+                DB::raw("COALESCE(productos.nombre_producto, 'Producto no disponible') AS nombre_producto"),
+                DB::raw('COALESCE(productos.cantidad, 0) AS cantidad_stock'),
+                DB::raw("COALESCE(productos.detalle_cantidad, 'unidades') AS detalle_cantidad"),
+                DB::raw("COALESCE(forma_ventas.tipo_venta, 'N/A') AS tipo_venta"),
+                'ventas_mayoristas.precio_unitario AS precio_venta',
+                'ventas_mayoristas.id AS id_pedido',
+                'ventas_mayoristas.id_usuario AS id_vendedor',
+                'ventas_mayoristas.numero_venta AS numero_pedido',
+                'ventas_mayoristas.cantidad AS cantidad_pedido',
+                DB::raw('FALSE AS promocion'),
+                DB::raw('0 AS descripcion_descuento_porcentaje'),
+                DB::raw("'' AS descripcion_regalo")
+            )
+            ->orderBy('ventas_mayoristas.id')
+            ->get();
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', [
+            'pedidos' => $pedidos,
+            'lista_de_pedidos' => $listaDePedidos,
+        ]);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('hoja-pedido-mayorista-' . $ventaBase->numero_venta . '.pdf');
     }
 
     public function detallePedido(string $numeroPedido)
