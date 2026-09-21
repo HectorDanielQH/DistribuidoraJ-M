@@ -275,6 +275,117 @@ class PedidoMayoristaController extends Controller
         return $pdf->stream('hoja-pedido-mayorista-' . $ventaBase->numero_venta . '.pdf');
     }
 
+    public function pdfPedidosPorFechas(Request $request)
+    {
+        $validator = validator($request->query(), [
+            'fecha_desde' => ['required', 'date_format:Y-m-d'],
+            'fecha_hasta' => ['required', 'date_format:Y-m-d', 'after_or_equal:fecha_desde'],
+        ]);
+
+        if ($validator->fails()) {
+            return response(
+                '<h2>Rango de fechas invalido</h2><p>Seleccione correctamente la fecha desde y la fecha hasta.</p>',
+                422
+            );
+        }
+
+        $desde = $request->query('fecha_desde');
+        $hasta = $request->query('fecha_hasta');
+
+        $listaDePedidos = VentaMayorista::query()
+            ->leftJoin('clientes', 'ventas_mayoristas.id_cliente', '=', 'clientes.id')
+            ->when(! $this->puedeAdministrar(), function ($query) {
+                $query->where('ventas_mayoristas.id_usuario', auth()->id());
+            })
+            ->whereDate('ventas_mayoristas.fecha_venta', '>=', $desde)
+            ->whereDate('ventas_mayoristas.fecha_venta', '<=', $hasta)
+            ->select(
+                'ventas_mayoristas.numero_venta AS numero_pedido',
+                'ventas_mayoristas.id_usuario AS id_vendedor',
+                DB::raw('DATE(MIN(ventas_mayoristas.fecha_venta)) AS fecha_pedido'),
+                DB::raw("COALESCE(clientes.nombres, 'Cliente') AS nombres"),
+                DB::raw("COALESCE(clientes.apellidos, '') AS apellidos"),
+                DB::raw("COALESCE(clientes.celular, 'N/A') AS celular"),
+                DB::raw("COALESCE(clientes.calle_avenida, 'N/A') AS calle_avenida"),
+                DB::raw("COALESCE(clientes.zona_barrio, 'N/A') AS zona_barrio"),
+                DB::raw("COALESCE(clientes.referencia_direccion, 'N/A') AS referencia_direccion"),
+                'clientes.ruta_id AS ruta_id'
+            )
+            ->groupBy(
+                'ventas_mayoristas.numero_venta',
+                'ventas_mayoristas.id_usuario',
+                'clientes.nombres',
+                'clientes.apellidos',
+                'clientes.celular',
+                'clientes.calle_avenida',
+                'clientes.zona_barrio',
+                'clientes.referencia_direccion',
+                'clientes.ruta_id'
+            )
+            ->orderBy('ventas_mayoristas.id_usuario')
+            ->orderBy('ventas_mayoristas.numero_venta')
+            ->get();
+
+        if ($listaDePedidos->isEmpty()) {
+            return response(
+                '<h2>Sin pedidos en el rango</h2><p>No existen pedidos mayoristas registrados entre las fechas seleccionadas.</p>',
+                404
+            );
+        }
+
+        $pedidosQuery = VentaMayorista::query()
+            ->leftJoin('productos', 'ventas_mayoristas.id_producto', '=', 'productos.id')
+            ->leftJoin('forma_ventas', 'ventas_mayoristas.id_forma_venta', '=', 'forma_ventas.id')
+            ->when(! $this->puedeAdministrar(), function ($query) {
+                $query->where('ventas_mayoristas.id_usuario', auth()->id());
+            })
+            ->whereDate('ventas_mayoristas.fecha_venta', '>=', $desde)
+            ->whereDate('ventas_mayoristas.fecha_venta', '<=', $hasta)
+            ->select(
+                DB::raw('COALESCE(productos.id, ventas_mayoristas.id_producto) AS id_producto'),
+                DB::raw("COALESCE(productos.codigo, 'N/A') AS codigo"),
+                DB::raw("COALESCE(productos.nombre_producto, 'Producto no disponible') AS nombre_producto"),
+                DB::raw('COALESCE(productos.cantidad, 0) AS cantidad_stock'),
+                DB::raw("COALESCE(productos.detalle_cantidad, 'unidades') AS detalle_cantidad"),
+                DB::raw("COALESCE(forma_ventas.tipo_venta, 'N/A') AS tipo_venta"),
+                'ventas_mayoristas.precio_unitario AS precio_venta',
+                'ventas_mayoristas.id AS id_pedido',
+                'ventas_mayoristas.id_usuario AS id_vendedor',
+                'ventas_mayoristas.numero_venta AS numero_pedido',
+                'ventas_mayoristas.cantidad AS cantidad_pedido',
+                DB::raw('FALSE AS promocion'),
+                DB::raw('0 AS descripcion_descuento_porcentaje'),
+                DB::raw("'' AS descripcion_regalo")
+            );
+
+        if ((clone $pedidosQuery)->count('ventas_mayoristas.id') > 1200) {
+            return response(
+                '<h2>El reporte es demasiado grande</h2><p>Seleccione un rango de fechas mas corto para generar el PDF.</p>',
+                422
+            );
+        }
+
+        $pedidos = $pedidosQuery
+            ->orderBy('ventas_mayoristas.numero_venta')
+            ->orderBy('ventas_mayoristas.id')
+            ->get();
+
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(120);
+
+        $pdf = Pdf::loadView('administrador.pdf.pdf_despachar', [
+            'pedidos' => $pedidos,
+            'lista_de_pedidos' => $listaDePedidos,
+            'rangoReporte' => [
+                'desde' => $desde,
+                'hasta' => $hasta,
+            ],
+        ]);
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('pedidos-mayoristas-' . $desde . '-al-' . $hasta . '.pdf');
+    }
+
     public function detallePedido(string $numeroPedido)
     {
         $ventaBase = $this->ventasVisibles()

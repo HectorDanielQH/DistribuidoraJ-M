@@ -10,6 +10,9 @@
             <p>Registra ventas mayoristas con formas de venta, precio negociado, control de stock y total automatico. Tambien puedes reabrir y editar registros guardados.</p>
         </div>
         <div class="hero-actions">
+            <button type="button" class="btn btn-danger wholesale-main-btn" id="btnPdfFechasMayorista">
+                <i class="fas fa-file-pdf"></i> PDF por fechas
+            </button>
             <button type="button" class="btn btn-success wholesale-main-btn" id="btnGuardarPedidoMayorista">
                 <i class="fas fa-save"></i> Guardar pedido
             </button>
@@ -476,6 +479,65 @@
                 $item.prop('disabled', false)
                     .removeClass('btn-loading')
                     .html($item.data('original-html') || $item.html());
+            });
+        }
+
+        function fechaLocalIso(fecha) {
+            const year = fecha.getFullYear();
+            const month = String(fecha.getMonth() + 1).padStart(2, '0');
+            const day = String(fecha.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function abrirPdfMayoristaPorFechas() {
+            const hoy = new Date();
+            const haceTreintaDias = new Date();
+            haceTreintaDias.setDate(hoy.getDate() - 30);
+
+            Swal.fire({
+                title: 'Exportar hoja de pedidos',
+                html: `
+                    <div class="text-left">
+                        <p class="text-muted mb-3">Selecciona el rango de fechas de registro que aparecerá en el PDF.</p>
+                        <label for="pdfMayoristaDesde">Desde</label>
+                        <input type="date" id="pdfMayoristaDesde" class="swal2-input m-0 mb-3 w-100" value="${fechaLocalIso(haceTreintaDias)}">
+                        <label for="pdfMayoristaHasta">Hasta</label>
+                        <input type="date" id="pdfMayoristaHasta" class="swal2-input m-0 w-100" value="${fechaLocalIso(hoy)}">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-file-pdf"></i> Generar PDF',
+                cancelButtonText: 'Cancelar',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const desde = document.getElementById('pdfMayoristaDesde').value;
+                    const hasta = document.getElementById('pdfMayoristaHasta').value;
+
+                    if (!desde || !hasta) {
+                        Swal.showValidationMessage('Selecciona la fecha desde y la fecha hasta.');
+                        return false;
+                    }
+
+                    if (desde > hasta) {
+                        Swal.showValidationMessage('La fecha desde no puede ser posterior a la fecha hasta.');
+                        return false;
+                    }
+
+                    return { desde, hasta };
+                }
+            }).then((resultado) => {
+                if (!resultado.isConfirmed) {
+                    return;
+                }
+
+                const url = new URL("{{ route('mayoristas.pedidos.pdf.fechas') }}", window.location.origin);
+                url.searchParams.set('fecha_desde', resultado.value.desde);
+                url.searchParams.set('fecha_hasta', resultado.value.hasta);
+
+                const ventanaPdf = window.open(url.toString(), '_blank');
+                if (!ventanaPdf) {
+                    window.location.href = url.toString();
+                }
             });
         }
 
@@ -1021,6 +1083,7 @@
             $('#btnLimpiarProductoMayorista').on('click', limpiarProductoSeleccionado);
             $('#btnGuardarPedidoMayorista').on('click', guardarPedidoMayorista);
             $('#btnNuevoPedidoMayorista').on('click', limpiarPedidoMayorista);
+            $('#btnPdfFechasMayorista').on('click', abrirPdfMayoristaPorFechas);
 
             tablaPedidos = $('#tablaPedidosMayorista').DataTable({
                 ajax: "{{ route('mayoristas.pedidos.listado') }}",

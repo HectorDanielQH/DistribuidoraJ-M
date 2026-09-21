@@ -230,6 +230,7 @@ Route::prefix('mayoristas')->name('mayoristas.')->middleware('can:mayoristas.pan
         Route::get('formas-venta/{id}', [PedidoMayoristaController::class, 'obtenerFormaVenta'])->name('formasVenta.detalle');
         Route::get('stock-productos', [PedidoMayoristaController::class, 'obtenerStockProductos'])->name('productos.stock');
         Route::get('pedidos/listado', [PedidoMayoristaController::class, 'listadoPedidos'])->name('pedidos.listado');
+        Route::get('pedidos/reporte/pdf', [PedidoMayoristaController::class, 'pdfPedidosPorFechas'])->name('pedidos.pdf.fechas');
         Route::get('pedidos/{numero}/pdf', [PedidoMayoristaController::class, 'pdfPedido'])->whereNumber('numero')->name('pedidos.pdf');
         Route::get('pedidos/{numero}/detalle', [PedidoMayoristaController::class, 'detallePedido'])->name('pedidos.detalle');
         Route::post('pedidos/guardar', [PedidoMayoristaController::class, 'guardarPedido'])->name('pedidos.guardar');

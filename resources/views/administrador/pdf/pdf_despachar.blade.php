@@ -326,7 +326,12 @@
         </td>
         <td>
             <h1 class="title">Reporte de carga y despacho</h1>
-            <div class="title-sub">Formato funcional para impresion y corte</div>
+            <div class="title-sub">
+                Formato funcional para impresion y corte
+                @isset($rangoReporte)
+                    | Periodo: {{ date('d/m/Y', strtotime($rangoReporte['desde'])) }} al {{ date('d/m/Y', strtotime($rangoReporte['hasta'])) }}
+                @endisset
+            </div>
         </td>
         <td class="date-box">
             <strong>{{ now()->format('d/m/Y') }}</strong>
@@ -393,7 +398,8 @@
                                                 <td><span class="meta-label">Celular vendedor:</span> {{ $boleta['celular_vendedor'] }}</td>
                                             </tr>
                                             <tr>
-                                                <td colspan="2"><span class="meta-label">Ruta:</span> {{ $boleta['ruta_nombre'] }}</td>
+                                                <td><span class="meta-label">Ruta:</span> {{ $boleta['ruta_nombre'] }}</td>
+                                                <td><span class="meta-label">Fecha de registro:</span> {{ $boleta['pedido']->fecha_pedido ? date('d/m/Y', strtotime($boleta['pedido']->fecha_pedido)) : 'N/A' }}</td>
                                             </tr>
                                         </table>
                                     </td>

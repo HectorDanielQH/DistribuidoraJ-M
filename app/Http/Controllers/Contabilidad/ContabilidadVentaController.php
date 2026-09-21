@@ -832,7 +832,7 @@ class ContabilidadVentaController extends Controller
     {
         $query = $this->ventasMayoristasBaseQuery($request)
             ->selectRaw('ventas_mayoristas.numero_venta')
-            ->selectRaw("TO_CHAR(DATE(MIN(ventas_mayoristas.fecha_venta)), 'DD/MM/YYYY') AS fecha_venta")
+            ->selectRaw('DATE(MIN(ventas_mayoristas.fecha_venta)) AS fecha_venta')
             ->selectRaw("TRIM(CONCAT(COALESCE(clientes.nombres, ''), ' ', COALESCE(clientes.apellidos, ''))) AS cliente")
             ->selectRaw("COALESCE(rutas.nombre_ruta, 'Sin ruta') AS ruta")
             ->selectRaw("TRIM(CONCAT(COALESCE(users.nombres, ''), ' ', COALESCE(users.apellido_paterno, ''), ' ', COALESCE(users.apellido_materno, ''))) AS mayorista")
@@ -843,6 +843,7 @@ class ContabilidadVentaController extends Controller
             ->orderByDesc('ventas_mayoristas.numero_venta');
 
         return DataTables::of($query)
+            ->editColumn('fecha_venta', fn ($row) => Carbon::parse($row->fecha_venta)->format('d/m/Y'))
             ->editColumn('total', fn ($row) => round((float) $row->total, 2))
             ->make(true);
     }
@@ -1215,4 +1216,3 @@ class ContabilidadVentaController extends Controller
         return round((($actual - $anterior) / $anterior) * 100, 2);
     }
 }
-
